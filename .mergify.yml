@@ -5,6 +5,7 @@ pull_request_rules:
       # All conditions must match for action to occur
       conditions:
           - 'title~=.*WIP.*'
+          - '-label=WIP'
       actions: &add_wip
           label:
               add:
@@ -13,10 +14,12 @@ pull_request_rules:
     - name: automatic labeling of work-in-progress PRs by body
       conditions:
           - 'body~=.*WIP.*'
+          - '-label=WIP'
       actions: *add_wip
 
     - name: automatic work-in-progress label removal
       conditions:
+          - 'label=WIP'
           - '-title~=.*WIP.*'
           - '-body~=.*WIP.*'
       actions:
@@ -24,6 +27,7 @@ pull_request_rules:
               remove:
                   - 'WIP'
 
+    # N/B: This will _NEVER_ fire if this file is also modified by the same PR
     - name: automatic merge when Cirrus-CI 'success' task passes
       conditions:
           - '-label=WIP'  # Will NOT match a PR labeled during this run
