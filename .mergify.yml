@@ -1,0 +1,39 @@
+---
+
+pull_request_rules:
+    - name: automatic labeling of work-in-progress PRs by title
+      # All conditions must match for action to occur
+      conditions:
+          - 'title~=.*WIP.*'
+      actions: &add_wip
+          label:
+              add:
+                  - 'WIP'
+
+    - name: automatic labeling of work-in-progress PRs by body
+      conditions:
+          - 'body~=.*WIP.*'
+      actions: *add_wip
+
+    - name: automatic work-in-progress label removal
+      conditions:
+          - '-title~=.*WIP.*'
+          - '-body~=.*WIP.*'
+      actions:
+          label:
+              remove:
+                  - 'WIP'
+
+    - name: automatic merge when Cirrus-CI 'success' task passes
+      conditions:
+          - '-label=WIP'  # Will NOT match a PR labeled during this run
+          - '-title~=.*WIP.*'  # Don't merge with WIP label still applied
+          - '-body~=.*WIP.*'   # "
+          - 'status-success=cirrus-ci/success'  # defined in .cirrus.yml
+      actions:
+          label:
+              remove:
+                  - 'WIP'
+          merge:
+            strict: true
+            method: 'rebase'
