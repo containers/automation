@@ -1,0 +1,12 @@
+---
+
+# Must pass for automatic-merge to occur, see .mergify.yml
+'cirrus-ci/success_task':
+    alias: 'cirrus-ci/success'
+
+    container:
+        image: alpine
+        cpu: 1
+        memory: 1
+
+    noop_script: '/bin/true'
