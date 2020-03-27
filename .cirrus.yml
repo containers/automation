@@ -1,12 +1,34 @@
 ---
 
+# Ref: https://cirrus-ci.org/guide/writing-tasks/
+
+# Default task runtime environment
+container:
+    image: registry.fedoraproject.org/fedora-minimal:latest
+    cpu: 1
+    memory: 1
+
+# Execute all unit-tests in the repo
+cirrus-ci/unit_test_task:
+    setup_script:
+        - microdnf update -y
+        - microdnf install findutils jq
+    test_script:
+        - $CIRRUS_WORKING_DIR/bin/run_all_tests.sh
+
+# Provide an artifact for post-cirrus testing to examine
+cirrus-ci/test_artifact_task:
+    script: echo "$CIRRUS_BUILD_ID/$CIRRUS_TASK_ID/pass" > passing_output.log
+    always: &results
+        test_artifacts:
+            path: '*.log'
+
 # Must pass for automatic-merge to occur, see .mergify.yml
-'cirrus-ci/success_task':
-    alias: 'cirrus-ci/success'
+cirrus-ci/success_task:
+    alias: cirrus-ci/success
 
-    container:
-        image: alpine
-        cpu: 1
-        memory: 1
+    depends_on:
+        - cirrus-ci/unit_test
+        - cirrus-ci/test_artifact
 
-    noop_script: '/bin/true'
+    noop_script: /bin/true

@@ -1,0 +1,45 @@
+---
+
+on:
+    # Ref: https://help.github.com/en/actions/reference/events-that-trigger-workflows#check-suite-event-check_suite
+    check_suite:
+        types: [completed]
+
+jobs:
+    cirrus-ci_retrospective:
+        # Do not execute for other github applications, only works with cirrus-ci
+        if: github.event.check_suite.app.name == 'Cirrus CI'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  # For secutrity reasons, github will ONLY/EVER use this action config.
+                  # and script from the default (master) branch, and never anywhere else.
+                  # The ref setting below serves as a reminder of this.
+                  ref: ${{ github.event.repository.default_branch }}
+                  persist-credentials: false
+                  path: ./
+
+            # TODO: Make this into an action (container image)
+            # Note: Debugging this script in github is all but impossible (see note above)
+            #       There is a purpose-built debug.sh script that should be used locally.
+            - run: $GITHUB_WORKSPACE/cirrus-ci_retrospective/bin/cirrus-ci_retrospective.sh
+              env:
+                GITHUB_TOKEN: ${{ github.token }}
+
+            - uses: actions/upload-artifact@v1.0.0
+              with:
+                  # There is no way to avoid this being zipped :(
+                  name: cirrus-ci_retrospective.json.zip
+                  # Script (above) generate this filename
+                  path: ./cirrus-ci_retrospective.json
+    event_debug:
+        # Avoid useless executions (same as above)
+        if: github.event.check_suite.app.name == 'Cirrus CI'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/upload-artifact@v1.0.0
+              with:
+                  # There is no way to avoid this being zipped :(
+                  name: event.json.zip
+                  path: ${{ github.event_path }}
