@@ -1,6 +1,20 @@
 ---
 
+# Format Ref: https://doc.mergify.io/configuration.html
+
 pull_request_rules:
+    - name: 'automatic labeling of PRs that require manual merging'
+      # Github blocks apps from merging if they modify any github action or workflow file.
+      # Mergify blocks merging PRs if they modify _this_ file.
+      # For consistency sake, also block auto-merge for PRs that modify the cirrus config.
+      conditions:
+          - 'files~=(^.github/workflow)|(^.cirrus.y.+l)|(^.mergify.y.+l)'
+          - '-label=Manual Merge'
+      actions:
+          label:
+              add:
+                  - 'Manual Merge'
+
     - name: 'automatic labeling of work-in-progress PRs by title'
       # All conditions must match for action to occur
       conditions:
@@ -28,11 +42,13 @@ pull_request_rules:
                   - 'WIP'
 
     # N/B: This will _NEVER_ fire if this file is also modified by the same PR
-    - name: 'automatic merge non-WIP + Cirrus-CI Successful'
+    - name: 'automatic merge when Cirrus-CI Successful'
       conditions:
           - '-label=WIP'  # Will NOT match a PR labeled during this run
           - '-title~=.*WIP'  # Don't merge with WIP label still applied
           - '-body~=.*WIP'   # "
+          - '-label=Manual Merge'  # Automation config. file modified
+          - '-files~=(^.github/workflow)|(^.cirrus.y.+l)|(^.mergify.y.+l)'
           - '-title~=.*CI.*SKIP'  # Cirrus-CI feature
           - '-title~=.*SKIP.*CI'  # "
           - 'status-success=cirrus-ci/success'  # defined in .cirrus.yml
