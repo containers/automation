@@ -1,0 +1,116 @@
+---
+
+on:
+  push:
+      # ref: https://help.github.com/en/actions/reference/events-that-trigger-workflows#example-using-multiple-events-with-activity-types-or-configuration
+      tags:
+          - 'v*'
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  # Testing installer requires a full repo. history
+                  fetch-depth: 0
+                  path: ./
+
+            - name: Fetch all repository tags
+              run: git fetch --tags --force
+
+            - name: Execute all unit-tests
+              run: $GITHUB_WORKSPACE/bin/run_all_tests.sh
+
+    release:
+        needs: test
+        # Don't blindly trust the 'v*' push event filter.
+        if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '.')
+        runs-on: ubuntu-latest
+        steps:
+            # At the time of this comment, there is NO other source or method for
+            # obtaining the pushed tag from any function, env. var., event JSON, or
+            # context data.
+            - id: get_tag
+              name: Retrieve the tag name
+              run: printf "::set-output name=TAG_NAME::%s" $(basename $GITHUB_REF)
+
+            - id: create_release  # Pre-req for upload-release-asset below
+              name: Create a new Github Release item for tag
+              uses: actions/create-release@v1.0.1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                tag_name: ${{ steps.get_tag.outputs.TAG_NAME }}
+                release_name: ${{ steps.get_tag.outputs.TAG_NAME }}
+
+            - uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0
+                  path: ./
+
+            - uses: actions/upload-release-asset@v1.0.2
+              name: Upload the install script as the release artifact
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ steps.create_release.outputs.upload_url }}
+                  asset_path: ./bin/install_automation.sh
+                  asset_name: install_automation.sh
+                  asset_content_type: application/octet-stream
+
+    container_image:
+        needs: test
+        runs-on: ubuntu-latest
+        env:
+            REGISTRY: quay.io
+            REPO_USER: libpod
+            REPO_NAME: cirrus-ci_retrospective
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0
+                  path: ./
+
+            - name: Build the cirrus-ci_retrospective container image
+              run: >-
+                docker build -t $REGISTRY/$REPO_USER/$REPO_NAME:latest \
+                    -f cirrus-ci_retrospective/Dockerfile \
+                    --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
+                    ./
+
+            - name: Configure registry credentials
+              env:
+                  DOCKER_CONFIG_JSON: ${{secrets.DOCKER_CONFIG_JSON}}
+              run: |
+                  if [[ -z "$DOCKER_CONFIG_JSON" ]]; then
+                      echo "::error::Empty/unset \$DOCKER_CONFIG_JSON"
+                      exit 1
+                  fi
+                  trap "history -c" EXIT
+                  mkdir -p $HOME/.docker
+                  echo "$DOCKER_CONFIG_JSON" > $HOME/.docker/config.json
+
+            - name: Retrieve the tag name
+              id: get_tag
+              run: printf "::set-output name=TAG_NAME::%s" $(basename $GITHUB_REF)
+
+            - name: Tag and push cirrus-ci_retrospective container image to registry
+              run: |
+                  docker tag $REGISTRY/$REPO_USER/$REPO_NAME:latest \
+                             $REGISTRY/$REPO_USER/$REPO_NAME:${{ steps.get_tag.outputs.TAG_NAME }}
+                  docker push $REGISTRY/$REPO_USER/$REPO_NAME:${{ steps.get_tag.outputs.TAG_NAME }} && \
+                  docker push $REGISTRY/$REPO_USER/$REPO_NAME:latest
+
+    debug:
+        runs-on: ubuntu-latest
+        steps:
+            - if: always()
+              name: Log colorized and formatted event JSON
+              run: jq --indent 4 --color-output . ${{ github.event_path }}
+
+            - if: always()
+              uses: actions/upload-artifact@v1.0.0
+              name: Archive triggering event JSON
+              with:
+                  name: event.json.zip
+                  path: ${{ github.event_path }}

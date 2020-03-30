@@ -3,9 +3,21 @@
 # filesystem location.  Not intended be executed directly.
 
 # Absolute realpath anchors for important directory tree roots.
-COMMON_LIB_PATH=$(realpath $(dirname "${BASH_SOURCE[0]}"))  # THIS file's directory path
-REPO_ROOT=$(realpath "$COMMON_LIB_PATH/../../")  # Specific to THIS repository & file
-SCRIPT_FILENAME=$(basename $0)  # Source script's file
+AUTOMATION_LIB_PATH=$(realpath $(dirname "${BASH_SOURCE[0]}"))  # THIS file's directory
+AUTOMATION_ROOT=$(realpath "$AUTOMATION_LIB_PATH/../")  # THIS file's parent directory
 SCRIPT_PATH=$(realpath "$(dirname $0)")  # Source script's directory
-SCRIPT_LIB_PATH=$(realpath "$SCRIPT_PATH/../lib/")  # Assumes FHS-like structure
+SCRIPT_FILENAME=$(basename $0)  # Source script's file
 MKTEMP_FORMAT=".tmp_${SCRIPT_FILENAME}_XXXXXXXX"  # Helps reference source
+
+automation_version() {
+    local git_cmd="git describe HEAD"
+    cd "$AUTOMATION_ROOT"
+    if [[ -r "AUTOMATION_VERSION" ]]; then
+       cat "AUTOMATION_VERSION"
+    elif [[ -n "$(type -P git)" ]] && $git_cmd &> /dev/null; then
+        $git_cmd
+    else
+        echo "Error determining version number" > /dev/stderr
+        exit 1
+    fi
+}

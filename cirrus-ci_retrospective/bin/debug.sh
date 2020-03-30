@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # This script assists with debugging cirrus-ci_retrospective.sh
-# locally, since normally it can only execute as a github action
-# from the master-branch.
+# manually/locally or remotely in a github action.
 #
 # Usage: You need to export a valid $GITHUB_EVENT_PATH and $GITHUB_TOKEN value.
 # The referenced event file, should be the JSON file from a "check_suite" event
@@ -19,6 +18,10 @@
 
 set -eo pipefail
 
+# Do not use magic default values set by common.sh
+DEBUG_MSG_PREFIX="DEBUG:"
+WARNING_MSG_PREFIX="WARNING:"
+ERROR_MSG_PREFIX="ERROR:"
 source "$(dirname $0)/../lib/common.sh"
 DEBUG_SUBJECT_FILEPATH="$SCRIPT_PATH/cirrus-ci_retrospective.sh"
 
@@ -57,7 +60,7 @@ unset _MSGPFX
 export GITHUB_EVENT_PATH
 export GITHUB_EVENT_NAME=check_suite  # Validated above
 export GITHUB_ACTIONS=true            # Mock value from Github Actions
-export GITHUB_WORKSPACE="$REPO_ROOT"  # Normally the default branch is used
+export GITHUB_WORKSPACE="${GITHUB_WORKSPACE:-$SCRIPT_PATH/../../}"
 export DEBUG=1                        # The purpose of this script
 
 $DEBUG_SUBJECT_FILEPATH

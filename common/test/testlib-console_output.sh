@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source $(dirname $0)/testlib.sh || exit 1
+source $(dirname ${BASH_SOURCE[0]})/testlib.sh || exit 1
 source "$TEST_DIR"/"$SUBJ_FILENAME" || exit 2
 
 test_message_text="This is the test text for a console_output library unit-test"

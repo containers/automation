@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source $(dirname $0)/testlib.sh || exit 1
+source $(dirname ${BASH_SOURCE[0]})/testlib.sh || exit 1
 
 # CI must only/always be either 'true' or 'false'.
 # Usage: test_ci <initial value> <expected value>

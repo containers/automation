@@ -1,5 +1,6 @@
 # automation
-Automation scripts, libraries, and other tooling for re-use by other containers org. repositories
+Automation scripts, libraries, and other tooling for re-use by other containers org.
+repositories
 
 ## bin
 
@@ -16,12 +17,13 @@ other repositories.
 ## cirrus-ci_retrospective
 
 This directory contains items intended for use in/by a github-action, under a
-very specific environment.  It will examine a Cirrus-CI execution after-the-fact,
-and provide cross-references and other details in the form of a JSON file.  The
-only useful component outside of a github-action environment, is the
-`bin/debug.sh` script.  See the comments in that script for usage.
+that environment.  It helps perform automated analysis of a Cirrus-CI execution
+after-the-fact.  Providing cross-references and other runtime details in a JSON
+output file.
 
-An example of a deployed workflow for this action can be seen in this repo.'s
-`.github/workflows/cirrus-ci_retrospective.yml` file.  Execution of this
-workflow can be observed under the *actions* tab of the main repository
-page.
+An commented example of using the cirrus-ci_retrospective container is present in
+this repository, and used to bootstrap testing of PRs that modify it's files.
+
+Outside of the github-action environment, there is a `bin/debug.sh` script.  This
+is intended for local use, and will provide additional runtime operational details.
+See the comments in the script for its usage.

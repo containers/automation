@@ -17,24 +17,30 @@ fi
 verify_env_vars
 
 INTERMEDIATE_OUTPUT_EXT=".json_item"
-OUTPUT_JSON_FILE="$GITHUB_WORKSPACE/${SCRIPT_FILENAME%.sh}.json"
+OUTPUT_JSON_FILE="${OUTPUT_JSON_FILE:-$GITHUB_WORKSPACE/${SCRIPT_FILENAME%.sh}.json}"
 
-# Confirm expected triggering event
-[[ "$(jq --slurp --compact-output --raw-output '.[0].action' < $GITHUB_EVENT_PATH)" == "completed" ]] || \
-    die "Expecting github action event action to be 'completed'"
+# Confirm expected triggering event and type
+jq --exit-status 'has("check_suite")' < "$GITHUB_EVENT_PATH" || \
+    die "Expecting to find a top-level 'check_suite' key in event JSON $GITHUB_EVENT_PATH"
 
-cirrus_app_id=$(jq --slurp --compact-output --raw-output '.[0].check_suite.app.id' < $GITHUB_EVENT_PATH)
+_act_typ=$(jq --compact-output --raw-output '.action' < "$GITHUB_EVENT_PATH")
+[[ "$_act_typ" == "completed" ]] || \
+    die "Expecting github action 'check_suite' event to be type 'completed', got '$_act_typ'"
+
+_filt='.check_suite.app.id'
+cirrus_app_id=$(jq --compact-output --raw-output "$_filt" < "$GITHUB_EVENT_PATH")
 dbg "# Working with Github Application ID: '$cirrus_app_id'"
 [[ -n "$cirrus_app_id" ]] || \
-    die "Failed to obtain Cirrus-CI's github app ID number"
+    die "Expecting non-empty value from jq filter $_filt in $GITHUB_EVENT_PATH"
 [[ "$cirrus_app_id" -gt 0 ]] || \
-    die "Expecting Cirrus-CI app ID to be integer greater than 0"
+    die "Expecting jq filter $_filt value to be integer greater than 0, got '$cirrus_app_id'"
 
 # Guaranteed shortcut by Github API straight to actual check_suite node
-cs_node_id="$(jq --slurp --compact-output --raw-output '.[0].check_suite.node_id' < $GITHUB_EVENT_PATH)"
+_filt='.check_suite.node_id'
+cs_node_id=$(jq --compact-output --raw-output "$_filt" < "$GITHUB_EVENT_PATH")
 dbg "# Working with github global node id '$cs_node_id'"
 [[ -n "$cs_node_id" ]] || \
-    die "You must provide the check_suite's node_id string as the first parameter"
+    die "Expecting the jq filter $_filt to be non-empty value in $GITHUB_EVENT_PATH"
 
 # Validate node is really the type expected - global node ID's can point anywhere
 dbg "# Checking type of object at '$cs_node_id'"
@@ -118,8 +124,14 @@ do
           }
         }" \
         '.' \
-        '-n @@@@' >> "$output_json"
+        '-n @@@@' | jq --indent 4 '.data.task' > "$output_json"
 done
 
-dbg "# Combining and pretty-formatting all task data as JSON list into $OUTPUT_JSON_FILE"
-jq --indent 4 --slurp '.' $TMPDIR/.*$INTERMEDIATE_OUTPUT_EXT > "$OUTPUT_JSON_FILE"
+dbg "# Combining all task data into JSON list as action output and into $OUTPUT_JSON_FILE"
+# Github Actions handles this prefix specially:  Ensure stdout JSON is all on one line.
+# N/B: It is not presently possible to actually _use_ this output value as JSON in
+#      a github actions workflow.
+printf "::set-output name=json::'%s'" \
+    $(jq --indent 4 --slurp '.' $TMPDIR/.*$INTERMEDIATE_OUTPUT_EXT | \
+      tee "$OUTPUT_JSON_FILE" | \
+      jq --compact-output '.')
