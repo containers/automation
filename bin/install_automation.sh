@@ -11,11 +11,8 @@ set +x
 # bash
 # core-utils
 # curl
-# find-utils
 # git
 # install
-# jq
-# sed
 
 AUTOMATION_REPO_URL=${AUTOMATION_REPO_URL:-https://github.com/containers/automation.git}
 AUTOMATION_REPO_BRANCH=${AUTOMATION_REPO_BRANCH:-master}
@@ -26,8 +23,8 @@ AUTOMATION_VERSION="$1"
 shift || true  # ignore if no more args
 # Set non-zero to enable
 DEBUG=${DEBUG:-0}
-# Save a bit of typin
-OOE=$(realpath $(dirname "${BASH_SOURCE[0]}")/../common/bin/ooe.sh)
+# Save some output eyestrain (if script can be found)
+OOE=$(realpath $(dirname "${BASH_SOURCE[0]}")/../common/bin/ooe.sh 2>/dev/null || echo "")
 # Sentinel value representing whatever version is present in the local repository
 MAGIC_LOCAL_VERSION='0.0.0'
 # Needed for unit-testing
