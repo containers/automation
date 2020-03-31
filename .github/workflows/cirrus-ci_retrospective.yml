@@ -66,20 +66,6 @@ jobs:
                   echo "PR Number: ${{ steps.retro.outputs.prn }}"
                   echo "SHA: ${{ steps.retro.outputs.sha }}"
 
-            # Block mergify from merging the PR
-            - if: steps.retro.outputs.was_pr == 'true'
-              name: Remove cirrus-ci_retrospective self-test success label
-              uses: actions/github-script@0.9.0
-              with:
-                  github-token: ${{secrets.GITHUB_TOKEN}}
-                  script: |
-                      github.issues.removeLabel({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issue_number: ${{ steps.retro.outputs.prn }},
-                        name: 'Cirrus-CI Retrospective Self-tested'
-                      })
-
             # Provide feedback to PR in the form of a comment, referncing this run.
             - if: steps.retro.outputs.was_pr == 'true'
               id: create_pr_comment
@@ -216,10 +202,26 @@ jobs:
                       and artifacts are now
                       available.](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
 
-            # Workflow against a PR was canceled for some reason,
+            # Allow mergify to merge the PR
+            - if: steps.retro.outputs.was_pr == 'true'
+              name: Remove cirrus-ci_retrospective self-test success label
+              # Ref: https://github.com/actions/github-script
+              uses: actions/github-script@0.9.0
+              with:
+                  github-token: ${{secrets.GITHUB_TOKEN}}
+                  script: |
+                      github.issues.addLabels({
+                        issue_number: ${{ steps.retro.outputs.prn }},
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        labels: ['Cirrus-CI Retrospective Self-tested']
+                      })
+
+
+            # Workflow against a PR was cancelled for some reason,
             # This can happen because of --force push, manual button press, or some other cause.
             - if: cancelled() && steps.retro.outputs.was_pr == 'true'
-              name: Add comment on workflow cancle
+              name: Clear comment on workflow cancel
               uses: jungwinter/comment@v1
               with:
                   type: 'edit'
@@ -228,7 +230,7 @@ jobs:
                   # Don't leave unnecessary clutter comments in the PR, erase them.
                   body: ''
 
-            # Lastly, notice if there was a failure and provide feedback to PR.
+            # Provide feedback to PR.
             - if: failure() && steps.retro.outputs.was_pr == 'true'
               name: Add comment on workflow failure
               uses: jungwinter/comment@v1
@@ -242,19 +244,18 @@ jobs:
                       failed against this PR's
                       [${{ steps.retro.outputs.sha }}](https://github.com/${{github.repository}}/pull/${{steps.retro.outputs.prn}}/commits/${{steps.retro.outputs.sha}})
 
-            # Allow mergify to merge the PR
-            - if: steps.retro.outputs.was_pr == 'true'
+            # Block mergify from merging the PR (This will break if label not present)
+            - if: (failure() || cancelled()) && steps.retro.outputs.was_pr == 'true'
               name: Remove cirrus-ci_retrospective self-test success label
-              # Ref: https://github.com/actions/github-script
               uses: actions/github-script@0.9.0
               with:
                   github-token: ${{secrets.GITHUB_TOKEN}}
                   script: |
-                      github.issues.addLabels({
-                        issue_number: ${{ steps.retro.outputs.prn }},
+                      github.issues.removeLabel({
                         owner: context.repo.owner,
                         repo: context.repo.repo,
-                        labels: 'Cirrus-CI Retrospective Self-tested'
+                        issue_number: ${{ steps.retro.outputs.prn }},
+                        name: 'Cirrus-CI Retrospective Self-tested'
                       })
 
     debug_cirrus-ci_retrospective:
