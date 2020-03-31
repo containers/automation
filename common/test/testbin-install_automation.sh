@@ -72,11 +72,10 @@ test_cmd \
     0 "PATH ==> .+:$INSTALL_PREFIX/automation/bin" \
     load_example_environment
 
-# TODO: Enable when upstream release is available
-#test_cmd \
-#    "The installed installer, can update itself to the latest upstream version" \
-#    0 "Installation complete for v[0-9]+\.[0-9]+\.[0-9]+" \
-#    execute_in_example_environment $SUBJ_FILENAME latest
+test_cmd \
+    "The installed installer, can update itself to the latest upstream version" \
+    0 "Installation complete for v[0-9]+\.[0-9]+\.[0-9]+" \
+    execute_in_example_environment $SUBJ_FILENAME latest
 
 # Must be last call
 exit_with_status
