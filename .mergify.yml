@@ -44,6 +44,7 @@ pull_request_rules:
     # N/B: This will _NEVER_ fire if this file is also modified by the same PR
     - name: 'automatic merge when Cirrus-CI Successful'
       conditions:
+          - 'label=Cirrus-CI Retrospective Self-tested'  # Managed by cirrus-ci_retrospective workflow
           - '-label=WIP'  # Will NOT match a PR labeled during this run
           - '-title~=.*WIP'  # Don't merge with WIP label still applied
           - '-body~=.*WIP'   # "

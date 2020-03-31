@@ -66,6 +66,20 @@ jobs:
                   echo "PR Number: ${{ steps.retro.outputs.prn }}"
                   echo "SHA: ${{ steps.retro.outputs.sha }}"
 
+            # Block mergify from merging the PR
+            - if: steps.retro.outputs.was_pr == 'true'
+              name: Remove cirrus-ci_retrospective self-test success label
+              uses: actions/github-script@0.9.0
+              with:
+                  github-token: ${{secrets.GITHUB_TOKEN}}
+                  script: |
+                      github.issues.removeLabel({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: ${{ steps.retro.outputs.prn }},
+                        name: 'Cirrus-CI Retrospective Self-tested'
+                      })
+
             # Provide feedback to PR in the form of a comment, referncing this run.
             - if: steps.retro.outputs.was_pr == 'true'
               id: create_pr_comment
@@ -227,6 +241,21 @@ jobs:
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
                       failed against this PR's
                       [${{ steps.retro.outputs.sha }}](https://github.com/${{github.repository}}/pull/${{steps.retro.outputs.prn}}/commits/${{steps.retro.outputs.sha}})
+
+            # Allow mergify to merge the PR
+            - if: steps.retro.outputs.was_pr == 'true'
+              name: Remove cirrus-ci_retrospective self-test success label
+              # Ref: https://github.com/actions/github-script
+              uses: actions/github-script@0.9.0
+              with:
+                  github-token: ${{secrets.GITHUB_TOKEN}}
+                  script: |
+                      github.issues.addLabels({
+                        issue_number: ${{ steps.retro.outputs.prn }},
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        labels: 'Cirrus-CI Retrospective Self-tested'
+                      })
 
     debug_cirrus-ci_retrospective:
         if: github.event.check_suite.app.name == 'Cirrus CI'
