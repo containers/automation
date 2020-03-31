@@ -6,6 +6,20 @@ on:
       tags:
           - 'v*'
 jobs:
+    smoke:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Confirm provledged registry access
+              env:
+                  DOCKER_CONFIG_JSON: ${{secrets.DOCKER_CONFIG_JSON}}
+              run: |
+                  set -e
+                  set +x
+                  if [[ -z "$DOCKER_CONFIG_JSON" ]]; then
+                      echo "::error::Empty/unset \$DOCKER_CONFIG_JSON for quay.io/libpod write access"
+                      exit 1
+                  fi
+
     test:
         runs-on: ubuntu-latest
         steps:
@@ -22,7 +36,9 @@ jobs:
               run: $GITHUB_WORKSPACE/bin/run_all_tests.sh
 
     release:
-        needs: test
+        needs:
+            - test
+            - smoke
         # Don't blindly trust the 'v*' push event filter.
         if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '.')
         runs-on: ubuntu-latest
@@ -32,7 +48,7 @@ jobs:
             # context data.
             - id: get_tag
               name: Retrieve the tag name
-              run: printf "::set-output name=TAG_NAME::%s" $(basename $GITHUB_REF)
+              run: printf "::set-output name=TAG_NAME::%s\n" $(basename "$GITHUB_REF" | tee /dev/stderr)
 
             - id: create_release  # Pre-req for upload-release-asset below
               name: Create a new Github Release item for tag
@@ -59,7 +75,9 @@ jobs:
                   asset_content_type: application/octet-stream
 
     container_image:
-        needs: test
+        needs:
+            - test
+            - smoke
         runs-on: ubuntu-latest
         env:
             REGISTRY: quay.io
@@ -92,7 +110,7 @@ jobs:
 
             - name: Retrieve the tag name
               id: get_tag
-              run: printf "::set-output name=TAG_NAME::%s" $(basename $GITHUB_REF)
+              run: printf "::set-output name=TAG_NAME::%s\n" $(basename "$GITHUB_REF" | tee /dev/stderr)
 
             - name: Tag and push cirrus-ci_retrospective container image to registry
               run: |
