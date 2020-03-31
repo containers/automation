@@ -3,6 +3,8 @@
 # A Library of contextual console output-related operations.
 # Intended for use by other scripts, not to be executed directly.
 
+source $(dirname "${BASH_SOURCE[0]}")/defaults.sh
+
 # helper, not intended for use outside this file
 _rel_path() {
     local abs_path=$(realpath "$1")
@@ -35,13 +37,13 @@ _fmt_ctx() {
 
 # Print a highly-visible message to stderr.  Usage: warn <msg>
 warn() {
-    _fmt_ctx "WARNING: ${1:-no warning message given}" > /dev/stderr
+    _fmt_ctx "$WARNING_MSG_PREFIX ${1:-no warning message given}" > /dev/stderr
 }
 
 # Same as warn() but exit non-zero or with given exit code
 # usage: die <msg> [exit-code]
 die() {
-    _fmt_ctx "ERROR: ${1:-no error message given}" > /dev/stderr
+    _fmt_ctx "$ERROR_MSG_PREFIX ${1:-no error message given}" > /dev/stderr
     exit ${2:-1}
 }
 
@@ -50,7 +52,7 @@ dbg() {
         local shortest_source_path=$(_rel_path "${BASH_SOURCE[1]}")
         (
         echo
-        echo "DEBUG: ${1:-No debugging message given} ($shortest_source_path:${BASH_LINENO[0]} in ${FUNCNAME[1]}())"
+        echo "$DEBUG_MSG_PREFIX ${1:-No debugging message given} ($shortest_source_path:${BASH_LINENO[0]} in ${FUNCNAME[1]}())"
         ) > /dev/stderr
     fi
 }

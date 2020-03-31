@@ -170,18 +170,19 @@ url_query_filter_test() {
 }
 
 verify_env_vars() {
+    # N/B: The word 'Expecting' is checked for by unit-testing
     [[ "$GITHUB_ACTIONS" == "true" ]] || \
-        die "Expecting to be running inside a Github Action"
+        die "Expecting \$GITHUB_ACTIONS to be 'true', got '$GITHUB_ACTIONS'" 2
 
     [[ "$GITHUB_EVENT_NAME" = "check_suite" ]] || \
-        die "Expecting \$GITHUB_EVENT_NAME to be 'check_suite'"
+        die "Expecting \$GITHUB_EVENT_NAME to be 'check_suite', got '$GITHUB_EVENT_NAME'" 2
 
     [[ -r "$GITHUB_EVENT_PATH" ]] || \
-        die "Unable to read github action event file '$GITHUB_EVENT_PATH'"
+        die "Expecting readable \$GITHUB_EVENT_PATH file, got '$GITHUB_EVENT_PATH'" 2
 
     [[ -n "$GITHUB_TOKEN" ]] || \
-        die "Expecting non-empty \$GITHUB_TOKEN"
+        die "Expecting non-empty \$GITHUB_TOKEN, got '$GITHUB_TOKEN'" 2
 
     [[ -d "$GITHUB_WORKSPACE" ]] || \
-        die "Expecting to find \$GITHUB_WORKSPACE '$GITHUB_WORKSPACE' as a directory"
+        die "Expecting \$GITHUB_WORKSPACE directory, got '$GITHUB_WORKSPACE'" 2
 }
