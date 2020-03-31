@@ -36,6 +36,15 @@ jobs:
         ...act on contents of ./cirrus-ci_retrospective.json...
 ```
 
+## Dependencies:
+
+In addition to the basic `common` requirements (see [top-level README.md](../master/README.md))
+the following system packages (or their equivalents) are needed:
+
+* curl
+* jq
+* sed
+
 ## Usage Notes:
 
 * The trigger, `check_suite` type `completed` is the only event currently supported
