@@ -91,8 +91,10 @@ containing multiple `tasks`.
 
 ```json
     {
+        id: "1234567890",
         ...cut...
         "build": {
+            "id": "0987654321"
             "changeIdInRepo": "679085b3f2b40797fedb60d02066b3cbc592ae4e",
             "branch": "pull/34",
             "pullRequest": 34,
@@ -106,10 +108,12 @@ containing multiple `tasks`.
 
 ```json
     {
+        id: "something",
         ...cut...
         "status": "PAUSED",
         "automaticReRun": false,
         "build": {
+            "id": "otherthing"
             "changeIdInRepo": "679085b3f2b40797fedb60d02066b3cbc592ae4e",
             "branch": "pull/34",
             "pullRequest": 34,
@@ -130,6 +134,7 @@ conclude until the manual task is triggered and completes (pass, fail, or other)
     {
         ...cut...
         "build": {
+            "id": "foobarbaz"
             "changeIdInRepo": "232bae5d8ffb6082393e7543e4e53f978152f98a",
             "branch": "master",
             "pullRequest": null,
@@ -143,6 +148,7 @@ conclude until the manual task is triggered and completes (pass, fail, or other)
 
 ```json
     {
+        id: "1234567890",
         ...cut...
         "build": {
             ...cut...

@@ -113,10 +113,11 @@ do
         "$CCI_URL" \
         "{
           task(id: $task_id) {
+            id
             name
             status
             automaticReRun
-            build {changeIdInRepo branch pullRequest status repository {
+            build {id changeIdInRepo branch pullRequest status repository {
                 owner name cloneUrl masterBranch
               }
             }
