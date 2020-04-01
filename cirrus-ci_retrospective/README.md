@@ -76,47 +76,66 @@ perform test-executions for PRs.  See the workflow file for comments on related 
 
 # Output Decoding
 
-The output JSON is a list of all Cirrus-CI tasks which completed after being triggered by
+The output JSON is an `array` of all Cirrus-CI tasks which completed after being triggered by
 one of the supported mechanisms (i.e. PR push, branch push, or tag push).  At the time
 this was written, CRON-based runs in Cirrus-CI do not trigger a `check_suite` in Github.
 Otherwise, based on various values in the output JSON, it is possible to objectively
-determine the execution context for the build.  For example (condensed):
+determine the execution context for the build.
+
+*Note*: The object nesting is backwards from what you may expect.  The top-level object
+represents an individual `task`, but contains it's `build` object to make parsing
+with `jq` easier.  In reality, the data model actually represents a single `build`,
+containing multiple `tasks`.
 
 ## After pushing to pull request number 34
 
 ```json
     {
-        "data": {
-            "task": {
-                ...cut...
-                "build": {
-                    "changeIdInRepo": "679085b3f2b40797fedb60d02066b3cbc592ae4e",
-                    "branch": "pull/34",
-                    "pullRequest": 34,
-                    ...cut...
-                }
-                ...cut...
-            }
+        ...cut...
+        "build": {
+            "changeIdInRepo": "679085b3f2b40797fedb60d02066b3cbc592ae4e",
+            "branch": "pull/34",
+            "pullRequest": 34,
+            ...cut...
         }
+        ...cut...
     }
 ```
+
+## Pull request 34's `trigger_type: manual` task (not yet triggered)
+
+```json
+    {
+        ...cut...
+        "status": "PAUSED",
+        "automaticReRun": false,
+        "build": {
+            "changeIdInRepo": "679085b3f2b40797fedb60d02066b3cbc592ae4e",
+            "branch": "pull/34",
+            "pullRequest": 34,
+        }
+        ...cut...
+    }
+```
+
+*Important note about manual tasks:* Manually triggering an independent the task
+***will not*** result in a new `check_suite`.  Therefor, the cirrus-ci_retrospective
+action will not execute again, irrespective of pass, fail or any other manual task status.
+Also, if any task in Cirrus-CI is dependent on a manual task, the build itself will not
+conclude until the manual task is triggered and completes (pass, fail, or other).
 
 ## After merging pull request 34 into master branch (merge commit added)
 
 ```json
     {
-        "data": {
-            "task": {
-                ...cut...
-                "build": {
-                    "changeIdInRepo": "232bae5d8ffb6082393e7543e4e53f978152f98a",
-                    "branch": "master",
-                    "pullRequest": null,
-                    ...cut...
-                }
-                ...cut...
-            }
+        ...cut...
+        "build": {
+            "changeIdInRepo": "232bae5d8ffb6082393e7543e4e53f978152f98a",
+            "branch": "master",
+            "pullRequest": null,
+            ...cut...
         }
+        ...cut...
     }
 ```
 
@@ -124,20 +143,15 @@ determine the execution context for the build.  For example (condensed):
 
 ```json
     {
-        "data": {
-            "task": {
-                ...cut...
-                "build": {
-                    ...cut...
-                    "changeIdInRepo": "679085b3f2b40797fedb60d02066b3cbc592ae4e",
-                    "branch": "v2.2.0",
-                    "pullRequest": null,
-                    ...cut...
-                    }
-                }
-                ...cut...
-            }
+        ...cut...
+        "build": {
+            ...cut...
+            "changeIdInRepo": "679085b3f2b40797fedb60d02066b3cbc592ae4e",
+            "branch": "v2.2.0",
+            "pullRequest": null,
+            ...cut...
         }
+        ...cut...
     }
 ```
 
