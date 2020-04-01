@@ -211,8 +211,7 @@ jobs:
                   type: 'edit'
                   comment_id: '${{ steps.create_pr_comment.outputs.id }}'
                   token: '${{ secrets.GITHUB_TOKEN }}'
-                  # Don't leave unnecessary clutter comments in the PR, erase them.
-                  body: ''
+                  body: [Cancelled](https://github.com/${{github.repository}}/pull/${{steps.retro.outputs.prn}}/commits/${{steps.retro.outputs.sha}})
 
             # Provide feedback to PR.
             - if: failure() && steps.retro.outputs.was_pr == 'true'
