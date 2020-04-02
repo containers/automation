@@ -45,7 +45,8 @@ jobs:
                   prn=$(jq --raw-output '.[] | select(.name == "cirrus-ci/success") | .build.pullRequest' ./cirrus-ci_retrospective.json)
                   tid=$(jq --raw-output '.[] | select(.name == "cirrus-ci/success") | .id' ./cirrus-ci_retrospective.json)
                   sha=$(jq --raw-output '.[] | select(.name == "cirrus-ci/success") | .build.changeIdInRepo' ./cirrus-ci_retrospective.json)
-                  if [[ -n "$prn" ]] && [[ "$prn" != "null" ]] && [[ $prn -gt 0 ]] && [[ -n "$sha" ]]; then
+                  tst=$(jq --raw-output '.[] | select(.name == "cirrus-ci/test_manual") | .status' ./cirrus-ci_retrospective.json)
+                  if [[ -n "$prn" ]] && [[ "$prn" != "null" ]] && [[ -n "$tst" ]] && [[ $prn -gt 0 ]] && [[ -n "$sha" ]]; then
                       printf "\n::set-output name=was_pr::true\n"
                       printf "\n::set-output name=prn::%d\n" "$prn"
                   else
@@ -54,6 +55,7 @@ jobs:
                   fi
                   printf "\n::set-output name=tid::%s\n" "$tid"
                   printf "\n::set-output name=sha::%s\n" "$sha"
+                  printf "\n::set-output name=tst::%s\n" "$tst"
 
             # In case there was a problem, provide details about what might have gone wrong.
             - if: always()
@@ -68,6 +70,7 @@ jobs:
                   echo "PR Number: ${{ steps.retro.outputs.prn }}"
                   echo "Task ID was: ${{ steps.retro.outputs.tid }}"
                   echo "SHA: ${{ steps.retro.outputs.sha }}"
+                  echo "Task Status: ${{ steps.retro.outputs.tst }}"
 
             # Provide feedback to PR in the form of a comment, referncing this run.
             - if: steps.retro.outputs.was_pr == 'true'
