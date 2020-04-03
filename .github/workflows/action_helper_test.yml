@@ -1,0 +1,51 @@
+---
+
+# Perform unit-testing of the helper scripts used by github actions workflows
+
+on: [push, pull_request]
+
+# Variables required by multiple jobs/steps
+env:
+    # Authoritative Cirrus-CI task to monitor for completion info of all other cirrus-ci tasks.
+    MONITOR_TASK: 'MONITOR/TEST/VALUE'
+    # Authoritative Github Action task (in cirrus-ci) to trigger / check for completion of _this_ workflow
+    ACTION_TASK: 'ACTION/TEST/VALUE'
+    HELPER_LIB_TEST: '.github/test/run_action_tests.sh'
+    # Enables debugging of github actions itself
+    # (see https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-a-debug-message)
+    ACTIONS_STEP_DEBUG: '${{ secrets.ACTIONS_STEP_DEBUG }}'
+
+jobs:
+    unit-test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Clone the repository code
+              uses: actions/checkout@v2
+              with:
+                persist-credentials: false
+                path: ./
+
+            - name: Execute helper library unit-tests using code from PR
+              run: |
+                  ./$HELPER_LIB_TEST
+
+    event-debug:
+        if: github.event.check_suite.app.name == 'Cirrus CI'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Collect the originating event and result JSON
+              run: cp "${{ github.event_path }}" ./
+
+            - name: Log colorized and formatted event JSON
+              run: jq --indent 4 --color-output . ./event.json
+
+            - if: always()
+              name: Execute latest upstream cirrus-ci_retrospective
+              id: cirrus-ci_retrospective
+              uses: docker://quay.io/libpod/cirrus-ci_retrospective:latest
+              env:
+                GITHUB_TOKEN: ${{ github.token }}
+
+            - if: always()
+              name: Log colorized and formatted cirrus-ci_retrospective JSON
+              run: jq --indent 4 --color-output . ./cirrus-ci_retrospective.json

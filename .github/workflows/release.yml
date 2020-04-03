@@ -5,29 +5,41 @@ on:
       # ref: https://help.github.com/en/actions/reference/events-that-trigger-workflows#example-using-multiple-events-with-activity-types-or-configuration
       tags:
           - 'v*'
+env:
+    # Authoritative Cirrus-CI task to monitor for completion info of all other cirrus-ci tasks.
+    MONITOR_TASK: 'MONITOR/TEST/VALUE'
+    # Authoritative Github Action task (in cirrus-ci) to trigger / check for completion of _this_ workflow
+    ACTION_TASK: 'ACTION/TEST/VALUE'
+    HELPER_LIB_TEST: '.github/test/run_action_tests.sh'
+
 jobs:
     smoke:
         runs-on: ubuntu-latest
         steps:
-            - name: Confirm provledged registry access
+            - name: Confirm privileged registry access
               env:
                   DOCKER_CONFIG_JSON: ${{secrets.DOCKER_CONFIG_JSON}}
               run: |
-                  set -e
                   set +x
+                  trap "history -c" EXIT
                   if [[ -z "$DOCKER_CONFIG_JSON" ]]; then
                       echo "::error::Empty/unset \$DOCKER_CONFIG_JSON for quay.io/libpod write access"
                       exit 1
                   fi
 
-    test:
+    unit-tests:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
               with:
                   # Testing installer requires a full repo. history
                   fetch-depth: 0
+                  persist-credentials: false
                   path: ./
+
+            - name: Execute helper library unit-tests using code from PR
+              run: |
+                  $GITHUB_WORKSPACE/$HELPER_LIB_TEST
 
             - name: Fetch all repository tags
               run: git fetch --tags --force
@@ -37,8 +49,9 @@ jobs:
 
     release:
         needs:
-            - test
+            - unit-tests
             - smoke
+
         # Don't blindly trust the 'v*' push event filter.
         if: startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '.')
         runs-on: ubuntu-latest
@@ -48,7 +61,7 @@ jobs:
             # context data.
             - id: get_tag
               name: Retrieve the tag name
-              run: printf "::set-output name=TAG_NAME::%s\n" $(basename "$GITHUB_REF" | tee /dev/stderr)
+              run: printf "::set-output name=TAG_NAME::%s\n" $(basename "$GITHUB_REF")
 
             - id: create_release  # Pre-req for upload-release-asset below
               name: Create a new Github Release item for tag

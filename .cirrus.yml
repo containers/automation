@@ -26,14 +26,12 @@ cirrus-ci/test_task:
 
 # Represent primary Cirrus-CI based testing (Required for merge)
 cirrus-ci/success_task:
-    alias: cirrus-ci/success
     depends_on:
         - cirrus-ci/test
-    noop_script: /bin/true
+    script: /bin/true
 
 # Represent secondary Github Action based testing (Required for merge)
 github-actions/success_task:
-    alias: github-actions/success
     # Note: ***DO NOT*** manually trigger this task under normal circumstances.
     #       It is triggered automatically by the cirrus-ci_retrospective
     #       Github Action.  This action is responsible for testing the PR changes
@@ -43,6 +41,5 @@ github-actions/success_task:
     only_if: $CIRRUS_BRANCH != $DEST_BRANCH
     depends_on:
         - cirrus-ci/test
-
-    noop_script: /bin/true
-
+    script: >-
+        echo "Related Github Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
