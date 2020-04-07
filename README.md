@@ -13,7 +13,7 @@ the requested version of itself.
 For example, to install the `v1.0.0` release, run:
 ```sh
 url='https://github.com/containers/automation/releases/latest/download/install_automation.sh'
-curl -sL "$url" | bash -s 1.0.0
+curl -sL "$url" | bash -s 1.1.2
 ```
 
 The basic install consists of copying the contents of the `common` (subdirectory) and
@@ -64,4 +64,4 @@ other repositories.
 
 ### `cirrus-ci_retrospective`
 
-See the [README.md file in this subdirectory](cirrus-ci_retrospective/README.md) for more information
+See the [README.md file in the subdirectory](cirrus-ci_retrospective/README.md) for more information
