@@ -89,7 +89,7 @@ jobs:
 
     container_image:
         needs:
-            - test
+            - unit-tests
             - smoke
         runs-on: ubuntu-latest
         env:

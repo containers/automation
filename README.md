@@ -13,7 +13,7 @@ the requested version of itself.
 For example, to install the `v1.0.0` release, run:
 ```sh
 url='https://github.com/containers/automation/releases/latest/download/install_automation.sh'
-curl -sL "$url" | bash -s 1.1.2
+curl -sL "$url" | bash -s 1.1.3
 ```
 
 The basic install consists of copying the contents of the `common` (subdirectory) and
