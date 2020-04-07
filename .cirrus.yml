@@ -2,6 +2,11 @@
 
 # Ref: https://cirrus-ci.org/guide/writing-tasks/
 
+# Global environment variables
+env:
+    # Name of the typical destination branch for PRs.
+    DEST_BRANCH: "master"
+
 # Default task runtime environment
 container:
     image: quay.io/libpod/cirrus-ci_retrospective:latest
@@ -19,11 +24,22 @@ cirrus-ci/test_task:
         test_output_artifacts:
             path: '/tmp/*.log'
 
-# Must pass for automatic-merge to occur, see .mergify.yml
+# Represent primary Cirrus-CI based testing (Required for merge)
 cirrus-ci/success_task:
-    alias: cirrus-ci/success
-
     depends_on:
         - cirrus-ci/test
+    script: /bin/true
 
-    noop_script: /bin/true
+# Represent secondary Github Action based testing (Required for merge)
+github-actions/success_task:
+    # Note: ***DO NOT*** manually trigger this task under normal circumstances.
+    #       It is triggered automatically by the cirrus-ci_retrospective
+    #       Github Action.  This action is responsible for testing the PR changes
+    #       to the action itself.
+    trigger_type: manual
+    # Only required for PRs, never tag or branch testing
+    only_if: $CIRRUS_BRANCH != $DEST_BRANCH
+    depends_on:
+        - cirrus-ci/test
+    script: >-
+        echo "Related Github Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
