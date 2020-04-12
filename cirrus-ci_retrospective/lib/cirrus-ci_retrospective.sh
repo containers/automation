@@ -2,7 +2,7 @@
 # Library of constants and functions for the cirrus-ci_retrospective script
 # Not intended to be executed directly.
 
-source $(dirname "${BASH_SOURCE[0]}")/common.sh
+source $(dirname "${BASH_SOURCE[0]}")/ccir_common.sh
 
 # GH GraphQL General Reference: https://developer.github.com/v4/object/
 # GH CheckSuite Object Reference: https://developer.github.com/v4/object/checksuite

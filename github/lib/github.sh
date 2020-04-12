@@ -2,7 +2,7 @@
 # This file is intended for sourcing by the cirrus-ci_retrospective workflow
 # It should not be used under any other context.
 
-source $(dirname $BASH_SOURCE[0])/common.sh || exit 1
+source $(dirname $BASH_SOURCE[0])/github_common.sh || exit 1
 
 # Cirrus-CI Build status codes that represent completion
 COMPLETE_STATUS_RE='FAILED|COMPLETED|ABORTED|ERRORED'

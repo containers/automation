@@ -6,7 +6,7 @@
 TEST_DIR=$(realpath "$(dirname ${BASH_SOURCE[0]})/../../bin")
 source $(dirname ${BASH_SOURCE[0]})/testlib.sh || exit 1
 INSTALLER_FILEPATH="$TEST_DIR/$SUBJ_FILENAME"
-TEST_INSTALL_ROOT=$(mktemp -p '' -d "tmp_$(basename $0)_XXXXXXXX")
+TEST_INSTALL_ROOT=$(mktemp -p '' -d "testing_$(basename $0)_XXXXXXXX")
 trap "rm -rf $TEST_INSTALL_ROOT" EXIT
 
 # Receives special treatment in the installer script
@@ -23,7 +23,7 @@ test_cmd \
     $INSTALLER_FILEPATH "not a version number"
 
 test_cmd \
-    "The inetaller exits non-zero with a helpful message about an non-existant version" \
+    "The installer exits non-zero with a helpful message about an non-existant version" \
     128 "fatal.+v99.99.99.*not found" \
     $INSTALLER_FILEPATH 99.99.99
 
@@ -36,6 +36,13 @@ test_cmd \
     "The installer successfully installs and configures into \$INSTALL_PREFIX" \
     0 "Installation complete" \
     $INSTALLER_FILEPATH 0.0.0
+
+for required_file in environment AUTOMATION_VERSION; do
+    test_cmd \
+        "The installer created the file $required_file in $INSTALL_PREFIX/automation" \
+        0 "" \
+        test -r "$INSTALL_PREFIX/automation/$required_file"
+done
 
 test_cmd \
     "The installer correctly removes/reinstalls \$TEST_INSTALL_ROOT" \
@@ -54,7 +61,7 @@ load_example_environment() {
         source "$INSTALL_PREFIX/automation/environment" || return 99
         echo "AUTOMATION_LIB_PATH ==> ${AUTOMATION_LIB_PATH:-UNDEFINED}"
         echo "PATH ==> ${PATH:-EMPTY}"
-        [[ -z "$_args" ]] || $_args
+        [[ -z "$_args" ]] || DEBUG=1 $_args
     )
 }
 
@@ -76,6 +83,9 @@ test_cmd \
     "The installed installer, can update itself to the latest upstream version" \
     0 "Installation complete for v[0-9]+\.[0-9]+\.[0-9]+" \
     execute_in_example_environment $SUBJ_FILENAME latest
+
+# Ensure cleanup
+rm -rf $TEST_INSTALL_ROOT
 
 # Must be last call
 exit_with_status

@@ -129,10 +129,6 @@ do
 done
 
 dbg "# Combining all task data into JSON list as action output and into $OUTPUT_JSON_FILE"
-# Github Actions handles this prefix specially:  Ensure stdout JSON is all on one line.
-# N/B: It is not presently possible to actually _use_ this output value as JSON in
-#      a github actions workflow.
-printf "::set-output name=json::'%s'" \
+set_out_var json \
     $(jq --indent 4 --slurp '.' $TMPDIR/.*$INTERMEDIATE_OUTPUT_EXT | \
-      tee "$OUTPUT_JSON_FILE" | \
-      jq --compact-output '.')
+      tee "$OUTPUT_JSON_FILE" | jq --compact-output '.')
