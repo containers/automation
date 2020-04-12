@@ -10,7 +10,7 @@ env:
     MONITOR_TASK: 'MONITOR/TEST/VALUE'
     # Authoritative Github Action task (in cirrus-ci) to trigger / check for completion of _this_ workflow
     ACTION_TASK: 'ACTION/TEST/VALUE'
-    HELPER_LIB_TEST: '.github/test/run_action_tests.sh'
+    HELPER_LIB_TEST: 'github/test/run_action_tests.sh'
     # Enables debugging of github actions itself
     # (see https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-a-debug-message)
     ACTIONS_STEP_DEBUG: '${{ secrets.ACTIONS_STEP_DEBUG }}'
