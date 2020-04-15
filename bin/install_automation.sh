@@ -28,7 +28,7 @@ OOE=$(realpath $(dirname "${BASH_SOURCE[0]}")/../common/bin/ooe.sh 2>/dev/null |
 # Sentinel value representing whatever version is present in the local repository
 MAGIC_LOCAL_VERSION='0.0.0'
 # Needed for unit-testing
-DEFAULT_INSTALL_PREFIX=/usr/local/share
+DEFAULT_INSTALL_PREFIX=/usr/local
 INSTALL_PREFIX="${INSTALL_PREFIX:-$DEFAULT_INSTALL_PREFIX}"
 # Used internally here and in unit-testing, do not change without a really, really good reason.
 _ARGS="$@"
@@ -50,16 +50,14 @@ d41d844b68a14ee7b9e6a6bb88385b4d() {
         exit 16
     fi
 
-    local actual_inst_path="$INSTALL_PREFIX/automation"
+    local actual_inst_path="$INSTALL_PREFIX/share/automation"
     # Name Hack: if/when installed globally, should work for both Fedora and Debian-based
-    spp="etc/profile.d/zz_automation.sh"
-    local sys_profile_path="${actual_inst_path}/$spp"
+    local spp="/etc/profile.d/zz_automation.sh"
     local inst_perm_arg="-o root -g root"
     local am_root=0
     if [[ $UID -eq 0 ]]; then
         dbg "Will try to install and configure system-wide"
         am_root=1
-        sys_profile_path="/$spp"
     else
        msg "Warning: Not installing as root, this is not recommended other than for testing purposes"
        inst_perm_arg=""
@@ -95,6 +93,8 @@ EOF
     if ((am_root)); then
         msg "Installing example environment files system-wide"
         install -v $inst_perm_arg --no-target-directory "./environment" "/$spp"
+        msg "Making binaries available system-wide"
+        ln -svT $INSTALL_PREFIX/bin $actual_inst_path/bin
     fi
 
     echo -n "Installation complete for " > /dev/stderr
@@ -198,7 +198,7 @@ elif [[ "$_MAGIC_JUJU" == "$_DEFAULT_MAGIC_JUJU" ]]; then
     $_MAGIC_JUJU
 
     # Validate the common library can load
-    source "$INSTALL_PREFIX/automation/lib/anchors.sh"
+    source "$INSTALL_PREFIX/share/automation/lib/anchors.sh"
 
     # Additional arguments specify subdirectories to check and chain to their installer script
     for arg in $_ARGS; do
@@ -208,6 +208,7 @@ elif [[ "$_MAGIC_JUJU" == "$_DEFAULT_MAGIC_JUJU" ]]; then
             msg "Chaining to additional install script for $arg"
             # Cannot assume common was installed system-wide
             env AUTOMATION_LIB_PATH=$AUTOMATION_LIB_PATH \
+                INSTALL_PREFIX=$INSTALL_PREFIX \
                 DEBUG=$DEBUG \
                 /bin/bash $CHAIN_TO
         else

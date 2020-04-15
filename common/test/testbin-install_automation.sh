@@ -45,13 +45,13 @@ test_cmd \
 test_cmd \
     "The re-installed version has AUTOMATION_VERSION file matching the current version" \
     0 "$(git describe HEAD)" \
-    cat "$INSTALL_PREFIX/automation/AUTOMATION_VERSION"
+    cat "$INSTALL_PREFIX/share/automation/AUTOMATION_VERSION"
 
 load_example_environment() {
     local _args="$@"
     # Don't disturb testing
     (
-        source "$INSTALL_PREFIX/automation/environment" || return 99
+        source "$INSTALL_PREFIX/share/automation/environment" || return 99
         echo "AUTOMATION_LIB_PATH ==> ${AUTOMATION_LIB_PATH:-UNDEFINED}"
         echo "PATH ==> ${PATH:-EMPTY}"
         [[ -z "$_args" ]] || $_args
@@ -64,12 +64,12 @@ execute_in_example_environment() {
 
 test_cmd \
     "The example environment defines AUTOMATION_LIB_PATH" \
-    0 "AUTOMATION_LIB_PATH ==> $INSTALL_PREFIX/automation/lib" \
+    0 "AUTOMATION_LIB_PATH ==> $INSTALL_PREFIX/share/automation/lib" \
     load_example_environment
 
 test_cmd \
     "The example environment appends to \$PATH" \
-    0 "PATH ==> .+:$INSTALL_PREFIX/automation/bin" \
+    0 "PATH ==> .+:$INSTALL_PREFIX/share/automation/bin" \
     load_example_environment
 
 test_cmd \

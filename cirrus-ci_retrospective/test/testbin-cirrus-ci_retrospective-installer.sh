@@ -14,6 +14,6 @@ test_cmd "Verify cirrus-ci_retrospective can be installed under $TEMPDIR" \
 
 test_cmd "Verify executing cirrus-ci_retrospective.sh gives 'Expecting' error message" \
     2 '::error::.+Expecting' \
-    env AUTOMATION_LIB_PATH=$TEMPDIR/automation/lib $TEMPDIR/automation/bin/cirrus-ci_retrospective.sh
+    env AUTOMATION_LIB_PATH=$TEMPDIR/share/automation/lib $TEMPDIR/share/automation/bin/cirrus-ci_retrospective.sh
 
 exit_with_status
