@@ -4,6 +4,9 @@
 
 source $(dirname $BASH_SOURCE[0])/common.sh || exit 1
 
+# Cirrus-CI Build status codes that represent completion
+COMPLETE_STATUS_RE='FAILED|COMPLETED|ABORTED|ERRORED'
+
 # Shell variables used throughout this workflow
 prn=
 tid=
@@ -39,6 +42,7 @@ load_ccir() {
 
     dbg "--Loading Cirrus-CI monitoring task $MONITOR_TASK--"
     dbg "$(jq --indent 4 '.[] | select(.name == "'${MONITOR_TASK}'")' $ccirjson)"
+    bst=$(jq --raw-output '.[] | select(.name == "'${MONITOR_TASK}'") | .build.status' "$ccirjson")
     prn=$(jq --raw-output '.[] | select(.name == "'${MONITOR_TASK}'") | .build.pullRequest' "$ccirjson")
     sha=$(jq --raw-output '.[] | select(.name == "'${MONITOR_TASK}'") | .build.changeIdInRepo' "$ccirjson")
 
@@ -47,7 +51,7 @@ load_ccir() {
     tid=$(jq --raw-output '.[] | select(.name == "'${ACTION_TASK}'") | .id' "$ccirjson")
     tst=$(jq --raw-output '.[] | select(.name == "'${ACTION_TASK}'") | .status' "$ccirjson")
 
-    for var in prn sha; do
+    for var in bst prn sha; do
         [[ -n "${!var}" ]] || \
             die "Expecting \$$var to be non-empty after loading $ccirjson" 42
     done
@@ -57,9 +61,15 @@ load_ccir() {
     if [[ -n "$prn" ]] && [[ "$prn" != "null" ]] && [[ $prn -gt 0 ]]; then
         dbg "Detected pull request $prn"
         was_pr='true'
-        if [[ -n "$tst" ]] && [[ "$tst" == "PAUSED" ]]; then
-            dbg "Detected action status $tst"
-            do_intg='true'
+        # Don't race vs another cirrus-ci build triggered _after_ GH action workflow started
+        # since both may share the same check_suite. e.g. task re-run or manual-trigger
+        if echo "$bst" | egrep -q "$COMPLETE_STATUS_RE"; then
+            if [[ -n "$tst" ]] && [[ "$tst" == "PAUSED" ]]; then
+                dbg "Detected action status $tst"
+                do_intg='true'
+            fi
+        else
+            warn "Unexpected build status '$bst', was a task re-run or manually triggered?"
         fi
     fi
     dbg_ccir
