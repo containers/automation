@@ -3,7 +3,7 @@ RUN microdnf update -y && \
     microdnf install -y findutils jq git curl && \
     microdnf clean all && \
     rm -rf /var/cache/dnf
-
+# Assume build is for development/manual testing purposes by default (automation should override with fixed version)
 ARG INSTALL_AUTOMATION_VERSION=latest
 ARG INSTALL_AUTOMATION_URI=https://raw.githubusercontent.com/containers/automation/master/bin/install_automation.sh
 ADD / /usr/src/automation
