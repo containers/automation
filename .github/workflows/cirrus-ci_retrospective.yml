@@ -15,6 +15,8 @@ on:
 
 # Variables required by multiple jobs/steps
 env:
+    # Default 'sh' behaves slightly but significantly different
+    CIRRUS_SHELL: '/bin/bash'
     # Authoritative Cirrus-CI task to monitor for completion info of all other cirrus-ci tasks.
     MONITOR_TASK: 'cirrus-ci/success'
     # Authoritative Github Action task (in cirrus-ci) to trigger / check for completion of _this_ workflow
@@ -25,6 +27,79 @@ env:
     # Enable debugging of github actions itself
     # (see https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-a-debug-message)
     ACTIONS_STEP_DEBUG: '${{ secrets.ACTIONS_STEP_DEBUG }}'
+    # Required data for testing ephemeral_gpg container
+    TEST_PASSPHRASE: 'ZXBoZW1lcmFsX2dwZ194WExuODY4OWVwaGVtZXJhbF9ncGdfNXJDUDQ4NDQK'
+    # There's no easy way to easily include this data from an external file
+    TEST_PRIVATE_KEY: |
+        -----BEGIN PGP PUBLIC KEY BLOCK-----
+        mDMEXvCXXBYJKwYBBAHaRw8BAQdAAZ2SkTVon0o5GOrFeGvyyFzCsD1D/5YaDuft
+        lcCDj7i0HkZ1bmt5IFRlYSBPb2xvbmcgPGZvb0BiYXIuYmF6PoiQBBMWCAA4FiEE
+        UGx2MeOfMIY1pMpFLnr9QOCSI3YFAl7wl1wCGwMFCwkIBwIGFQoJCAsCBBYCAwEC
+        HgECF4AACgkQLnr9QOCSI3aasgD/VoUbtPEGXGnWtXays8tW0LTCBwc3F2FkLLjF
+        1zPokpQBAM0YPtTXECK94Ns6Hq4qT9D7Z+QLvkvXAskicYcOTtsOuDgEXvCXXBIK
+        KwYBBAGXVQEFAQEHQNhyii6b4ui4sdiDumbh/K1pOEkDAPqf6qiabrRCrWNPAwEI
+        B4h4BBgWCAAgFiEEUGx2MeOfMIY1pMpFLnr9QOCSI3YFAl7wl1wCGwwACgkQLnr9
+        QOCSI3bEMgD+P6W+phzoImFabaDWykmSO2kOiCQ8rbur+rBEDT2nlLUA/R+7Crq4
+        dLvdvPcboSPlDHi8JD5HWyYX20T+zA93HLYHuDMEXvCXXRYJKwYBBAHaRw8BAQdA
+        G/VOwqwpgEW/VnNVXH5N8iWOzJ2vDmmTeNpq3OupySGI7wQYFggAIBYhBFBsdjHj
+        nzCGNaTKRS56/UDgkiN2BQJe8JddAhsCAIEJEC56/UDgkiN2diAEGRYIAB0WIQTx
+        ZF9aIhRTnWQjp+w5WdSvzDsctQUCXvCXXQAKCRA5WdSvzDsctbhPAQDqu4013Ez1
+        nueEeq0Fc/5ObnIrxWQWpnPih9CaAzXcewD/XuHwJuRdAt0v1zR7chzvwIACH4UP
+        cocfX1iNZOvsFwOgSwEA6jmOZmkYkd+2h8ijxfRqOeTBmym0FNzXx4/dbrPaW74B
+        AIU92ZyRi7AdGJwL0ii7gArLuEELhBl4Kpy5BSgblZgPuDMEXvCXXhYJKwYBBAHa
+        Rw8BAQdAF+wo1grCiFBzRGBPZEjCYa4zaYG8yvfJU3JxbioMBhKIeAQYFggAIBYh
+        BFBsdjHjnzCGNaTKRS56/UDgkiN2BQJe8JdeAhsgAAoJEC56/UDgkiN2XWYA/i3y
+        vpxJ7CrLdpT63w3wE0EUpnL8dQ4w1kclsvFC4ZTJAQCEYrRHvE2e8a/GKxvYTjkn
+        o48h93APyUSMaalMKju9Bw==
+        =XYfd
+        -----END PGP PUBLIC KEY BLOCK-----
+        -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+        mQENBFmUaEEBCACzXTDt6ZnyaVtueZASBzgnAmK13q9Urgch+sKYeIhdymjuMQta
+        x15OklctmrZtqre5kwPUosG3/B2/ikuPYElcHgGPL4uL5Em6S5C/oozfkYzhwRrT
+        SQzvYjsE4I34To4UdE9KA97wrQjGoz2Bx72WDLyWwctD3DKQtYeHXswXXtXwKfjQ
+        7Fy4+Bf5IPh76dA8NJ6UtjjLIDlKqdxLW4atHe6xWFaJ+XdLUtsAroZcXBeWDCPa
+        buXCDscJcLJRKZVc62gOZXXtPfoHqvUPp3nuLA4YjH9bphbrMWMf810Wxz9JTd3v
+        yWgGqNY0zbBqeZoGv+TuExlRHT8ASGFS9SVDABEBAAG0NUdpdEh1YiAod2ViLWZs
+        b3cgY29tbWl0IHNpZ25pbmcpIDxub3JlcGx5QGdpdGh1Yi5jb20+iQEiBBMBCAAW
+        BQJZlGhBCRBK7hj4Ov3rIwIbAwIZAQAAmQEH/iATWFmi2oxlBh3wAsySNCNV4IPf
+        DDMeh6j80WT7cgoX7V7xqJOxrfrqPEthQ3hgHIm7b5MPQlUr2q+UPL22t/I+ESF6
+        9b0QWLFSMJbMSk+BXkvSjH9q8jAO0986/pShPV5DU2sMxnx4LfLfHNhTzjXKokws
+        +8ptJ8uhMNIDXfXuzkZHIxoXk3rNcjDN5c5X+sK8UBRH092BIJWCOfaQt7v7wig5
+        4Ra28pM9GbHKXVNxmdLpCFyzvyMuCmINYYADsC848QQFFwnd4EQnupo6QvhEVx1O
+        j7wDwvuH5dCrLuLwtwXaQh0onG4583p0LGms2Mf5F+Ick6o/4peOlBoZz48=
+        =Bvzs
+        -----END PGP PUBLIC KEY BLOCK-----
+        -----BEGIN PGP PRIVATE KEY BLOCK-----
+
+        lIYEXvCXXBYJKwYBBAHaRw8BAQdAAZ2SkTVon0o5GOrFeGvyyFzCsD1D/5YaDuft
+        lcCDj7j+BwMC7sy7xo4yICDs58wocxNUPChlafDEeLFpj0nniKUFpneMe7UZ3y7m
+        9phoLB81h14qGVg2Dv/x3+qXQ6rkcu0HaVDnPnhzAoE4eqNKkKDUIrQeRnVua3kg
+        VGVhIE9vbG9uZyA8Zm9vQGJhci5iYXo+iJAEExYIADgWIQRQbHYx458whjWkykUu
+        ev1A4JIjdgUCXvCXXAIbAwULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRAuev1A
+        4JIjdpqyAP9WhRu08QZcada1drKzy1bQtMIHBzcXYWQsuMXXM+iSlAEAzRg+1NcQ
+        Ir3g2zoeripP0Ptn5Au+S9cCySJxhw5O2w6ciwRe8JdcEgorBgEEAZdVAQUBAQdA
+        2HKKLpvi6Lix2IO6ZuH8rWk4SQMA+p/qqJputEKtY08DAQgH/gcDAnQ8oXqItJKi
+        7Jgcb7ToR4H6/dH3XWJWzeFcbFiflQXi18k1K5pyFWrxJdGIGP18og3kL3ZVZ5gd
+        pJYCAXWQjlhBX/viHUz+d2Gd4QGajoiIeAQYFggAIBYhBFBsdjHjnzCGNaTKRS56
+        /UDgkiN2BQJe8JdcAhsMAAoJEC56/UDgkiN2xDIA/j+lvqYc6CJhWm2g1spJkjtp
+        DogkPK27q/qwRA09p5S1AP0fuwq6uHS73bz3G6Ej5Qx4vCQ+R1smF9tE/swPdxy2
+        B5yGBF7wl10WCSsGAQQB2kcPAQEHQBv1TsKsKYBFv1ZzVVx+TfIljsydrw5pk3ja
+        atzrqckh/gcDAst40uzvUMHv7IrvPpKDFwk0lIQsZuX8Vq3GkqklX0uePiR5R279
+        gkcOAYXA7oK1RiYZjosnn4o4Q2ZzTKI8Vb692+cxtrfIA+9MjB8yL+eI7wQYFggA
+        IBYhBFBsdjHjnzCGNaTKRS56/UDgkiN2BQJe8JddAhsCAIEJEC56/UDgkiN2diAE
+        GRYIAB0WIQTxZF9aIhRTnWQjp+w5WdSvzDsctQUCXvCXXQAKCRA5WdSvzDsctbhP
+        AQDqu4013Ez1nueEeq0Fc/5ObnIrxWQWpnPih9CaAzXcewD/XuHwJuRdAt0v1zR7
+        chzvwIACH4UPcocfX1iNZOvsFwOgSwEA6jmOZmkYkd+2h8ijxfRqOeTBmym0FNzX
+        x4/dbrPaW74BAIU92ZyRi7AdGJwL0ii7gArLuEELhBl4Kpy5BSgblZgPnIYEXvCX
+        XhYJKwYBBAHaRw8BAQdAF+wo1grCiFBzRGBPZEjCYa4zaYG8yvfJU3JxbioMBhL+
+        BwMCmRzdBE6TjpLsTkWv34TCttSmwmXow+JFQDhiA5tghW0gGPE64QZnUNkRvUHU
+        T25bN6aKaPAWZ5r6ZAS68GdxBBN8yopnOd2mNETDZlO86Ih4BBgWCAAgFiEEUGx2
+        MeOfMIY1pMpFLnr9QOCSI3YFAl7wl14CGyAACgkQLnr9QOCSI3ZdZgD+LfK+nEns
+        Kst2lPrfDfATQRSmcvx1DjDWRyWy8ULhlMkBAIRitEe8TZ7xr8YrG9hOOSejjyH3
+        cA/JRIxpqUwqO70H
+        =B0/w
+        -----END PGP PRIVATE KEY BLOCK-----
 
 jobs:
     # Obtain task details and validate required execution conditions
@@ -126,20 +201,23 @@ jobs:
                       Unit-testing passed (`${{ env.HELPER_LIB_TEST }}`)passed.
                       [Cirrus-CI Retrospective Github
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
-                      is building [test cirrus-ci_retrospective container image
-                      Dockerfile](https://github.com/${{ github.repository}}/blob/${{steps.retro.outputs.sha}}/cirrus-ci_retrospective/Dockerfile) from this PR.
+                      is building test container images.
 
             # The Dockerfile and container environment may have changed in addition
             # to scripts.  Re-build a testing container image for use in exercising
             # the code from the PR.
             - if: steps.retro.outputs.do_intg == 'true'
-              name: Build cirrus-ci_retrospective container image from PR code
+              name: Build container images in parallel from PR code
+              strategy:
+                  matrix:
+                      name:
+                          - cirrus-ci_retrospective
+                          - ephemeral_gpg
               run: |
-                  cd pull_request
-                  docker build -t test_container \
-                        -f cirrus-ci_retrospective/Dockerfile \
+                  cd pull_request/${{ matrix.name }}
+                  docker build -t ${{ matrix.name }}:test \
                         --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
-                        ./ &> ../test_artifacts/build_output.txt
+                        ./ &> ../test_artifacts/${{ matrix.name }}-build_output.txt &
 
             # The container build can take a few minutes, update status comment when it finishes.
             - if: steps.retro.outputs.do_intg == 'true'
@@ -151,32 +229,83 @@ jobs:
                   comment_id: '${{ steps.edit_pr_comment_build.outputs.id }}'
                   token: '${{ secrets.GITHUB_TOKEN }}'
                   body: >-
-                      Test container image built.  [Cirrus-CI Retrospective Github
+                      Test container images built.  [Cirrus-CI Retrospective Github
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
-                      is executing test container.
+                      is executing test containers.
 
-            # Execute the PR's version of the container, against the same event.json
-            # used to trigger this workflow run.
+            # Smoke-test the built containers for basic functinality
             - if: steps.retro.outputs.do_intg == 'true'
               name: Execute PR's cirrus-ci_retrospective container image
+              strategy:
+                  matrix:
+                      name:
+                          - cirrus-ci_retrospective
+                          - ephemeral_gpg
+              env:
+                  _pr: './test_artifacts/test_repo'
+                  _pp: './test_artifacts/test_repo/private.pas'
+                  _pk: './test_artifacts/test_repo/private.key'
               run: |
-                  cd pull_request
-                  github_event_dirpath=$(dirname "${{ github.event_path }}")
-                  /usr/bin/docker run --rm \
-                      -e GITHUB_TOKEN=${{ github.token }} \
-                      -e GITHUB_EVENT_PATH=/github/workflow/event.json \
-                      -e GITHUB_ACTIONS=true \
-                      -e GITHUB_WORKSPACE=/github/workspace \
-                      -v "$GITHUB_WORKSPACE/pull_request":"/github/workspace" \
-                      -v $github_event_dirpath:/github/workflow \
-                      --entrypoint=/bin/bash test_container \
-                      -c "source /etc/profile && exec /usr/share/automation/bin/debug.sh" \
-                      &> ../test_artifacts/debug_output.txt
-                  mv ./cirrus-ci_retrospective.json ../test_artifacts/ || true
+                  case "${{ matrix.name }}" in
+                      cirrus-ci_retrospective)
+                          github_event_dirpath=$(dirname "${{ github.event_path }}")
+                          /usr/bin/docker run --rm \
+                              -e GITHUB_TOKEN=${{ github.token }} \
+                              -e GITHUB_EVENT_PATH=/github/workflow/event.json \
+                              -e GITHUB_ACTIONS=true \
+                              -e GITHUB_WORKSPACE=/github/workspace \
+                              -v "$GITHUB_WORKSPACE/pull_request":"/github/workspace" \
+                              -v $github_event_dirpath:/github/workflow \
+                              --entrypoint=/bin/bash \
+                              ${{ matrix.name }}:test \
+                              -c "source /etc/profile && exec /usr/share/automation/bin/debug.sh" \
+                              &> ./test_artifacts/debug_output.txt
+                          mv ./cirrus-ci_retrospective.json ./test_artifacts/ || true
+                          ;;
+                      ephemeral_gpg)
+                          git init "$_pr"
+                          echo "$TEST_PASSPHRASE" > "$_pp"
+                          echo "$TEST_PRIVATE_KEY" > "$_pk"
+
+                          ephemeral_gpg="/usr/bin/docker run --rm \
+                                -e PRIVATE_PASSPHRASE_FILEPATH=/tmp/private.pas \
+                                -e PRIVATE_KEY_FILEPATH=/tmp/private.key \
+                                -e GNUPGHOME=/tmp/ephemeral \
+                                -e TRUNCATE_PASSPHRASE_ON_READ=0 \
+                                --tmpfs /tmp:rw,size=64m \
+                                -v $_pp:/tmp/private.pas:rw \
+                                -v $_pk:/tmp/private.key:rw \
+                                -v $_pr:/tmp/repo:rw \
+                                --workdir /tmp/repo \
+                                ${{ matrix.name }}:test"
+
+                            $ephemeral_gpg add private.pas private.key
+                            $ephemeral_gpg commit -sm 'test commit message'
+                            $ephemeral_gpg log -1 --show-signature HEAD &> ./test_artifacts/test_repo.commit
+                            $ephemeral_gpg tag -as v0.0.0 -m 'test tag annotation' HEAD
+                            $ephemeral_gpg tag -v HEAD &> ./test_artifacts/test_repo.tag
+                          ;;
+                      *)
+                          echo "Unknown/unsupported matrix key '${{ matrix.name }}'."
+                          exit 1
+                  esac
+
+            - if: steps.retro.outputs.do_intg == 'true'
+              name: Validate ephemeral_gpg test container output
+              run: |
+                  cd pull_request/test_artifacts/test_repo
+                  for ext in pas key; do
+                      test "$(stat --format %s private.$ext)" -eq 0
+                  cd ../
+                  tr '\r\n' ' ' test_repo.commit | tee /dev/stderr | \
+                      egrep -q "gpg.+Signature.+Good signature.+ultimate.+Author.+Fine"
+                  tr '\r\n' ' ' test_repo.tag | tee /dev/stderr | \
+                      egrep -q ".+Good signature.+tagger Fine Oolong"
+
 
             - if: steps.retro.outputs.do_intg == 'true'
               id: pr_retro
-              name: Verify output JSON from test container parses for future use by this workflow
+              name: Load cirrus-ci_retrospective test container output into github action parameters
               env:
                   DEBUG: 1
               run: |
@@ -186,7 +315,7 @@ jobs:
                   set_ccir
 
             - if: steps.retro.outputs.do_intg == 'true'
-              name: Validate PR output values match expected values
+              name: Validate cirrus-ci_retrospective github action parameters match expected values
               run: |
                   samesame() { if [[ -z "$1" ]] || [[ "$2" != "$3" ]]; then echo "::error::Expecting $1 '$2' to equal '$3'"; exit 1; fi }
                   samesame "steps.pr_retro.outputs.prn" "${{ steps.pr_retro.outputs.prn }}" "${{ steps.retro.outputs.prn }}"

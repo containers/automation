@@ -12,16 +12,6 @@ if [[ -d "$_TMPDIR" ]]; then
     trap "rm -rf $_TMPDIR" EXIT  # The REAL directory to remove
 fi
 
-copy_function() {
-  test -n "$(declare -f "$1")" || return
-  eval "${_/$1/$2}"
-}
-
-rename_function() {
-  copy_function "$@" || return
-  unset -f "$1"
-}
-
 # There are many paths to die(), some specific paths need to be tested
 SPECIAL_DEATH_CODE=101
 rename_function die _die

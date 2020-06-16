@@ -19,18 +19,25 @@ cirrus-ci/test_task:
         CIRRUS_CLONE_DEPTH: 0
     script:
         - git fetch --tags |& tee /tmp/test_output.log
-        - $CIRRUS_WORKING_DIR/bin/run_all_tests.sh |& tee -a /tmp/output.log
+        - $CIRRUS_WORKING_DIR/bin/run_all_tests.sh |& tee -a $CIRRUS_WORKING_DIR/output.log
     always:
         test_output_artifacts:
-            path: '/tmp/*.log'
+            path: '*.log'
 
 # Represent primary Cirrus-CI based testing (Required for merge)
 cirrus-ci/success_task:
     depends_on:
         - cirrus-ci/test
-    script: /bin/true
+    clone_script: mkdir -p "$CIRRUS_WORKING_DIR"
+    script: >-
+        echo "Required for Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
 
 # Represent secondary Github Action based testing (Required for merge)
+# N/B: NO other task should depend on this task. Doing so will prevent
+#      the cirrus-ci_retrospective github action.  This is because the
+#      action trigers `on: check-suite: completed` event, which cannot
+#      fire since the manual task has dependencies that cannot be
+#      satisfied.
 github-actions/success_task:
     # Note: ***DO NOT*** manually trigger this task under normal circumstances.
     #       It is triggered automatically by the cirrus-ci_retrospective
@@ -41,5 +48,6 @@ github-actions/success_task:
     only_if: $CIRRUS_BRANCH != $DEST_BRANCH
     depends_on:
         - cirrus-ci/test
+    clone_script: mkdir -p "$CIRRUS_WORKING_DIR"
     script: >-
-        echo "Related Github Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
+        echo "Triggered by Github Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
