@@ -81,18 +81,24 @@ test_cmd() {
     set -o pipefail
     ( set -e; "$@" 0<&- |& tee "$a_out_f" | tr -s '[:space:]' ' ' &> "${a_out_f}.oneline")
     a_exit="$?"
+    if ((TEST_DEBUG)); then
+        echo "Command/Function call exited with code: $a_exit"
+    fi
 
     if [[ -n "$e_exit" ]] && [[ $e_exit -ne $a_exit ]]; then
-        _test_report "Expected exit-code $e_exit but received $a_exit while executing $1" 1 "$a_out_f"
+        _test_report "Expected exit-code $e_exit but received $a_exit while executing $1" "1" "$a_out_f"
     elif [[ -z "$e_out_re" ]] && [[ -n "$(<$a_out_f)" ]]; then
-        _test_report "Expecting no output from $@" 1 "$a_out_f"
+        _test_report "Expecting no output from $*" "1" "$a_out_f"
     elif [[ -n "$e_out_re" ]]; then
+        if ((TEST_DEBUG)); then
+            echo "Received $(wc -l $a_out_f | awk '{print $1}') output lines of $(wc -c $a_out_f | awk '{print $1}') bytes total"
+        fi
         if egrep -q "$e_out_re" "${a_out_f}.oneline"; then
-            _test_report "Command $1 exited as expected with expected output" 0 "$a_out_f"
+            _test_report "Command $1 exited as expected with expected output" "0" "$a_out_f"
         else
-            _test_report "Expecting regex '$e_out_re' match to (whitespace-squashed) output" 1 "$a_out_f"
+            _test_report "Expecting regex '$e_out_re' match to (whitespace-squashed) output" "1" "$a_out_f"
         fi
     else # Pass
-        _test_report "Command $1 exited as expected ($a_exit)" 0 "$a_out_f"
+        _test_report "Command $1 exited as expected ($a_exit)" "0" "$a_out_f"
     fi
 }
