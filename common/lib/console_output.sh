@@ -3,7 +3,7 @@
 # A Library of contextual console output-related operations.
 # Intended for use by other scripts, not to be executed directly.
 
-source $(dirname "${BASH_SOURCE[0]}")/defaults.sh
+source $(dirname $(realpath "${BASH_SOURCE[0]}"))/defaults.sh
 
 # helper, not intended for use outside this file
 _rel_path() {

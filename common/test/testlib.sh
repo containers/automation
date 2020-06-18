@@ -22,6 +22,21 @@ fi
 # Always run all tests, and keep track of failures.
 FAILURE_COUNT=0
 
+# Duplicated from common/lib/utils.sh to not create any circular dependencies
+copy_function() {
+    local src="$1"
+    local dst="$2"
+    test -n "$(declare -f "$1")" || return
+    eval "${_/$1/$2}"
+}
+
+rename_function() {
+    local from="$1"
+    local to="$2"
+    copy_function "$@" || return
+    unset -f "$1"
+}
+
 # Assume test script is set +e and this will be the last call
 exit_with_status() {
     if ((FAILURE_COUNT)); then
