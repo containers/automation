@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# This is a template for a generated script that feeds a private
+# passphrase from the kernel to gpg, on behalf of an asynchronous
+# call from git.  Not intended to be executed directly.
+
+set -e
+set +x
+
+_keyring_id='@@@@@ SUBSTITUTION TOKEN @@@@@'
+
+# Interpret variables/substitutions at runtime
+(
+    gpg --quiet --batch --no-tty --pinentry-mode loopback \
+    --passphrase-fd 44 \
+    --trust-model tofu+pgp --tofu-default-policy good \
+    "$@"
+# Use different fd from other scripts to prevent hard-to-debug accidents
+) 44<<<$(keyctl pipe $(base64 -d --ignore-garbage <<<$_keyring_id))

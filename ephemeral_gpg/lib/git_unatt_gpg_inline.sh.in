@@ -1,8 +1,11 @@
-#!/bin/bash -e
+#!/bin/bash
 
 # This is a template for a generated script that feeds a private
 # passphrase from the kernel to gpg, on behalf of an asynchronous
 # call from git.  Not intended to be executed directly.
+
+set -e
+set +x
 
 _obfsctd_b64_kp='@@@@@ SUBSTITUTION TOKEN @@@@@'
 
@@ -13,4 +16,5 @@ _obfsctd_b64_kp='@@@@@ SUBSTITUTION TOKEN @@@@@'
     --passphrase-fd 43 \
     --trust-model tofu+pgp --tofu-default-policy good \
     "$@"
+# Use different fd from other scripts to prevent hard-to-debug accidents
 ) 43<<<$(base64 -d --ignore-garbage <<<"$_obfsctd_b64_kp")

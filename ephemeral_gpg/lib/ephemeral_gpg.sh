@@ -8,8 +8,9 @@ source "$LIBRARY_DIRPATH/common.sh"
 # Executing inside a container (TODO: not used)
 EPHEMERAL_CONTAINER="${EPHEMERAL_CONTAINER:-0}"
 
-# Path to script template rendered by configure_git_gpg()
-GIT_UNATTENDED_GPG_TEMPLATE="$LIBRARY_DIRPATH/git_unattended_gpg.sh.in"
+# Path to script templates rendered by configure_git_gpg()
+INLINE_TEMPLATE="$LIBRARY_DIRPATH/git_unatt_gpg_inline.sh.in"
+KERNEL_TEMPLATE="$LIBRARY_DIRPATH/git_unatt_gpg_kernel.sh.in"
 
 # In case a bash prompt is presented, identify the environment
 EPHEMERAL_ENV_PROMPT_DIRTRIM=2
@@ -23,6 +24,9 @@ TRUNCATE_PASSPHRASE_ON_READ=1
 # Machine parse-able status will be written here
 # Empty-files have special-meanings to gpg, detect them to help debugging
 MIN_INPUT_FILE_SIZE=8  # bytes
+
+# When the kernel is used to store the key, expire key after this many seconds
+KEY_TIMEOUT="${KEY_TIMEOUT:-$[($RANDOM%30+31)*60]}"  # between 30 and 60 minutes by default
 
 # Ref: https://help.github.com/en/github/authenticating-to-github/about-commit-signature-verification
 GH_PUB_KEY_ID="4AEE18F83AFDEB23"
@@ -62,7 +66,7 @@ _EPHEMERAL_ENV_EXIT=0
 _KEY_COMMON_RX='u:[[:digit:]]+:[[:digit:]]+:[[:alnum:]]+:[[:digit:]]+:+u?:+'
 
 # These variables either absolutely must not, or simply should not
-# pass through to commands executed beneith the ephemeral environment
+# pass through to commands executed beneath the ephemeral environment
 _UNSET_VARS=( \
     EMAIL_RX
     EPHEMERAL_ENV_PROMPT_DIRTRIM
@@ -117,8 +121,9 @@ verify_env_vars() {
             dbg "The file "${!env_var_name}" is writeable)"
         fi
 
-        if (($(stat "--format=%s" "${!env_var_name}")<$MIN_INPUT_FILE_SIZE)); then
-            die "The file '${!env_var_name}' must be larger than $MIN_INPUT_FILE_SIZE bytes."
+        local stat_size=$(stat "--format=%s" "${!env_var_name}")
+        if ((stat_size<$MIN_INPUT_FILE_SIZE)); then
+            die "The file '${!env_var_name}' must be larger than $MIN_INPUT_FILE_SIZE bytes ($stat_size)."
         fi
 
         dbg "\$${env_var_name} appears fine for use."
@@ -356,6 +361,59 @@ git_config_ephemeral() {
     git config --file $GNUPGHOME/gitconfig "$@"
 }
 
+_obfuscate_key_in_script(){
+    local key="$1"
+    [[ ${#key} -gt $MIN_INPUT_FILE_SIZE ]] || \
+        die "Expecting first parameter to be a key longer than $MIN_INPUT_FILE_SIZE bytes (${#key})."
+    local templatefilepath="$2"
+    [[ -r "$templatefilepath" ]] || \
+        die "Expecting to find a readable script template file as the second parameter ($templatefilepath)"
+    local scriptfilepath="$3"
+    [[ -w "$scriptfilepath" ]] || \
+        die "Expecting to find a writeable script file as the third parameter ($scriptfilepath)"
+    local b64_kp=$(base64 -w0 <<<"$key")
+    sed -r -e "s/@@@@@ SUBSTITUTION TOKEN @@@@@/${b64_kp}/" \
+        "$templatefilepath" > "$scriptfilepath"
+    chmod 0700 "$unattended_script"
+}
+
+_configure_kernel_unattended_script(){
+    [[ ${#_KEY_PASSPHRASE} -gt $MIN_INPUT_FILE_SIZE ]] || \
+        die "Expecting to find \$_KEY_PASSPHRASE larger than $MIN_INPUT_FILE_SIZE bytes."
+    # Necessary so git doesn't prompt for passwords
+    local unattended_script=$(mktemp -p "$GNUPGHOME" ....XXXX)
+    # Security note: Any git commands will async. call into gpg, possibly
+    # in the future.  Therefor we must provide the passphrase for git's use,
+    # otherwise an interaction would be required.  Relying on the
+    # random script filename and a kernel session keyring with an
+    # obfuscated base64 encoded passphrase is about as good as it gets.
+    dbg "Rendering unattended kernel credentials gpg script '$unattended_script'"
+    # Session keys apply to current process and all child processes with the same uid/gid
+    keyctl new_session > /dev/null  # session ID is not important
+    # Avoid passphrase appearing on command-line of child process
+    keyid=$(keyctl padd user gpg @s <<<"$_KEY_PASSPHRASE")
+    # Don't leave key exposed on a runaway process
+    keyctl timeout $keyid $KEY_TIMEOUT
+    _obfuscate_key_in_script $(keyctl padd user gpg @s <<<"$_KEY_PASSPHRASE") "$KERNEL_TEMPLATE" "$unattended_script"
+    dbg "Configuring git to use $unattended_script for gpg operations"
+    git_config_ephemeral gpg.program "$unattended_script"
+}
+
+_configure_inline_unattended_script(){
+    [[ ${#_KEY_PASSPHRASE} -gt $MIN_INPUT_FILE_SIZE ]] || \
+        die "Expecting to find \$_KEY_PASSPHRASE larger than $MIN_INPUT_FILE_SIZE bytes."
+    # Necessary so git doesn't prompt for passwords
+    local unattended_script=$(mktemp -p "$GNUPGHOME" ....XXXX)
+    dbg "Rendering unattended inline credentials gpg script '$unattended_script'"
+    # Security note: No kernel keyring support, but we must provide
+    # the passphrase for git's use, otherwise an interaction would be required.
+    # Relying on the random script filename and obfuscated/encoded key material is about
+    # as good as we can do.
+    _obfuscate_key_in_script "$_KEY_PASSPHRASE" "$INLINE_TEMPLATE" "$unattended_script"
+    dbg "Configuring git to use $unattended_script for gpg operations"
+    git_config_ephemeral gpg.program "$unattended_script"
+}
+
 configure_git_gpg() {
     local optional_keyid="$1"  # needed for unit-testing
     [[ -z "$optional_keyid" ]] ||
@@ -363,8 +421,6 @@ configure_git_gpg() {
     # Required for obtaining the UID info and the sig subkey
     [[ -n "$_DEF_KEY_ID" ]] || \
         die "No default key has been set, call set_default_keyid() <ID> first."
-    [[ -r "$GIT_UNATTENDED_GPG_TEMPLATE" ]] || \
-        die "Could not read template file '$GIT_UNATTENDED_GPG_TEMPLATE'"
     local uid_string=$(get_key_uid "$_DEF_KEY_ID")
     [[ -n "$uid_string" ]] || \
         die "Expected non-empty uid string using the format:: <full name> <'<'e-mail address'>'>"
@@ -381,18 +437,10 @@ configure_git_gpg() {
     # Make active for general use, assuming they have \$HOME set properly
     ln -sf $GNUPGHOME/gitconfig $GNUPGHOME/.gitconfig
 
-    # Necessary so git doesn't prompt for passwords
-    local unattended_script=$(mktemp -p "$GNUPGHOME" ....XXXX)
-    dbg "Rendering unattended gpg passphrase supply script '$unattended_script'"
-    # Security note: Any git commands will async. call into gpg, possibly
-    # in the future.  Therefor we must provide the passphrase for git's use,
-    # otherwise an interaction would be required.  Relying on the
-    # random script filename and a kernel session keyring with an
-    # obfuscated base64 encoded passphrase is about as good as can be had.
-    local _shit=$'#\a#\a#\a#\a#\a#'
-    local _obfsctd_b64_kp=$(printf '%q' "$_shit")$(base64 -w0 <<<"$_KEY_PASSPHRASE")$(printf '%q' "$_shit")
-    sed -r -e "s/@@@@@ SUBSTITUTION TOKEN @@@@@/${_obfsctd_b64_kp}/" \
-        "$GIT_UNATTENDED_GPG_TEMPLATE" > "$unattended_script"
-    chmod 0700 "$unattended_script"
-    git_config_ephemeral gpg.program "$unattended_script"
+    local maxkeyfile="/proc/sys/kernel/keys/maxkeys"
+    if [[ -r "$maxkeyfile" ]] && [[ $(</proc/sys/kernel/keys/maxkeys) -gt 0 ]]; then
+        _configure_kernel_unattended_script
+    else
+        _configure_inline_unattended_script
+    fi
 }
