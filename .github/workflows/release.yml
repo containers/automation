@@ -87,7 +87,7 @@ jobs:
                   asset_name: install_automation.sh
                   asset_content_type: application/octet-stream
 
-    container_image:
+    cirrus-ci_retrospective_image:
         needs:
             - unit-tests
             - smoke
@@ -126,6 +126,51 @@ jobs:
               run: printf "::set-output name=TAG_NAME::%s\n" $(basename "$GITHUB_REF" | tee /dev/stderr)
 
             - name: Tag and push cirrus-ci_retrospective container image to registry
+              run: |
+                  docker tag $REGISTRY/$REPO_USER/$REPO_NAME:latest \
+                             $REGISTRY/$REPO_USER/$REPO_NAME:${{ steps.get_tag.outputs.TAG_NAME }}
+                  docker push $REGISTRY/$REPO_USER/$REPO_NAME:${{ steps.get_tag.outputs.TAG_NAME }} && \
+                  docker push $REGISTRY/$REPO_USER/$REPO_NAME:latest
+
+    ephemeral_gpg_image:
+        needs:
+            - unit-tests
+            - smoke
+        runs-on: ubuntu-latest
+        env:
+            REGISTRY: quay.io
+            REPO_USER: libpod
+            REPO_NAME: ephemeral_gpg
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0
+                  path: ./
+
+            - name: Build the ephemeral_gpg container image
+              run: >-
+                docker build -t $REGISTRY/$REPO_USER/$REPO_NAME:latest \
+                    -f ephemeral_gpg/Dockerfile \
+                    --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
+                    ./
+
+            - name: Configure registry credentials
+              env:
+                  DOCKER_CONFIG_JSON: ${{secrets.DOCKER_CONFIG_JSON}}
+              run: |
+                  if [[ -z "$DOCKER_CONFIG_JSON" ]]; then
+                      echo "::error::Empty/unset \$DOCKER_CONFIG_JSON"
+                      exit 1
+                  fi
+                  trap "history -c" EXIT
+                  mkdir -p $HOME/.docker
+                  echo "$DOCKER_CONFIG_JSON" > $HOME/.docker/config.json
+
+            - name: Retrieve the tag name
+              id: get_tag
+              run: printf "::set-output name=TAG_NAME::%s\n" $(basename "$GITHUB_REF" | tee /dev/stderr)
+
+            - name: Tag and push ephemeral_gpg container image to registry
               run: |
                   docker tag $REGISTRY/$REPO_USER/$REPO_NAME:latest \
                              $REGISTRY/$REPO_USER/$REPO_NAME:${{ steps.get_tag.outputs.TAG_NAME }}
