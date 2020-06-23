@@ -209,7 +209,7 @@ jobs:
             - if: steps.retro.outputs.do_intg == 'true'
               name: Build container image from code in PR
               env:
-                c_name: cirrus-ci_retrospective
+                  c_name: cirrus-ci_retrospective
               run: |
                   cd pull_request/${c_name}
                   docker build -t ${c_name}:test \
@@ -243,6 +243,8 @@ jobs:
             # Smoke-test the built containers for basic functinality
             - if: steps.retro.outputs.do_intg == 'true'
               name: Smoke-test PR's cirrus-ci_retrospective container image
+              env:
+                c_name: ephemeral_gpg
               run: |
                   github_event_dirpath=$(dirname "${{ github.event_path }}")
                   /usr/bin/docker run --rm \
@@ -253,7 +255,7 @@ jobs:
                       -v "$GITHUB_WORKSPACE/pull_request":"/github/workspace" \
                       -v $github_event_dirpath:/github/workflow \
                       --entrypoint=/bin/bash \
-                      ${{ matrix.name }}:test \
+                      ${c_name}:test \
                       -c "source /etc/profile && exec /usr/share/automation/bin/debug.sh" \
                       &> ./test_artifacts/debug_output.txt
                   mv ./cirrus-ci_retrospective.json ./test_artifacts/ || true
@@ -261,6 +263,7 @@ jobs:
             - if: steps.retro.outputs.do_intg == 'true'
               name: Execute PR's ephemeral_gpg image
               env:
+                  c_name: ephemeral_gpg
                   _pr: './test_artifacts/test_repo'
                   _pp: './test_artifacts/test_repo/private.pas'
                   _pk: './test_artifacts/test_repo/private.key'
@@ -278,7 +281,7 @@ jobs:
                         -v $_pk:/tmp/private.key:rw \
                         -v $_pr:/tmp/repo:rw \
                         --workdir /tmp/repo \
-                        ${{ matrix.name }}:test"
+                        ${c_name}:test"
                     $ephemeral_gpg add private.pas private.key
                     $ephemeral_gpg commit -sm 'test commit message'
                     $ephemeral_gpg log -1 --show-signature HEAD &> ./test_artifacts/test_repo.commit
