@@ -206,18 +206,19 @@ jobs:
             # The Dockerfile and container environment may have changed in addition
             # to scripts.  Re-build a testing container image for use in exercising
             # the code from the PR.
-            - if: steps.retro.outputs.do_intg == 'true'
-              name: Build container images in parallel from PR code
-              strategy:
-                  matrix:
-                      name:
-                          - cirrus-ci_retrospective
-                          - ephemeral_gpg
+            - &c_build
+              if: steps.retro.outputs.do_intg == 'true'
+              name: Build container image from code in PR
+              env:
+                c_name: cirrus-ci_retrospective
               run: |
-                  cd pull_request/${{ matrix.name }}
-                  docker build -t ${{ matrix.name }}:test \
+                  cd pull_request/${c_name}
+                  docker build -t ${c_name}:test \
                         --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
-                        ./ &> ../test_artifacts/${{ matrix.name }}-build_output.txt &
+                        ./ &> ../test_artifacts/${c_name}-build_output.txt &
+            - <<: *c_build
+              env:
+                c_name: ephemeral_gpg
 
             # The container build can take a few minutes, update status comment when it finishes.
             - if: steps.retro.outputs.do_intg == 'true'
@@ -235,60 +236,48 @@ jobs:
 
             # Smoke-test the built containers for basic functinality
             - if: steps.retro.outputs.do_intg == 'true'
-              name: Execute PR's cirrus-ci_retrospective container image
-              strategy:
-                  matrix:
-                      name:
-                          - cirrus-ci_retrospective
-                          - ephemeral_gpg
+              name: Smoke-test PR's cirrus-ci_retrospective container image
+              run: |
+                  github_event_dirpath=$(dirname "${{ github.event_path }}")
+                  /usr/bin/docker run --rm \
+                      -e GITHUB_TOKEN=${{ github.token }} \
+                      -e GITHUB_EVENT_PATH=/github/workflow/event.json \
+                      -e GITHUB_ACTIONS=true \
+                      -e GITHUB_WORKSPACE=/github/workspace \
+                      -v "$GITHUB_WORKSPACE/pull_request":"/github/workspace" \
+                      -v $github_event_dirpath:/github/workflow \
+                      --entrypoint=/bin/bash \
+                      ${{ matrix.name }}:test \
+                      -c "source /etc/profile && exec /usr/share/automation/bin/debug.sh" \
+                      &> ./test_artifacts/debug_output.txt
+                  mv ./cirrus-ci_retrospective.json ./test_artifacts/ || true
+
+            - if: steps.retro.outputs.do_intg == 'true'
+              name: Execute PR's ephemeral_gpg image
               env:
                   _pr: './test_artifacts/test_repo'
                   _pp: './test_artifacts/test_repo/private.pas'
                   _pk: './test_artifacts/test_repo/private.key'
               run: |
-                  case "${{ matrix.name }}" in
-                      cirrus-ci_retrospective)
-                          github_event_dirpath=$(dirname "${{ github.event_path }}")
-                          /usr/bin/docker run --rm \
-                              -e GITHUB_TOKEN=${{ github.token }} \
-                              -e GITHUB_EVENT_PATH=/github/workflow/event.json \
-                              -e GITHUB_ACTIONS=true \
-                              -e GITHUB_WORKSPACE=/github/workspace \
-                              -v "$GITHUB_WORKSPACE/pull_request":"/github/workspace" \
-                              -v $github_event_dirpath:/github/workflow \
-                              --entrypoint=/bin/bash \
-                              ${{ matrix.name }}:test \
-                              -c "source /etc/profile && exec /usr/share/automation/bin/debug.sh" \
-                              &> ./test_artifacts/debug_output.txt
-                          mv ./cirrus-ci_retrospective.json ./test_artifacts/ || true
-                          ;;
-                      ephemeral_gpg)
-                          git init "$_pr"
-                          echo "$TEST_PASSPHRASE" > "$_pp"
-                          echo "$TEST_PRIVATE_KEY" > "$_pk"
-
-                          ephemeral_gpg="/usr/bin/docker run --rm \
-                                -e PRIVATE_PASSPHRASE_FILEPATH=/tmp/private.pas \
-                                -e PRIVATE_KEY_FILEPATH=/tmp/private.key \
-                                -e GNUPGHOME=/tmp/ephemeral \
-                                -e TRUNCATE_PASSPHRASE_ON_READ=0 \
-                                --tmpfs /tmp:rw,size=64m \
-                                -v $_pp:/tmp/private.pas:rw \
-                                -v $_pk:/tmp/private.key:rw \
-                                -v $_pr:/tmp/repo:rw \
-                                --workdir /tmp/repo \
-                                ${{ matrix.name }}:test"
-
-                            $ephemeral_gpg add private.pas private.key
-                            $ephemeral_gpg commit -sm 'test commit message'
-                            $ephemeral_gpg log -1 --show-signature HEAD &> ./test_artifacts/test_repo.commit
-                            $ephemeral_gpg tag -as v0.0.0 -m 'test tag annotation' HEAD
-                            $ephemeral_gpg tag -v HEAD &> ./test_artifacts/test_repo.tag
-                          ;;
-                      *)
-                          echo "Unknown/unsupported matrix key '${{ matrix.name }}'."
-                          exit 1
-                  esac
+                  git init "$_pr"
+                  echo "$TEST_PASSPHRASE" > "$_pp"
+                  echo "$TEST_PRIVATE_KEY" > "$_pk"
+                  ephemeral_gpg="/usr/bin/docker run --rm \
+                        -e PRIVATE_PASSPHRASE_FILEPATH=/tmp/private.pas \
+                        -e PRIVATE_KEY_FILEPATH=/tmp/private.key \
+                        -e GNUPGHOME=/tmp/ephemeral \
+                        -e TRUNCATE_PASSPHRASE_ON_READ=0 \
+                        --tmpfs /tmp:rw,size=64m \
+                        -v $_pp:/tmp/private.pas:rw \
+                        -v $_pk:/tmp/private.key:rw \
+                        -v $_pr:/tmp/repo:rw \
+                        --workdir /tmp/repo \
+                        ${{ matrix.name }}:test"
+                    $ephemeral_gpg add private.pas private.key
+                    $ephemeral_gpg commit -sm 'test commit message'
+                    $ephemeral_gpg log -1 --show-signature HEAD &> ./test_artifacts/test_repo.commit
+                    $ephemeral_gpg tag -as v0.0.0 -m 'test tag annotation' HEAD
+                    $ephemeral_gpg tag -v HEAD &> ./test_artifacts/test_repo.tag
 
             - if: steps.retro.outputs.do_intg == 'true'
               name: Validate ephemeral_gpg test container output
