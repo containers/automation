@@ -214,7 +214,7 @@ jobs:
                   cd pull_request/${c_name}
                   docker build -t ${c_name}:test \
                         --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
-                        ./ &> ../test_artifacts/${c_name}-build_output.txt &
+                        ./ &> ../../test_artifacts/${c_name}-build_output.txt &
             # MUST duplicate this, yaml alias/anchors aren't supported :(
             - if: steps.retro.outputs.do_intg == 'true'
               name: Build container image from code in PR
@@ -224,7 +224,7 @@ jobs:
                   cd pull_request/${c_name}
                   docker build -t ${c_name}:test \
                         --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
-                        ./ &> ../test_artifacts/${c_name}-build_output.txt &
+                        ./ &> ../../test_artifacts/${c_name}-build_output.txt &
 
             # The container build can take a few minutes, update status comment when it finishes.
             - if: steps.retro.outputs.do_intg == 'true'
@@ -244,7 +244,7 @@ jobs:
             - if: steps.retro.outputs.do_intg == 'true'
               name: Smoke-test PR's cirrus-ci_retrospective container image
               env:
-                c_name: ephemeral_gpg
+                c_name: cirrus-ci_retrospective
               run: |
                   github_event_dirpath=$(dirname "${{ github.event_path }}")
                   /usr/bin/docker run --rm \
@@ -261,7 +261,7 @@ jobs:
                   mv ./cirrus-ci_retrospective.json ./test_artifacts/ || true
 
             - if: steps.retro.outputs.do_intg == 'true'
-              name: Execute PR's ephemeral_gpg image
+              name: Smoke-test PR's ephemeral_gpg container image
               env:
                   c_name: ephemeral_gpg
                   _pr: './test_artifacts/test_repo'
