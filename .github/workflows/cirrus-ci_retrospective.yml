@@ -206,8 +206,7 @@ jobs:
             # The Dockerfile and container environment may have changed in addition
             # to scripts.  Re-build a testing container image for use in exercising
             # the code from the PR.
-            - &c_build
-              if: steps.retro.outputs.do_intg == 'true'
+            - if: steps.retro.outputs.do_intg == 'true'
               name: Build container image from code in PR
               env:
                 c_name: cirrus-ci_retrospective
@@ -216,9 +215,16 @@ jobs:
                   docker build -t ${c_name}:test \
                         --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
                         ./ &> ../test_artifacts/${c_name}-build_output.txt &
-            - <<: *c_build
+            # MUST duplicate this, yaml alias/anchors aren't supported :(
+            - if: steps.retro.outputs.do_intg == 'true'
+              name: Build container image from code in PR
               env:
                 c_name: ephemeral_gpg
+              run: |
+                  cd pull_request/${c_name}
+                  docker build -t ${c_name}:test \
+                        --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
+                        ./ &> ../test_artifacts/${c_name}-build_output.txt &
 
             # The container build can take a few minutes, update status comment when it finishes.
             - if: steps.retro.outputs.do_intg == 'true'
