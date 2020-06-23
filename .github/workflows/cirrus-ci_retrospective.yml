@@ -38,7 +38,8 @@ jobs:
             - name: Execute latest upstream cirrus-ci_retrospective
               # Actually use the (not-normally recommended) latest version,
               # since it likely represents the behaviors most similar to
-              # what this action expects.
+              # what this action expects.  This is automatically built on
+              # new tag by the release github-actions workflow.
               uses: docker://quay.io/libpod/cirrus-ci_retrospective:latest
               env:
                 GITHUB_TOKEN: ${{ github.token }}
@@ -130,7 +131,45 @@ jobs:
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
                       is smoke-testing PR changes to images.
 
-            # TODO: Implement container build + smoke-test coverage changes in PR
+            - if: steps.retro.outputs.do_intg == 'true'
+              name: Test build cirrus-ci_retrospective container
+              run: |
+                  cd pull_request
+                  docker build -t test_ccir:test \
+                      -f cirrus-ci_retrospective/Dockerfile \
+                      --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
+                      ./
+
+            - if: steps.retro.outputs.do_intg == 'true'
+              name: Execute test cirrus-ci_retrospective container
+              uses: docker://test_ccir:test
+              env:
+                GITHUB_TOKEN: ${{ github.token }}
+
+            - if: steps.retro.outputs.do_intg == 'true'
+              name: Reload cirrus-ci_retrospective JSON and set action outputs
+              id: testretro
+              env:
+                  DEBUG: 1
+              run: |
+                  cd pull_request
+                  source ./main/$HELPER_LIB
+                  load_ccir $GITHUB_WORKSPACE
+                  set_ccir
+
+            - if: steps.retro.outputs.do_intg == 'true'
+              name: Verify expected outputs match test outputs
+              run: |
+                  cd pull_request
+                  source ./main/$HELPER_LIB
+                  set -x
+                  [[ "${{ steps.retro.outputs.prn }}" == "${{ steps.testretro.outputs.prn }}" ]] || \
+                  [[ "${{ steps.retro.outputs.tid }}" == "${{ steps.testretro.outputs.tid }}" ]] || \
+                  [[ "${{ steps.retro.outputs.sha }}" == "${{ steps.testretro.outputs.sha }}" ]] || \
+                  [[ "${{ steps.retro.outputs.tst }}" == "${{ steps.testretro.outputs.tst }}" ]] || \
+                  [[ "${{ steps.retro.outputs.was_pr }}" == "${{ steps.testretro.outputs.was_pr }}" ]] || \
+                  [[ "${{ steps.retro.outputs.do_intg }}" == "${{ steps.testretro.outputs.do_intg }}" ]] || \
+                    die "One or more expected test outputs do not match actual outputs"
 
             - if: steps.retro.outputs.do_intg == 'true'
               id: edit_pr_comment_exec
