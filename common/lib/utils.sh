@@ -4,7 +4,6 @@
 
 source $(dirname $(realpath "${BASH_SOURCE[0]}"))/console_output.sh
 
-# TODO: Add unit test
 copy_function() {
     local src="$1"
     local dst="$2"
@@ -19,7 +18,6 @@ copy_function() {
     eval "${src_def/$src/$dst}"
 }
 
-# TODO: Add unit test
 rename_function() {
     local from="$1"
     local to="$2"
