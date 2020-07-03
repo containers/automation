@@ -35,5 +35,41 @@ test_cmd "The behavior of test_function_three matches renamed test_function_one"
     0 "This is test function one" \
     test_function_three
 
+test_cmd "The contains function operates as expected for the normal case" \
+    0 "" \
+    contains 3 1 2 3 4 5
+
+test_cmd "The contains function operates as expected for the negative case" \
+    1 "" \
+    contains 42 1 2 3 4 5
+
+test_cmd "The contains function operates as expected despite whitespace" \
+    0 "" \
+    contains 'foo bar' "foobar" "foo" "foo bar" "bar"
+
+test_cmd "The contains function operates as expected despite whitespace, negative case" \
+    1 "" \
+    contains 'foo bar' "foobar" "foo" "baz" "bar"
+
+test_cmd "The err_retry function retries three times for true, exit(0) in [1]" \
+    126 "Attempt 1 of 3:.+Attempt 3 of 3" \
+    err_retry 3 10 1 true
+
+test_cmd "The err_retry function retries three times for false, exit(1) in [0]" \
+    126 "Attempt 1 of 3:.+Attempt 3 of 3" \
+    err_retry 3 10 0 false
+
+test_cmd "The err_retry function catches an exit 42 in [1, 2, 3, 42, 99, 100, 101]" \
+    42 "exit.+42" \
+    err_retry 3 10 "1 2 3 42 99 100 101" exit 42
+
+test_cmd "The err_retry function retries 2 time for exit 42 in [1, 2, 3, 99, 100, 101]" \
+    42 "exit.+42" \
+    err_retry 2 10 "1 2 3 99 100 101" exit 42
+
+test_cmd "The err_retry function retries 1 time for false, non-zero exit" \
+    1 "Attempt 1 of 2" \
+    err_retry 2 10 "" false
+
 # script is set +e
 exit_with_status
