@@ -2,11 +2,16 @@
 
 source $(dirname $BASH_SOURCE[0])/testlib.sh
 
+# This is necessary when executing from a Github Action workflow so it ignores
+# all magic output tokens
+echo "::stop-commands::TESTING"
+trap "echo '::TESTING::'" EXIT
+
 test_cmd "The library $TEST_DIR/$SUBJ_FILENAME loads" \
     0 '' \
     source $TEST_DIR/$SUBJ_FILENAME
 
-source $TEST_DIR/$SUBJ_FILENAME
+source $TEST_DIR/$SUBJ_FILENAME || exit 1  # can't continue w/o loaded library
 
 test_cmd 'These tests are running in a github actions workflow environment' \
     0 '' \
@@ -20,7 +25,7 @@ test_cmd 'Default shell variables are initialized empty/false' \
 DEBUG=1
 
 test_cmd 'The debugging function does not throw any errors and uses special debug output' \
-    0 'DEBUG:' \
+    0 '::debug::' \
     dbg_ccir
 
 test_cmd "The \$MONITOR_TASK variable is defined an non-empty" \

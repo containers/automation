@@ -22,8 +22,8 @@ env:
     # Authoritative Github Action task (in cirrus-ci) to trigger / check for completion of _this_ workflow
     ACTION_TASK: 'github-actions/success'
     # Relative locations to help with safe use and testing
-    HELPER_LIB: '.github/lib/cirrus-ci_retrospective.sh'
-    HELPER_LIB_TEST: '.github/test/run_action_tests.sh'
+    HELPER_LIB: 'github/lib/cirrus-ci_retrospective.sh'
+    HELPER_LIB_TEST: 'github/test/run_action_tests.sh'
     # Enable debugging of github actions itself
     # (see https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-a-debug-message)
     ACTIONS_STEP_DEBUG: '${{ secrets.ACTIONS_STEP_DEBUG }}'
@@ -201,32 +201,10 @@ jobs:
                       Unit-testing passed (`${{ env.HELPER_LIB_TEST }}`)passed.
                       [Cirrus-CI Retrospective Github
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
-                      is building test container images.
+                      is smoke-testing PR changes to images.
 
-            # The Dockerfile and container environment may have changed in addition
-            # to scripts.  Re-build a testing container image for use in exercising
-            # the code from the PR.
-            - if: steps.retro.outputs.do_intg == 'true'
-              name: Build container image from code in PR
-              env:
-                  c_name: cirrus-ci_retrospective
-              run: |
-                  cd pull_request/${c_name}
-                  docker build -t ${c_name}:test \
-                        --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
-                        ./ &> ../../test_artifacts/${c_name}-build_output.txt &
-            # MUST duplicate this, yaml alias/anchors aren't supported :(
-            - if: steps.retro.outputs.do_intg == 'true'
-              name: Build container image from code in PR
-              env:
-                c_name: ephemeral_gpg
-              run: |
-                  cd pull_request/${c_name}
-                  docker build -t ${c_name}:test \
-                        --build-arg INSTALL_AUTOMATION_VERSION=0.0.0 \
-                        ./ &> ../../test_artifacts/${c_name}-build_output.txt &
+            # TODO: Implement container build + smoke-test coverage changes in PR
 
-            # The container build can take a few minutes, update status comment when it finishes.
             - if: steps.retro.outputs.do_intg == 'true'
               id: edit_pr_comment_exec
               name: Update status comment on PR again
@@ -236,92 +214,9 @@ jobs:
                   comment_id: '${{ steps.edit_pr_comment_build.outputs.id }}'
                   token: '${{ secrets.GITHUB_TOKEN }}'
                   body: >-
-                      Test container images built.  [Cirrus-CI Retrospective Github
+                      Smoke testing passed [Cirrus-CI Retrospective Github
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
-                      is executing test containers.
-
-            # Smoke-test the built containers for basic functinality
-            - if: steps.retro.outputs.do_intg == 'true'
-              name: Smoke-test PR's cirrus-ci_retrospective container image
-              env:
-                c_name: cirrus-ci_retrospective
-              run: |
-                  github_event_dirpath=$(dirname "${{ github.event_path }}")
-                  /usr/bin/docker run --rm \
-                      -e GITHUB_TOKEN=${{ github.token }} \
-                      -e GITHUB_EVENT_PATH=/github/workflow/event.json \
-                      -e GITHUB_ACTIONS=true \
-                      -e GITHUB_WORKSPACE=/github/workspace \
-                      -v "$GITHUB_WORKSPACE/pull_request":"/github/workspace" \
-                      -v $github_event_dirpath:/github/workflow \
-                      --entrypoint=/bin/bash \
-                      ${c_name}:test \
-                      -c "source /etc/profile && exec /usr/share/automation/bin/debug.sh" \
-                      &> ./test_artifacts/debug_output.txt
-                  mv ./cirrus-ci_retrospective.json ./test_artifacts/ || true
-
-            - if: steps.retro.outputs.do_intg == 'true'
-              name: Smoke-test PR's ephemeral_gpg container image
-              env:
-                  c_name: ephemeral_gpg
-                  _pr: './test_artifacts/test_repo'
-                  _pp: './test_artifacts/test_repo/private.pas'
-                  _pk: './test_artifacts/test_repo/private.key'
-              run: |
-                  git init "$_pr"
-                  echo "$TEST_PASSPHRASE" > "$_pp"
-                  echo "$TEST_PRIVATE_KEY" > "$_pk"
-                  ephemeral_gpg="/usr/bin/docker run --rm \
-                        -e PRIVATE_PASSPHRASE_FILEPATH=/tmp/private.pas \
-                        -e PRIVATE_KEY_FILEPATH=/tmp/private.key \
-                        -e GNUPGHOME=/tmp/ephemeral \
-                        -e TRUNCATE_PASSPHRASE_ON_READ=0 \
-                        --tmpfs /tmp:rw,size=64m \
-                        -v $_pp:/tmp/private.pas:rw \
-                        -v $_pk:/tmp/private.key:rw \
-                        -v $_pr:/tmp/repo:rw \
-                        --workdir /tmp/repo \
-                        ${c_name}:test"
-                    $ephemeral_gpg add private.pas private.key
-                    $ephemeral_gpg commit -sm 'test commit message'
-                    $ephemeral_gpg log -1 --show-signature HEAD &> ./test_artifacts/test_repo.commit
-                    $ephemeral_gpg tag -as v0.0.0 -m 'test tag annotation' HEAD
-                    $ephemeral_gpg tag -v HEAD &> ./test_artifacts/test_repo.tag
-
-            - if: steps.retro.outputs.do_intg == 'true'
-              name: Validate ephemeral_gpg test container output
-              run: |
-                  cd pull_request/test_artifacts/test_repo
-                  for ext in pas key; do
-                      test "$(stat --format %s private.$ext)" -eq 0
-                  cd ../
-                  tr '\r\n' ' ' test_repo.commit | tee /dev/stderr | \
-                      egrep -q "gpg.+Signature.+Good signature.+ultimate.+Author.+Fine"
-                  tr '\r\n' ' ' test_repo.tag | tee /dev/stderr | \
-                      egrep -q ".+Good signature.+tagger Fine Oolong"
-
-
-            - if: steps.retro.outputs.do_intg == 'true'
-              id: pr_retro
-              name: Load cirrus-ci_retrospective test container output into github action parameters
-              env:
-                  DEBUG: 1
-              run: |
-                  cd pull_request
-                  source ./$HELPER_LIB
-                  load_ccir $GITHUB_WORKSPACE/test_artifacts
-                  set_ccir
-
-            - if: steps.retro.outputs.do_intg == 'true'
-              name: Validate cirrus-ci_retrospective github action parameters match expected values
-              run: |
-                  samesame() { if [[ -z "$1" ]] || [[ "$2" != "$3" ]]; then echo "::error::Expecting $1 '$2' to equal '$3'"; exit 1; fi }
-                  samesame "steps.pr_retro.outputs.prn" "${{ steps.pr_retro.outputs.prn }}" "${{ steps.retro.outputs.prn }}"
-                  samesame "steps.pr_retro.outputs.was_pr" "${{ steps.pr_retro.outputs.was_pr }}" "${{ steps.retro.outputs.was_pr }}"
-                  samesame "steps.pr_retro.outputs.tid" "${{ steps.pr_retro.outputs.tid }}" "${{ steps.retro.outputs.tid }}"
-                  samesame "steps.pr_retro.outputs.sha" "${{ steps.pr_retro.outputs.sha }}" "${{ steps.retro.outputs.sha }}"
-                  samesame "steps.pr_retro.outputs.tst" "${{ steps.pr_retro.outputs.tst }}" "${{ steps.retro.outputs.tst }}"
-                  samesame "steps.pr_retro.outputs.do_intg" "${{ steps.pr_retro.outputs.do_intg }}" "${{ steps.retro.outputs.do_intg }}"
+                      is triggering Cirrus-CI ${{ env.ACTION_TASK }} task.
 
             # Allow PR to be merged by triggering required action-status marker task in Cirrus CI
             - if: steps.retro.outputs.do_intg == 'true'

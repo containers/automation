@@ -1,1 +1,0 @@
-../../bin/install_automation.sh

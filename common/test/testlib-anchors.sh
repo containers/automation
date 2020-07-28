@@ -39,23 +39,33 @@ test_cmd "There is no AUTOMATION_VERSION file in \$AUTOMATION_ROOT before testin
     1 "" \
     test -r "$AUTOMATION_ROOT/AUTOMATION_VERSION"
 
-TEMPDIR=$(mktemp -p '' -d tmp_${SCRIPT_FILENAME}_XXXXXXXX)
+TEMPDIR=$(mktemp -p '' -d testing_${SCRIPT_FILENAME}_XXXXXXXX)
 trap "rm -rf $TEMPDIR" EXIT
+
 cat << EOF > "$TEMPDIR/git"
-#!/bin/bash
-echo "Standard Error is ignored" > /dev/stderr
-echo "99.99.99" > /dev/stdout
+#!/bin/bash -e
+echo "99.99.99"
 EOF
 chmod +x "$TEMPDIR/git"
 
+test_cmd "Mock git returns expected output" \
+    0 "99.99.99" \
+    $TEMPDIR/git
+
 actual_path=$PATH
-export PATH=$TEMPDIR:$PATH
-test_cmd "Without AUTOMATION_VERSION file, automation_version() uses git" \
+export PATH=$TEMPDIR:$PATH:$TEMPDIR
+_avcache=""  # ugly, but necessary to not pollute other test results
+test_cmd "Without AUTOMATION_VERSION file, automation_version() uses mock git" \
     0 "99.99.99" \
     automation_version
 
-echo "exit 123" >> "$TEMPDIR/git"
+echo -e "#!/bin/bash\nexit 99" > "$TEMPDIR/git"
 
+test_cmd "Modified mock git exits with expected error code" \
+    99 "" \
+    $TEMPDIR/git
+
+_avcache=""
 test_cmd "Without AUTOMATION_VERSION file, a git error causes automation_version() to error" \
     1 "Error determining version number" \
     automation_version
@@ -64,11 +74,15 @@ ln -sf /usr/bin/* $TEMPDIR/
 ln -sf /bin/* $TEMPDIR/
 rm -f "$TEMPDIR/git"
 export PATH=$TEMPDIR
-test_cmd "Without git or AUTOMATION_VERSION file automation_version() errorsr"\
+_avcache=""
+test_cmd "Without git or AUTOMATION_VERSION file automation_version() errors"\
     1 "Error determining version number" \
     automation_version
 unset PATH
 export PATH=$actual_path
+
+# ensure cleanup
+rm -rf $TEMPDIR
 
 # Must be last call
 exit_with_status
