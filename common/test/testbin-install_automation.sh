@@ -81,7 +81,7 @@ test_cmd \
 
 test_cmd \
     "The installed installer, can update itself to the latest upstream version" \
-    0 "Installation complete for v[0-9]+\.[0-9]+\.[0-9]+" \
+    0 "Finalizing successful installation of version v" \
     execute_in_example_environment $SUBJ_FILENAME latest
 
 # Ensure cleanup
