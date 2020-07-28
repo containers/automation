@@ -22,84 +22,11 @@ env:
     # Authoritative Github Action task (in cirrus-ci) to trigger / check for completion of _this_ workflow
     ACTION_TASK: 'github-actions/success'
     # Relative locations to help with safe use and testing
-    HELPER_LIB: 'github/lib/cirrus-ci_retrospective.sh'
+    HELPER_LIB: 'github/lib/github.sh'
     HELPER_LIB_TEST: 'github/test/run_action_tests.sh'
     # Enable debugging of github actions itself
     # (see https://help.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-a-debug-message)
     ACTIONS_STEP_DEBUG: '${{ secrets.ACTIONS_STEP_DEBUG }}'
-    # Required data for testing ephemeral_gpg container
-    TEST_PASSPHRASE: 'ZXBoZW1lcmFsX2dwZ194WExuODY4OWVwaGVtZXJhbF9ncGdfNXJDUDQ4NDQK'
-    # There's no easy way to easily include this data from an external file
-    TEST_PRIVATE_KEY: |
-        -----BEGIN PGP PUBLIC KEY BLOCK-----
-        mDMEXvCXXBYJKwYBBAHaRw8BAQdAAZ2SkTVon0o5GOrFeGvyyFzCsD1D/5YaDuft
-        lcCDj7i0HkZ1bmt5IFRlYSBPb2xvbmcgPGZvb0BiYXIuYmF6PoiQBBMWCAA4FiEE
-        UGx2MeOfMIY1pMpFLnr9QOCSI3YFAl7wl1wCGwMFCwkIBwIGFQoJCAsCBBYCAwEC
-        HgECF4AACgkQLnr9QOCSI3aasgD/VoUbtPEGXGnWtXays8tW0LTCBwc3F2FkLLjF
-        1zPokpQBAM0YPtTXECK94Ns6Hq4qT9D7Z+QLvkvXAskicYcOTtsOuDgEXvCXXBIK
-        KwYBBAGXVQEFAQEHQNhyii6b4ui4sdiDumbh/K1pOEkDAPqf6qiabrRCrWNPAwEI
-        B4h4BBgWCAAgFiEEUGx2MeOfMIY1pMpFLnr9QOCSI3YFAl7wl1wCGwwACgkQLnr9
-        QOCSI3bEMgD+P6W+phzoImFabaDWykmSO2kOiCQ8rbur+rBEDT2nlLUA/R+7Crq4
-        dLvdvPcboSPlDHi8JD5HWyYX20T+zA93HLYHuDMEXvCXXRYJKwYBBAHaRw8BAQdA
-        G/VOwqwpgEW/VnNVXH5N8iWOzJ2vDmmTeNpq3OupySGI7wQYFggAIBYhBFBsdjHj
-        nzCGNaTKRS56/UDgkiN2BQJe8JddAhsCAIEJEC56/UDgkiN2diAEGRYIAB0WIQTx
-        ZF9aIhRTnWQjp+w5WdSvzDsctQUCXvCXXQAKCRA5WdSvzDsctbhPAQDqu4013Ez1
-        nueEeq0Fc/5ObnIrxWQWpnPih9CaAzXcewD/XuHwJuRdAt0v1zR7chzvwIACH4UP
-        cocfX1iNZOvsFwOgSwEA6jmOZmkYkd+2h8ijxfRqOeTBmym0FNzXx4/dbrPaW74B
-        AIU92ZyRi7AdGJwL0ii7gArLuEELhBl4Kpy5BSgblZgPuDMEXvCXXhYJKwYBBAHa
-        Rw8BAQdAF+wo1grCiFBzRGBPZEjCYa4zaYG8yvfJU3JxbioMBhKIeAQYFggAIBYh
-        BFBsdjHjnzCGNaTKRS56/UDgkiN2BQJe8JdeAhsgAAoJEC56/UDgkiN2XWYA/i3y
-        vpxJ7CrLdpT63w3wE0EUpnL8dQ4w1kclsvFC4ZTJAQCEYrRHvE2e8a/GKxvYTjkn
-        o48h93APyUSMaalMKju9Bw==
-        =XYfd
-        -----END PGP PUBLIC KEY BLOCK-----
-        -----BEGIN PGP PUBLIC KEY BLOCK-----
-
-        mQENBFmUaEEBCACzXTDt6ZnyaVtueZASBzgnAmK13q9Urgch+sKYeIhdymjuMQta
-        x15OklctmrZtqre5kwPUosG3/B2/ikuPYElcHgGPL4uL5Em6S5C/oozfkYzhwRrT
-        SQzvYjsE4I34To4UdE9KA97wrQjGoz2Bx72WDLyWwctD3DKQtYeHXswXXtXwKfjQ
-        7Fy4+Bf5IPh76dA8NJ6UtjjLIDlKqdxLW4atHe6xWFaJ+XdLUtsAroZcXBeWDCPa
-        buXCDscJcLJRKZVc62gOZXXtPfoHqvUPp3nuLA4YjH9bphbrMWMf810Wxz9JTd3v
-        yWgGqNY0zbBqeZoGv+TuExlRHT8ASGFS9SVDABEBAAG0NUdpdEh1YiAod2ViLWZs
-        b3cgY29tbWl0IHNpZ25pbmcpIDxub3JlcGx5QGdpdGh1Yi5jb20+iQEiBBMBCAAW
-        BQJZlGhBCRBK7hj4Ov3rIwIbAwIZAQAAmQEH/iATWFmi2oxlBh3wAsySNCNV4IPf
-        DDMeh6j80WT7cgoX7V7xqJOxrfrqPEthQ3hgHIm7b5MPQlUr2q+UPL22t/I+ESF6
-        9b0QWLFSMJbMSk+BXkvSjH9q8jAO0986/pShPV5DU2sMxnx4LfLfHNhTzjXKokws
-        +8ptJ8uhMNIDXfXuzkZHIxoXk3rNcjDN5c5X+sK8UBRH092BIJWCOfaQt7v7wig5
-        4Ra28pM9GbHKXVNxmdLpCFyzvyMuCmINYYADsC848QQFFwnd4EQnupo6QvhEVx1O
-        j7wDwvuH5dCrLuLwtwXaQh0onG4583p0LGms2Mf5F+Ick6o/4peOlBoZz48=
-        =Bvzs
-        -----END PGP PUBLIC KEY BLOCK-----
-        -----BEGIN PGP PRIVATE KEY BLOCK-----
-
-        lIYEXvCXXBYJKwYBBAHaRw8BAQdAAZ2SkTVon0o5GOrFeGvyyFzCsD1D/5YaDuft
-        lcCDj7j+BwMC7sy7xo4yICDs58wocxNUPChlafDEeLFpj0nniKUFpneMe7UZ3y7m
-        9phoLB81h14qGVg2Dv/x3+qXQ6rkcu0HaVDnPnhzAoE4eqNKkKDUIrQeRnVua3kg
-        VGVhIE9vbG9uZyA8Zm9vQGJhci5iYXo+iJAEExYIADgWIQRQbHYx458whjWkykUu
-        ev1A4JIjdgUCXvCXXAIbAwULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRAuev1A
-        4JIjdpqyAP9WhRu08QZcada1drKzy1bQtMIHBzcXYWQsuMXXM+iSlAEAzRg+1NcQ
-        Ir3g2zoeripP0Ptn5Au+S9cCySJxhw5O2w6ciwRe8JdcEgorBgEEAZdVAQUBAQdA
-        2HKKLpvi6Lix2IO6ZuH8rWk4SQMA+p/qqJputEKtY08DAQgH/gcDAnQ8oXqItJKi
-        7Jgcb7ToR4H6/dH3XWJWzeFcbFiflQXi18k1K5pyFWrxJdGIGP18og3kL3ZVZ5gd
-        pJYCAXWQjlhBX/viHUz+d2Gd4QGajoiIeAQYFggAIBYhBFBsdjHjnzCGNaTKRS56
-        /UDgkiN2BQJe8JdcAhsMAAoJEC56/UDgkiN2xDIA/j+lvqYc6CJhWm2g1spJkjtp
-        DogkPK27q/qwRA09p5S1AP0fuwq6uHS73bz3G6Ej5Qx4vCQ+R1smF9tE/swPdxy2
-        B5yGBF7wl10WCSsGAQQB2kcPAQEHQBv1TsKsKYBFv1ZzVVx+TfIljsydrw5pk3ja
-        atzrqckh/gcDAst40uzvUMHv7IrvPpKDFwk0lIQsZuX8Vq3GkqklX0uePiR5R279
-        gkcOAYXA7oK1RiYZjosnn4o4Q2ZzTKI8Vb692+cxtrfIA+9MjB8yL+eI7wQYFggA
-        IBYhBFBsdjHjnzCGNaTKRS56/UDgkiN2BQJe8JddAhsCAIEJEC56/UDgkiN2diAE
-        GRYIAB0WIQTxZF9aIhRTnWQjp+w5WdSvzDsctQUCXvCXXQAKCRA5WdSvzDsctbhP
-        AQDqu4013Ez1nueEeq0Fc/5ObnIrxWQWpnPih9CaAzXcewD/XuHwJuRdAt0v1zR7
-        chzvwIACH4UPcocfX1iNZOvsFwOgSwEA6jmOZmkYkd+2h8ijxfRqOeTBmym0FNzX
-        x4/dbrPaW74BAIU92ZyRi7AdGJwL0ii7gArLuEELhBl4Kpy5BSgblZgPnIYEXvCX
-        XhYJKwYBBAHaRw8BAQdAF+wo1grCiFBzRGBPZEjCYa4zaYG8yvfJU3JxbioMBhL+
-        BwMCmRzdBE6TjpLsTkWv34TCttSmwmXow+JFQDhiA5tghW0gGPE64QZnUNkRvUHU
-        T25bN6aKaPAWZ5r6ZAS68GdxBBN8yopnOd2mNETDZlO86Ih4BBgWCAAgFiEEUGx2
-        MeOfMIY1pMpFLnr9QOCSI3YFAl7wl14CGyAACgkQLnr9QOCSI3ZdZgD+LfK+nEns
-        Kst2lPrfDfATQRSmcvx1DjDWRyWy8ULhlMkBAIRitEe8TZ7xr8YrG9hOOSejjyH3
-        cA/JRIxpqUwqO70H
-        =B0/w
-        -----END PGP PRIVATE KEY BLOCK-----
 
 jobs:
     # Obtain task details and validate required execution conditions
