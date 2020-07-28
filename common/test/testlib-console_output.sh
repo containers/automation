@@ -43,6 +43,22 @@ for fname in warn die; do
     basic_tests $fname $exp_exit $exp_word
 done
 
+# Function requires stdin, must execute in subshell by test_cmd
+export -f indent
+# test_cmd whitespace-squashes output but this function's purpose is producing whitespace
+EXPECTED_SUM="63d43cf4cbc95b61754d57e9c877a082eab24ba89a8628825e7d8006a0af34ad"
+test_cmd "The indent function correctly indents 4x number of spaces indicated" \
+    0 "$EXPECTED_SUM" \
+    bash -c 'echo "The quick brown fox jumped to the right 16-spaces" | indent 4 | sha256sum'
+
+test_cmd "The indent function notices when no arguments are given" \
+    1 "number greater than 1" \
+    indent
+
+test_cmd "The indent function notices when a non-number is given" \
+    1 "number greater than 1.*foobar" \
+    indent foobar
+
 DEBUG=0
 test_cmd \
     "The dbg function has no output when \$DEBUG is zero and no message is given" \
