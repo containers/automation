@@ -72,6 +72,32 @@ test_cmd \
 
 DEBUG=1
 basic_tests dbg 0 DEBUG
+DEBUG=0
+
+export VAR1=foo VAR2=bar VAR3=baz
+test_cmd \
+    "The req_env_vars function has no output for all non-empty vars" \
+    0 "" \
+    req_env_vars VAR1 VAR2 VAR3
+
+unset VAR2
+test_cmd \
+    "The req_env_vars function catches an empty VAR2 value" \
+    1 "Environment variable 'VAR2' is required" \
+    req_env_vars VAR1 VAR2 VAR3
+
+VAR1="    
+     "
+test_cmd \
+    "The req_env_vars function catches a whitespace-full VAR1 value" \
+    1 "Environment variable 'VAR1' is required" \
+    req_env_vars VAR1 VAR2 VAR3
+
+unset VAR1 VAR2 VAR3
+test_cmd \
+    "The req_env_vars function shows the source file/function of caller and error" \
+    1 "testlib.sh:test_cmd().+console_output.sh" \
+    req_env_vars VAR1 VAR2 VAR3
 
 # script is set +e
 exit_with_status
