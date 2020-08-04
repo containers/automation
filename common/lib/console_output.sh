@@ -80,3 +80,16 @@ indent(){
     local sedex="s/^/$indents/"
     cat - | sed -r -e "$sedex"
 }
+
+req_env_vars(){
+    dbg "Confirming non-empty vars for $*"
+    local var_name
+    local var_value
+    local msgpfx
+    for var_name in "$@"; do
+        var_value=$(tr -d '[:space:]' <<<"${!var_name}")
+        msgpfx="Environment variable '$var_name'"
+        ((${#var_value}>0)) || \
+            die "$msgpfx is required by $(_rel_path "${BASH_SOURCE[1]}"):${FUNCNAME[1]}() but empty or entirely white-space."
+    done
+}
