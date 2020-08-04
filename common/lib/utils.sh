@@ -42,6 +42,14 @@ contains() {
     return 1
 }
 
+not_contains(){
+    if contains "$@"; then
+        return 1
+    else
+        return 0
+    fi
+}
+
 # Retry a command on a particular exit code, up to a max number of attempts,
 # with exponential backoff.
 #
@@ -58,7 +66,7 @@ contains() {
 #
 # Based on work by 'Ayla Ounce <reacocard@gmail.com>' available at:
 # https://gist.github.com/reacocard/28611bfaa2395072119464521d48729a
-function err_retry() {
+err_retry() {
     local rc=0
     local attempt=0
     local attempts="$1"
@@ -68,40 +76,54 @@ function err_retry() {
         die "It's nonsense to retry a command less than twice, or '$attempts'"
     ((sleep_ms>0)) || \
         die "Refusing idiotic sleep interval of $sleep_ms"
-    local zzzs=$(awk -e '{printf "%f", $1 / 1000}'<<<"$sleep_ms")
+    local zzzs
+    zzzs=$(awk -e '{printf "%f", $1 / 1000}'<<<"$sleep_ms")
     local nzexit=0  #false
-    local dbgspec="[${exit_codes[@]}]"
+    local dbgspec
     if [[ -z "$3" ]]; then
         nzexit=1;  # true
         dbgspec="non-zero"
     else
-        exit_codes=("${3}")
+        exit_codes=("$3")
+        dbgspec="[${exit_codes[*]}]"
     fi
 
     shift 3
 
     dbg "Will retry $attempts times, sleeping up to $zzzs*2^$attempts or exit code(s) $dbgspec."
+    local print_once
+    print_once=$(echo -n "    + "; printf '%q ' "${@}")
     for attempt in $(seq 1 $attempts); do
-        msg "Attempt $attempt of $attempts:"
-        ( # Make each attempt easy to distinguish
-            echo -n "+ "; printf '%q\n' "${@}"  # Make bad command easy to spot
-            "$@" && rc=$? || rc=$?  # work with set -e or +e
-            msg "exit($rc)"  # Make easy to debug
+        # Make each attempt easy to distinguish
+        if ((nzexit)); then
+            msg "Attempt $attempt of $attempts (retry on non-zero exit):"
+        else
+            msg "Attempt $attempt of $attempts (retry on exit ${exit_codes[*]}):"
+        fi
+        if [[ -n "$print_once" ]]; then
+            msg "$print_once"
+            print_once=""
+        fi
+        "$@" && rc=$? || rc=$?  # work with set -e or +e
+        msg "exit($rc)" |& indent 1 # Make easy to debug
 
-            if ((nzexit!=0)) && ((rc==0)); then
-                dbg "Success! $rc==0"
-                return 0
-            elif ((nzexit)) || contains $rc ${exit_codes[@]}; then
-                dbg "Success! ($rc in [${exit_codes[@]}])"
-                return $rc
-            elif ((attempt<attempts))  # No sleep on last failure
-            then
-                dbg "Failure! Sleeping $zzzs"
-                sleep "$zzzs"
-            fi
-        ) |& indent 1
+        if ((nzexit)) && ((rc==0)); then
+            dbg "Success! $rc==0" |& indent 1
+            return 0
+        elif ((nzexit==0)) && not_contains $rc "${exit_codes[@]}"; then
+            dbg "Success! ($rc not in [${exit_codes[*]}])" |& indent 1
+            return $rc
+        elif ((attempt<attempts))  # No sleep on last failure
+        then
+            msg "Failure! Sleeping $zzzs seconds" |& indent 1
+            sleep "$zzzs"
+        fi
         zzzs=$(awk -e '{printf "%f", $1 + $1}'<<<"$zzzs")
     done
     msg "Retry attempts exhausted"
-    return 126
+    if ((nzexit)); then
+        return $rc
+    else
+        return 126
+    fi
 }
