@@ -51,13 +51,13 @@ test_cmd "The contains function operates as expected despite whitespace, negativ
     1 "" \
     contains 'foo bar' "foobar" "foo" "baz" "bar"
 
-test_cmd "The err_retry function retries three times for true, exit(0) in [1]" \
-    126 "Attempt 1 of 3:.+Attempt 3 of 3" \
-    err_retry 3 10 1 true
+test_cmd "The err_retry function retries three times for true + exit(0)" \
+    126 "Attempt 3 of 3" \
+    err_retry 3 10 0 true
 
-test_cmd "The err_retry function retries three times for false, exit(1) in [0]" \
-    126 "Attempt 1 of 3:.+Attempt 3 of 3" \
-    err_retry 3 10 0 false
+test_cmd "The err_retry function retries three times for false, exit(1)" \
+    126 "Attempt 3 of 3" \
+    err_retry 3 10 1 false
 
 test_cmd "The err_retry function catches an exit 42 in [1, 2, 3, 42, 99, 100, 101]" \
     42 "exit.+42" \
@@ -68,7 +68,7 @@ test_cmd "The err_retry function retries 2 time for exit 42 in [1, 2, 3, 99, 100
     err_retry 2 10 "1 2 3 99 100 101" exit 42
 
 test_cmd "The err_retry function retries 1 time for false, non-zero exit" \
-    1 "Attempt 1 of 2" \
+    1 "Attempt 2 of 2" \
     err_retry 2 10 "" false
 
 # script is set +e
