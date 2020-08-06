@@ -30,7 +30,7 @@ test_cmd "No debug message shows when ACTIONS_STEP_DEBUG is undefined" \
     dbg 'This debug message should not appear'
 
 test_cmd "The warning message prefix is compatible with github actions commands" \
-    0 '::warning:: This is a test warning message.+common/test/testlib.sh' \
+    0 '::warning:: This is a test warning message.+testlib-github_common.sh' \
     warn 'This is a test warning message'
 
 test_cmd "The github actions command for setting output parameter is formatted as expected" \
