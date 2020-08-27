@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefial
+set -eo pipefail
 
 # This scripts is intended to wrap commands which occasionally fail due
 # to external factors like networking hiccups, service failover, load-balancing,
