@@ -1,0 +1,9 @@
+# This action is intended to be triggered from
+# the cirrus-ci_retrospective workflow.  
+
+# FIXME: inputs: path to artifacts directory
+#                path to event.json
+# FIXME: run script that runs scripts
+#            run ./$HELPER_LIB_TEST
+#            run ccir vs. event.json
+#            run ephemeral_gpg test
