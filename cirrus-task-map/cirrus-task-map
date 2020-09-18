@@ -1,0 +1,553 @@
+#!/usr/bin/perl
+#
+# cirrus-task-map - draw dependencies between cirrus tasks
+#
+package ESM::CirrusMap;
+
+use v5.16;
+use utf8;
+use open qw( :encoding(UTF-8) :std );
+
+use strict;
+use warnings;
+
+(our $ME = $0) =~ s|.*/||;
+
+our $VERSION = "0.8";
+
+# For debugging, show data structures using DumpTree($var)
+#use Data::TreeDumper; $Data::TreeDumper::Displayaddress = 0;
+
+###############################################################################
+# BEGIN user-customizable section
+
+# Default input file
+our $Default_Yml = '.cirrus.yml';
+
+# Palette of somewhat distinct colors. Each box (task), and arrows
+# proceeding out of it, will be drawn in a unique color.
+our @Colors = qw(
+                    blue orange red chartreuse darkgoldenrod firebrick1
+                    darkturquoise deeppink deepskyblue3 coral dodgerblue
+                    bisque2 darkgreen indigo darkorchid1 palevioletred2
+                    slateblue1 seagreen3 yellow2 brown
+            );
+
+# END   user-customizable section
+###############################################################################
+
+use POSIX qw(strftime);
+
+###############################################################################
+# BEGIN boilerplate args checking, usage messages
+
+sub usage {
+    print  <<"END_USAGE";
+Usage: $ME [OPTIONS] [CIRRUS_YML_FILE | OUTFILE ... ]
+
+$ME uses graphviz to generate a diagram of task dependencies
+as specified in CIRRUS_YML_FILE (default: $Default_Yml). It
+first writes an output .gv file (default: CIRRUS_YML_FILE.gv)
+then uses graphviz's `dot` to generate one or more image files.
+
+OUTFILE can be any path with extension .gv, .png, .pdf, .ps, or .svg
+
+If no OUTFILE is given, $ME writes <CIRRUS_YML_FILE>.gv and .png
+
+OPTIONS:
+  --no-reduce    do not reduce transitive edges. Default is to reduce,
+                 e.g. if 'success' depends on 'a' and 'b', and 'b' depends
+                 on 'a', we do not want an arrow from 'a' to 'success'.
+
+  --help         display this message
+  --version      display program name and version
+END_USAGE
+
+    exit;
+}
+
+# Command-line options.  Note that this operates directly on @ARGV !
+our $reduce  = 1;               # run 'tred' to reduce transitive edges
+our $debug   = 0;
+our $verbose = 0;
+our $NOT     = '';              # print "blahing the blah$NOT\n" if $debug
+sub handle_opts {
+    use Getopt::Long;
+    GetOptions(
+        'reduce!'    => \$reduce,
+
+        'debug!'     => \$debug,
+        'dry-run|n!' => sub { $NOT = ' [NOT]' },
+        'verbose|v'  => \$verbose,
+
+        help         => \&usage,
+        version      => sub { print "$ME v$VERSION\n"; exit 0; },
+    ) or die "Try `$ME --help' for help\n";
+}
+
+# END   boilerplate args checking, usage messages
+###############################################################################
+
+############################## CODE BEGINS HERE ###############################
+
+# The term is "modulino".
+__PACKAGE__->main()                                     unless caller();
+
+# Main code.
+sub main {
+    # Note that we operate directly on @ARGV, not on function parameters.
+    # This is deliberate: it's because Getopt::Long only operates on @ARGV
+    # and there's no clean way to make it use @_.
+    handle_opts();                      # will set package globals
+
+    # Fetch command-line arguments. None are required, but if present
+    # we override the input YML file and/or output GV/PNG files.
+    my $yml_in = $Default_Yml;
+    my %outfile;
+    for my $arg (@ARGV) {
+        if ($arg =~ /\.ya?ml$/) {
+            -e $arg
+                or die "$ME: File does not exist: $arg\n";
+            $yml_in = $arg;
+        }
+        elsif ($arg =~ /^(.*)\.(gv|png|svg|ps|pdf)$/) {
+            $outfile{$2} = $arg;
+
+            # We always write a .gv file. Use the first output file as basename
+            $outfile{gv} //= "$1.gv";
+        }
+        else {
+            die "$ME: Cannot interpret '$arg' as input (yml, yaml) or output (gv, png, pdf, ps, svg)\n";
+        }
+    }
+
+    # If given any output file at all, we already have this set.
+    my $out_gv = delete($outfile{gv}) || "$yml_in.gv";
+
+    # Everything left in %outfile is an image. If given none, default to svg
+    if (! keys %outfile) {
+        ($outfile{png} = $out_gv) =~ s/\.gv$/.png/;
+    }
+
+    # Process the input file, create output files
+    my $tasklist = TaskList->new($yml_in);
+    write_gv($out_gv, $tasklist);
+    write_img($out_gv, $_, $outfile{$_}) for sort keys %outfile;
+}
+
+###############
+#  write_img  #  Given a GV file, use graphviz to generate an image file
+###############
+sub write_img {
+    my $gv_in   = shift;
+    my $format  = shift;
+    my $img_out = shift;
+
+    my $gv_fh;
+    my $gv_desc;
+    if ($reduce) {
+        $gv_desc = "reading from 'tred $gv_in'";
+        open $gv_fh, '-|', 'tred', $gv_in
+            or die "$ME: Cannot fork 'tred': $!\n";
+    }
+    else {
+        $gv_desc = "reading $gv_in";
+        open $gv_fh, '<', $gv_in
+            or die "$ME: Cannot read $gv_in: $!\n";
+    }
+
+    my $img_out_tmp = "$img_out.tmp.$$.$format";
+    unlink $img_out_tmp;
+
+    open my $dot_fh, '|-', 'dot', "-T$format", "-o$img_out_tmp"
+        or die "$ME: Cannot fork 'dot': $!\n";
+    while (my $line = <$gv_fh>) {
+        print { $dot_fh } $line;
+    }
+    close $gv_fh
+        or die "$ME: Error $gv_desc: $!\n";
+    close $dot_fh
+        or die "$ME: Error running 'dot'\n";
+    rename $img_out_tmp => $img_out
+        or die "$ME: Could not rename $img_out_tmp: $!\n";
+
+    # Annotate: add signature line at lower left
+    # FIXME: include git repo info?
+    if (grep { -x "$_/convert" } split(":", $ENV{PATH})) {
+        unlink $img_out_tmp;
+        my $signature = strftime("Generated %Y-%m-%dT%H:%M:%S%z by $ME v$VERSION", localtime);
+        my @cmd = (
+            "convert",
+            '-family'    => 'Courier',
+            '-pointsize' => '12',
+#            '-style'     => 'Normal',  # Argh! This gives us Bold!?
+            '-weight'    => 'Normal',
+            '-fill'      => '#000',
+            '-gravity'   => 'SouthWest',
+            "-annotate", "+5+5", $signature,
+            "$img_out" => "$img_out_tmp"
+        );
+        if (system(@cmd) == 0) {
+            rename $img_out_tmp => $img_out;
+        }
+        else {
+            warn "$ME: Could not annotate $img_out\n";
+        }
+    }
+
+    chmod 0444 => $img_out;
+}
+
+
+##############
+#  write_gv  #  Write a GV (DOT) file
+##############
+sub write_gv {
+    my $outfile  = shift;
+    my $tasklist = shift;
+
+    my $tmpfile = "$outfile.tmp.$$";
+    unlink $tmpfile;
+
+    # Write it out in DOT format
+    open my $out, ">", $tmpfile
+        or die "$ME: Cannot create $tmpfile: $!\n";
+    print { $out } $tasklist->graphviz(@Colors);
+    close $out
+        or die "$ME: Error writing $tmpfile: $!\n";
+    chmod 0444 => $tmpfile;
+    rename $tmpfile => $outfile
+        or die "$ME: Could not rename $tmpfile: $!\n";
+}
+
+###############################################################################
+
+package Task;
+
+use Carp;
+
+sub new {
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+
+    my $name = shift			# in: mandatory arg
+	or croak "Usage: ".__PACKAGE__."->new( NAME, HREF )";
+    my $cirrus_yml = shift			# in: mandatory arg
+	or croak "Usage: ".__PACKAGE__."->new( NAME, HREF )";
+#    $cirrus_yml->{$name}{_top} = $cirrus_yml;
+
+    my $self = {
+        name => $name,
+        yml  => $cirrus_yml,
+    };
+
+    return bless $self, $class;
+}
+
+
+sub name {
+    my $self = shift;
+
+    (my $name = $self->{name}) =~ s/_task$//;
+
+    return $name;
+}
+
+sub displayname {
+    my $self = shift;
+
+    return $self->{yml}{name} || $self->name;
+}
+
+
+sub depends_on {
+    my $self = shift;
+
+    if (my $d = $self->{yml}{depends_on}) {
+        return map { $self->{_tasklist}->find($_) } @$d;
+    }
+    return;
+}
+
+sub depended_on_by {
+    my $self = shift;
+
+    if (my $d = $self->{_depended_on_by}) {
+        return map { $self->{_tasklist}->find($_) } @$d;
+    }
+    return;
+}
+
+# FIXME: matrix and env matrix
+sub subtasks {
+    my $self = shift;
+
+    my @subtasks;
+    if (my $m = $self->{yml}{matrix}) {
+        for my $item (@$m) {
+            my $name = $self->_expand_matrix_name( $item );
+            push @subtasks, "- " . $name . '\l';
+        }
+    }
+
+    return @subtasks;
+}
+
+
+sub env_matrix {
+    my $self = shift;
+
+    my @subenv;
+    if (my $e = $self->{yml}{env}) {
+        if (my $m = $e->{matrix}) {
+            # FIXME: buildah has a one-item matrix??
+            if ((ref($m)||'') eq 'ARRAY') {
+                my %e_matrix;
+                for my $tuple (@$m) {
+                    for my $k (keys %$tuple) {
+                        push @{$e_matrix{$k}}, $tuple->{$k};
+                    }
+                }
+
+                for my $k (sort keys %e_matrix) {
+                    my $foo = "* $k=" . join("/", @{$e_matrix{$k}}) . '\l';
+                    push @subenv, $foo;
+                }
+            }
+        }
+    }
+
+    @subenv;
+}
+
+
+sub _expand_matrix_name {
+    my $self = shift;
+    my $matrix_item = shift;
+
+    # Environment: start with top-level env defined for entire yml file
+    my %env;
+    if (my $top_env = $self->{_top}{env}) {
+        %env = (%env, %$top_env);
+    }
+
+    # Override with env in this task
+    if (my $env = $self->{yml}{env}) {
+        %env = (%env, %$env);
+    }
+
+    # ...then finally with env in the matrix
+    if (my $m_env = $matrix_item->{env}) {
+        %env = (%env, %$m_env);
+    }
+
+    my $name = $matrix_item->{name} || $self->{yml}{name} || $self->name || '?';
+
+    # FIXME: need to clean this up!
+    $name =~ s/\$\{(.*?)\}/$env{$1} || "\$$1"/ge;
+    $name =~ s/\$([A-Z_]+)/$env{$1} || "\$$1"/ge;
+    $name =~ s/\$\{(.*?)\}/$env{$1} || "\$$1"/ge;     # and again with curlies
+    $name =~ s/\$([A-Z_]+)/$env{$1} || "\$$1"/ge;     # and again without
+
+    return $name;
+}
+
+###############################################################################
+
+package TaskList;
+
+use Carp;
+use YAML::XS qw(Load LoadFile);
+
+sub new {
+    my $proto = shift;
+    my $class = ref($proto) || $proto;
+
+    my $yml_in = shift			# in: mandatory arg
+	or croak "Usage: ".__PACKAGE__."->new( PATH-TO-CIRRUS-YML )";
+
+    # Load Cirrus config
+    my $cirrus_yml;
+    if ($yml_in =~ /^---/) {
+        ($cirrus_yml, undef, undef) = Load($yml_in);
+    }
+    else {
+        ($cirrus_yml, undef, undef) = LoadFile($yml_in);
+    }
+
+    my $self = bless {
+        yml_file => $yml_in,
+        yml      => $cirrus_yml,
+        tasks    => [],
+    }, $class;
+
+    my %depends_on;
+
+    # EEEK! Deal with just 'task', FIXME!
+    for my $fullname (grep { /task$/ } keys %$cirrus_yml) {
+        (my $task_name = $fullname) =~ s/_task$//;
+        if ($task_name eq 'task') {
+            if (my $alias = $cirrus_yml->{$fullname}{alias}) {
+                $task_name = $alias;
+            }
+        }
+
+        my $task = Task->new($task_name, $cirrus_yml->{$fullname});
+        $task->{_top} = $cirrus_yml;
+        $task->{_tasklist} = $self;
+
+        if (my $dep = $cirrus_yml->{$fullname}{depends_on}) {
+            # The "depends_on" list does not include "_task"
+            $depends_on{$_}{$task_name} = 1 for @$dep;
+        }
+        else {
+            $task->{_is_start_node} = 1;
+        }
+
+        push @{ $self->{tasks} }, $task;
+    }
+
+    # Pass 2
+    for my $task (@{ $self->{tasks} }) {
+        my @depended_on_by = keys %{$depends_on{$task->name}};
+        if (my $alias = $task->{yml}{alias}) {
+            if (my $d = $depends_on{$alias}) {
+                push @depended_on_by, keys %$d;
+            }
+        }
+
+        $task->{_depended_on_by} = [ sort @depended_on_by ];
+#        my $n = $task->name;
+#        use Data::Dumper; print "depended_on_by($n) = ", Dumper($task->{_depended_on_by});
+    }
+
+
+    # Determine git info, for use in plot title
+    unless ($yml_in =~ /^---/) {
+        my $git = 'git';
+        if ($yml_in =~ m!^(.*/)!) {
+            $git .= " -C $1";
+        }
+        chomp(my $repo   = qx{$git remote -v});
+        chomp(my $branch = qx{$git branch --show-current});
+        chomp(my $rev    = qx{$git rev-parse --short HEAD});
+
+        $self->{_git}{repo}   = $1          if ($repo||'') =~ m!:(\S+?/\S+)\.!;
+        $self->{_git}{branch} = $branch     if $branch;
+        $self->{_git}{rev}    = $rev        if $rev;
+
+        # Flag if cirrus yml is modified
+        if (my $modified = qx{$git ls-files -m $yml_in}) {
+            $self->{_git}{rev} .= '(modified)';
+        }
+    }
+
+    return $self;
+}
+
+sub tasks {
+    my $self = shift;
+
+    return @{ $self->{tasks} };
+}
+
+
+##########
+#  find  #  Given a node name (string), return the task object
+##########
+sub find {
+    my $self = shift;
+    my $want = shift;
+
+    my @match = grep { $_->{name} eq $want } $self->tasks;
+    if (@match == 0) {
+        @match = grep { ($_->{yml}{alias}||'') eq $want } $self->tasks;
+    }
+    croak "No task matches '$want'"             if @match == 0;
+    croak "Too many matches for task '$want'!"  if @match > 1;
+
+    return $match[0];
+}
+
+
+#################
+#  start_nodes  #  List of nodes with no dependencies: these are the LHS
+#################
+sub start_nodes {
+    my $self = shift;
+
+    return sort { $a->name cmp $b->name } grep { ! $_->depends_on } $self->tasks;
+}
+
+
+##############
+#  graphviz  #  Returns a graphviz (dot) file, as a string
+##############
+sub graphviz {
+    my $self = shift;
+
+    $self->{_gv} = { done => {}, colors => \@_ };
+
+    $self->{_gv}{dot} = <<'EOF';
+strict digraph X {
+  graph [fontname="Courier" rankdir=LR ratio=0.7]
+EOF
+
+    if (my $g = $self->{_git}) {
+        my $label = sprintf("%s: %s @ %s",
+                            $g->{repo}   || '(unknown repo)',
+                            $g->{branch} || '(unknown branch)',
+                            $g->{rev}    || '(unknown rev)');
+        $self->{_gv}{dot} .= <<"EOF";
+  label="$label" labelloc=top labeljust=left
+EOF
+    }
+
+    for my $start ($self->start_nodes) {
+        $self->_draw_boxes($start);
+    }
+
+    return $self->{_gv}{dot} . "}\n";
+}
+
+
+#################
+#  _draw_boxes  #  Draw a gv box for a node, then recurse into its children
+#################
+sub _draw_boxes {
+    my $self = shift;
+    my $task = shift;
+
+    my $node = $task->{name};
+    return if $self->{_gv}{done}{$node}++;
+
+    my $color = shift @{$self->{_gv}{colors}} || do {
+        warn "$ME: Ran out of colors\n";
+        "black";
+    };
+
+    my $shape = 'ellipse';
+    my $label = '';
+
+    if (my @subtasks = $task->subtasks) {
+        $shape = 'record';
+        $label .= join('', @subtasks);
+    }
+    if (my @env_matrix = $task->env_matrix) {
+        $shape = 'record';
+        $label .= '|' if $label;
+        $label .= join('', @env_matrix);
+    }
+
+    $self->{_gv}{dot} .= "  \"$node\" [shape=$shape style=bold color=$color fontcolor=$color";
+    $self->{_gv}{dot} .= " label=\"$node\\l\|$label\"" if $label;
+    $self->{_gv}{dot} .= "]\n";
+
+    for my $dep ($task->depended_on_by) {
+        $self->{_gv}{dot} .= "  \"$node\" -> \"$dep->{name}\" [color=$color]\n";
+        $self->_draw_boxes($dep);
+    }
+}
+
+
+1;
