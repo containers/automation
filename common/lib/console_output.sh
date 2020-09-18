@@ -25,11 +25,11 @@ _rel_path() {
 # helper, not intended for use outside this file
 _ctx() {
     # Caller's caller details
-    local shortest_source_path=$(_rel_path "${BASH_SOURCE[3]}")
-    local grandparent_func="${FUNCNAME[3]}"
+    local shortest_source_path=$(_rel_path "${BASH_SOURCE[4]}")
+    local grandparent_func="${FUNCNAME[4]}"
     [[ -n "$grandparent_func" ]] || \
         grandparent_func="main"
-    echo "$shortest_source_path:${BASH_LINENO[2]} in ${FUNCNAME[3]}()"
+    echo "$shortest_source_path:${BASH_LINENO[3]} in ${FUNCNAME[4]}()"
 }
 
 # helper, not intended for use outside this file.
@@ -91,5 +91,23 @@ req_env_vars(){
         msgpfx="Environment variable '$var_name'"
         ((${#var_value}>0)) || \
             die "$msgpfx is required by $(_rel_path "${BASH_SOURCE[1]}"):${FUNCNAME[1]}() but empty or entirely white-space."
+    done
+}
+
+show_env_vars() {
+    local filter_rx
+    local env_var_names
+    filter_rx='(^PATH$)|(^BASH_FUNC)|(^_.*)'
+    msg "Selection of current env. vars:"
+    if [[ -n "${SECRET_ENV_RE}" ]]; then
+        filter_rx="${filter_rx}|$SECRET_ENV_RE"
+    else
+        warn "The \$SECRET_ENV_RE var. unset/empty: Not filtering sensitive names!"
+    fi
+
+    for env_var_name in $(awk 'BEGIN{for(v in ENVIRON) print v}' | grep -Eiv "$filter_rx" | sort -u); do
+
+        line=$(printf '%q=%q' "${env_var_name}" "${!env_var_name}")
+        msg "    $line\n"
     done
 }

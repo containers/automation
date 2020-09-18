@@ -29,7 +29,7 @@ basic_tests() {
         $_fname "$test_message_text"
 
     test_cmd "The message text includes a the file, line number and testing function reference" \
-        $_exp_exit "testlib.sh:[[:digit:]]+ in test_cmd()" \
+        $_exp_exit '\.sh:[[:digit:]]+ in .+\(\)' \
         $_fname "$test_message_text"
 }
 
@@ -96,8 +96,35 @@ test_cmd \
 unset VAR1 VAR2 VAR3
 test_cmd \
     "The req_env_vars function shows the source file/function of caller and error" \
-    1 "testlib.sh:test_cmd().+console_output.sh" \
+    1 "testlib.sh:test_cmd()" \
     req_env_vars VAR1 VAR2 VAR3
+
+unset SECRET_ENV_RE
+test_cmd \
+    "The show_env_vars function issues warning when \$SECRET_ENV_RE is unset/empty" \
+    0 "SECRET_ENV_RE var. unset/empty" \
+    show_env_vars
+
+export UPPERCASE="@@@MAGIC@@@"
+export super_secret="@@@MAGIC@@@"
+export nOrMaL_vAr="@@@MAGIC@@@"
+for var_name in UPPERCASE super_secret nOrMaL_vAr; do
+    test_cmd \
+        "Without secret filtering, expected $var_name value is shown" \
+        0 "${var_name}=${!var_name}" \
+        show_env_vars
+done
+
+export SECRET_ENV_RE='(.+SECRET.*)|(uppercase)|(mal_var)'
+TMPFILE=$(mktemp -p '' ".$(basename ${BASH_SOURCE[0]})_tmp_XXXX")
+#trap "rm -f $TMPFILE" EXIT  # FIXME
+( show_env_vars 2>&1 ) >> "$TMPFILE"
+test_cmd \
+    "With case-insensitive secret filtering, no magic values shown in output" \
+    1 ""\
+    grep -q 'UPPERCASE=@@@MAGIC@@@' "$TMPFILE"
+
+unset env_vars SECRET_ENV_RE UPPERCASE super_secret nOrMaL_vAr
 
 # script is set +e
 exit_with_status
