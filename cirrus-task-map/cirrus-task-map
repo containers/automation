@@ -343,6 +343,25 @@ sub _expand_matrix_name {
         %env = (%env, %$m_env);
     }
 
+    # Ugh! There is some weird usage in automation_images/.cirrus.yml like
+    #
+    #        matrix:
+    #            - &base_image
+    #              name: "${PACKER_BUILDS} Base Image"
+    #              env:
+    #                PACKER_BUILDS: "fedora"
+    #            - <<: *base_image
+    #              env:
+    #                PACKER_BUILDS: "prior-fedora"
+    #
+    # This is presumably meant to mean that 'name' should apply to all
+    # the matrix elements, but YAML::XS instead makes a key '<<' with a
+    # reference to the first element of the list. Deal with that.
+    #
+    if (my $m_anchor = $matrix_item->{'<<'}) {
+        $matrix_item->{name} //= $m_anchor->{name};
+    }
+
     my $name = $matrix_item->{name} || $self->{yml}{name} || $self->name || '?';
 
     # FIXME: need to clean this up!
