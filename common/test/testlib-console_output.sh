@@ -46,18 +46,16 @@ done
 # Function requires stdin, must execute in subshell by test_cmd
 export -f indent
 # test_cmd whitespace-squashes output but this function's purpose is producing whitespace
-EXPECTED_SUM="63d43cf4cbc95b61754d57e9c877a082eab24ba89a8628825e7d8006a0af34ad"
+TEST_STRING="The quick brown fox jumped to the right by N-spaces"
+EXPECTED_SUM="334676ca13161af1fd95249239bb415b3d30eee7f78b39c59f9af5437989b724"
 test_cmd "The indent function correctly indents 4x number of spaces indicated" \
     0 "$EXPECTED_SUM" \
-    bash -c 'echo "The quick brown fox jumped to the right 16-spaces" | indent 4 | sha256sum'
+    bash -c "echo '$TEST_STRING' | indent | sha256sum"
 
-test_cmd "The indent function notices when no arguments are given" \
-    1 "number greater than 1" \
-    indent
-
-test_cmd "The indent function notices when a non-number is given" \
-    1 "number greater than 1.*foobar" \
-    indent foobar
+EXPECTED_SUM="764865c67f4088dd19981733d88287e1e196e71bef317092dcb6cb9ff101a319"
+test_cmd "The indent function indents it's own output" \
+    0 "$EXPECTED_SUM" \
+    bash -c "echo '$TEST_STRING' | indent | indent | sha256sum"
 
 DEBUG=0
 test_cmd \
