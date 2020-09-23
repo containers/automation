@@ -68,15 +68,13 @@ msg() {
     echo "${1:-No message specified}" &> /dev/stderr
 }
 
-# Expects stdin, indents with spaces, 4x the number given as the first parameter
+# Expects stdin, indents every input line right by 4 spaces
 indent(){
     local ic=" "
-    [[ $1 -ge 1 ]] || \
-        die "Expecting first parameter to be a number greater than 1, not '$1'"
     if ((DEBUG)); then
         ic=·
     fi
-    local indents=$(printf "$ic%.0s" $(seq 1 $[$1*4]))
+    local indents=$(printf "$ic%.0s" $(seq 1 4))
     local sedex="s/^/$indents/"
     cat - | sed -r -e "$sedex"
 }
