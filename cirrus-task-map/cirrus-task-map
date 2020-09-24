@@ -13,7 +13,7 @@ use warnings;
 
 (our $ME = $0) =~ s|.*/||;
 
-our $VERSION = "0.8";
+our $VERSION = "0.9";
 
 # For debugging, show data structures using DumpTree($var)
 #use Data::TreeDumper; $Data::TreeDumper::Displayaddress = 0;
@@ -26,11 +26,13 @@ our $Default_Yml = '.cirrus.yml';
 
 # Palette of somewhat distinct colors. Each box (task), and arrows
 # proceeding out of it, will be drawn in a unique color.
+# Try to leave one or two greens at the end: these will be used
+# for terminal nodes (e.g. "success")
 our @Colors = qw(
-                    blue orange red chartreuse darkgoldenrod firebrick1
+                    blue orange red darkgoldenrod firebrick1 orangered4
                     darkturquoise deeppink deepskyblue3 coral dodgerblue
-                    bisque2 darkgreen indigo darkorchid1 palevioletred2
-                    slateblue1 seagreen3 yellow2 brown
+                    bisque2 indigo darkorchid1 palevioletred2 slateblue4
+                    slateblue1 yellow4 brown chartreuse seagreen3 darkgreen
             );
 
 # END   user-customizable section
@@ -341,6 +343,25 @@ sub _expand_matrix_name {
         %env = (%env, %$m_env);
     }
 
+    # Ugh! There is some weird usage in automation_images/.cirrus.yml like
+    #
+    #        matrix:
+    #            - &base_image
+    #              name: "${PACKER_BUILDS} Base Image"
+    #              env:
+    #                PACKER_BUILDS: "fedora"
+    #            - <<: *base_image
+    #              env:
+    #                PACKER_BUILDS: "prior-fedora"
+    #
+    # This is presumably meant to mean that 'name' should apply to all
+    # the matrix elements, but YAML::XS instead makes a key '<<' with a
+    # reference to the first element of the list. Deal with that.
+    #
+    if (my $m_anchor = $matrix_item->{'<<'}) {
+        $matrix_item->{name} //= $m_anchor->{name};
+    }
+
     my $name = $matrix_item->{name} || $self->{yml}{name} || $self->name || '?';
 
     # FIXME: need to clean this up!
@@ -521,10 +542,18 @@ sub _draw_boxes {
     my $node = $task->{name};
     return if $self->{_gv}{done}{$node}++;
 
-    my $color = shift @{$self->{_gv}{colors}} || do {
+    # Terminal nodes: pop from the end of the color list (expect greens)
+    my $color;
+    if (! $task->depended_on_by) {
+        $color = pop @{$self->{_gv}{colors}};
+    }
+    else {
+        $color = shift @{$self->{_gv}{colors}};
+    }
+    if (! $color) {
         warn "$ME: Ran out of colors\n";
-        "black";
-    };
+        $color = 'black';
+    }
 
     my $shape = 'ellipse';
     my $label = '';
