@@ -412,16 +412,21 @@ sub new {
 
     # Pass 2
     for my $task (@{ $self->{tasks} }) {
-        my @depended_on_by = keys %{$depends_on{$task->name}};
+        my %depended_on_by;             # Use a hash so we can dedup
+        if (my $d = $depends_on{$task->name}) {
+            # Literal depends
+            %depended_on_by = (%depended_on_by, %$d);
+        }
         if (my $alias = $task->{yml}{alias}) {
-            if (my $d = $depends_on{$alias}) {
-                push @depended_on_by, keys %$d;
+            if (my $d_a = $depends_on{$alias}) {
+                # Depends via alias
+                %depended_on_by = (%depended_on_by, %$d_a);
             }
         }
 
-        $task->{_depended_on_by} = [ sort @depended_on_by ];
+        $task->{_depended_on_by} = [ sort keys %depended_on_by ];
 #        my $n = $task->name;
-#        use Data::Dumper; print "depended_on_by($n) = ", Dumper($task->{_depended_on_by});
+#        use Data::Dumper; print STDERR "depended_on_by($n) = ", Dumper($task->{_depended_on_by});
     }
 
 
