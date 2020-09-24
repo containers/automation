@@ -70,13 +70,9 @@ msg() {
 
 # Expects stdin, indents every input line right by 4 spaces
 indent(){
-    local ic=" "
-    if ((DEBUG)); then
-        ic=·
-    fi
-    local indents=$(printf "$ic%.0s" $(seq 1 4))
-    local sedex="s/^/$indents/"
-    cat - | sed -r -e "$sedex"
+    cat - |& while IFS='' read -r LINE; do
+         awk '{print "    "$0}' <<<"$LINE"
+    done
 }
 
 req_env_vars(){
