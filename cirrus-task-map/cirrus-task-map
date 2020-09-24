@@ -32,6 +32,7 @@ our @Colors = qw(
                     blue orange red darkgoldenrod firebrick1 orangered4
                     darkturquoise deeppink deepskyblue3 coral dodgerblue
                     bisque2 indigo darkorchid1 palevioletred2 slateblue4
+                    cornsilk4 deepskyblue4 navajowhite2
                     slateblue1 yellow4 brown chartreuse seagreen3 darkgreen
             );
 
@@ -343,25 +344,6 @@ sub _expand_matrix_name {
         %env = (%env, %$m_env);
     }
 
-    # Ugh! There is some weird usage in automation_images/.cirrus.yml like
-    #
-    #        matrix:
-    #            - &base_image
-    #              name: "${PACKER_BUILDS} Base Image"
-    #              env:
-    #                PACKER_BUILDS: "fedora"
-    #            - <<: *base_image
-    #              env:
-    #                PACKER_BUILDS: "prior-fedora"
-    #
-    # This is presumably meant to mean that 'name' should apply to all
-    # the matrix elements, but YAML::XS instead makes a key '<<' with a
-    # reference to the first element of the list. Deal with that.
-    #
-    if (my $m_anchor = $matrix_item->{'<<'}) {
-        $matrix_item->{name} //= $m_anchor->{name};
-    }
-
     my $name = $matrix_item->{name} || $self->{yml}{name} || $self->name || '?';
 
     # FIXME: need to clean this up!
@@ -390,10 +372,10 @@ sub new {
     # Load Cirrus config
     my $cirrus_yml;
     if ($yml_in =~ /^---/) {
-        ($cirrus_yml, undef, undef) = Load($yml_in);
+        ($cirrus_yml, undef, undef) = mergekeys(Load($yml_in));
     }
     else {
-        ($cirrus_yml, undef, undef) = LoadFile($yml_in);
+        ($cirrus_yml, undef, undef) = mergekeys(LoadFile($yml_in));
     }
 
     my $self = bless {
@@ -578,5 +560,72 @@ sub _draw_boxes {
     }
 }
 
+###############################################################################
+# BEGIN omg kludge for dealing with anchors
+#
+# https://www.perlmonks.org/?node_id=813443   - code stolen from here
+# https://www.perlmonks.org/?node_id=1124136  - further context
+#
+
+sub mergekeys
+{
+    return _mergekeys($_[0], []);
+}
+
+sub _mergekeys
+{
+    my $ref = shift;
+    my $resolveStack = shift;
+    my $reftype = ref $ref;
+
+    # If this hash or array is already on the resolution stack, then somewhere, a child data structure is trying to inherit from one of its parents,
+    # and hence by extension trying to inherit itself.
+    if ($reftype =~ /HASH|ARRAY/ and (grep $_ == $ref, @$resolveStack) > 0)
+    {
+        # Halt and catch fire, or store the cyclic reference and not process it further. Not complaining seems to
+        # be the behaviour of ruby's YAML parser, so let's go for that.
+
+        #die "Cyclic inheritance detected: ".($ref)." is already on the resolution stack!\n" .
+        #    "Dump of cyclic data structure (may have inheritance already partially resolved):\n".Dumper($ref);
+        return $ref;
+    }
+
+    if (ref($ref) eq 'HASH')
+    {
+        push @$resolveStack, $ref;
+        if (exists $ref->{'<<'})
+        {
+            my $inherits = $ref->{'<<'}; # can be either a single href, or an array of hrefs
+            die "Undefined value for merge key '<<' in ".Dumper($ref)
+                unless defined $inherits; # catch edge cases that YAML::XS won't catch, like "<<: &foo"
+            die "Merge key does not support merging non-hashmaps" unless ref($inherits) =~ /HASH|ARRAY/;
+            $inherits = [$inherits] if ref($inherits) eq 'HASH'; # normalize for further processing
+
+            # For each of the hashes/arrays we're inheriting, have them resolve their inheritance first before applying them onto ourselves.
+            # Also, remove the '<<' reference only afterwards, since by recursion these will have already been removed from our inheritees,
+            # and this also allows us to show the cyclic reference by dumping out the structure when we detect one.
+            foreach my $inherit (@$inherits)
+            {
+                $inherit = _mergekeys($inherit, $resolveStack);
+                %$ref = (%$inherit, %$ref);
+            }
+            delete $ref->{'<<'};
+        }
+
+        _mergekeys($_, $resolveStack) for (values %$ref);
+        die "Fatal error: imbalanced recursion stack in _mergekeys. This likely implies a programming error and/or a YAML file from hell." unless pop(@$resolveStack) eq $ref;
+    }
+    elsif (ref($ref) eq 'ARRAY')
+    {
+        push @$resolveStack, $ref;
+        _mergekeys($_, $resolveStack) for (@$ref);
+        die "Fatal error: imbalanced recursion stack in _mergekeys. This likely implies a programming error and/or a YAML file from hell." unless pop(@$resolveStack) eq $ref;
+    }
+
+    return $ref;
+}
+
+# END   omg kludge for dealing with anchors
+###############################################################################
 
 1;
