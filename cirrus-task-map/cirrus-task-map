@@ -272,11 +272,40 @@ sub depends_on {
     return;
 }
 
+###########
+#  _size  #  Heuristic for sorting: how many in/out edges, plus matrix jobs
+###########
+sub _size {
+    my $node  = shift;
+    my $count = 0;
+
+    if (my $on = $node->{yml}{depends_on}) {
+        $count += @$on;
+    }
+    if (my $by = $node->{_depended_on_by}) {
+        $count += @$by;
+    }
+    if (my $m = $node->{yml}{matrix}) {
+        $count += @$m;
+    }
+
+    return $count;
+}
+
+##############
+#  _by_size  #  sort helper, for putting big nodes at bottom
+##############
+sub _by_size {
+    _size($a) <=> _size($b) ||
+        $a->{name} cmp $b->{name};
+}
+
 sub depended_on_by {
     my $self = shift;
 
     if (my $d = $self->{_depended_on_by}) {
-        return map { $self->{_tasklist}->find($_) } @$d;
+        my @d = sort _by_size map { $self->{_tasklist}->find($_) } @$d;
+        return @d;
     }
     return;
 }
