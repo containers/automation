@@ -101,7 +101,7 @@ show_env_vars() {
 
     for env_var_name in $(awk 'BEGIN{for(v in ENVIRON) print v}' | grep -Eiv "$filter_rx" | sort -u); do
 
-        line=$(printf '%q=%q' "${env_var_name}" "${!env_var_name}")
-        msg "    $line\n"
+        line="${env_var_name}=${!env_var_name}"
+        msg "    $line"
     done
 }
