@@ -583,6 +583,30 @@ sub _draw_boxes {
         $label .= '|' if $label;
         $label .= join('', @env_matrix);
     }
+    if (my $only_if = $task->{yml}{only_if}) {
+        $shape = 'record';
+        $label .= '|' if $label;
+        if ($only_if =~ /CI:DOCS/) {
+            $label .= "[SKIP: CI:DOCS]\\l";
+        }
+        else {
+            $label .= "[only if: $only_if]";
+        }
+    }
+    if (my $skip = $task->{yml}{skip}) {
+        $shape = 'record';
+#        use Data::Dumper;print Dumper($skip);
+        $label .= '|' if $label;
+        my @reasons;
+        push @reasons, 'BRANCH'  if $skip =~ /CIRRUS_PR.*CIRRUS_TAG/;
+        push @reasons, 'CI:DOCS' if $skip =~ /CI:DOCS/;
+        if (@reasons) {
+            $label .= sprintf("[SKIP: %s]", join(' or ', @reasons));
+        }
+        else {
+            $label .= "[SKIPPABLE]";
+        }
+    }
 
     $self->{_gv}{dot} .= "  \"$node\" [shape=$shape style=bold color=$color fontcolor=$color";
     $self->{_gv}{dot} .= " label=\"$node\\l\|$label\"" if $label;
