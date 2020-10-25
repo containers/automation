@@ -589,6 +589,14 @@ sub _draw_boxes {
         if ($only_if =~ /CI:DOCS/) {
             $label .= "[SKIP: CI:DOCS]\\l";
         }
+        # 2020-10 used in automation_images repo
+        elsif ($only_if eq q{$CIRRUS_PR != ''}) {
+            $label .= "[only if PR]";
+        }
+        # 2020-10 used in automation_images repo
+        elsif ($only_if eq q{$CIRRUS_PR == '' && $CIRRUS_CRON != ''}) {
+            $label .= "[only if cron]";
+        }
         else {
             $label .= "[only if: $only_if]";
         }
