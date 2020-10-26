@@ -7,11 +7,13 @@ env:
     # Name of the typical destination branch for PRs.
     DEST_BRANCH: "master"
 
+
 # Default task runtime environment
 container:
-    image: quay.io/libpod/cirrus-ci_retrospective:latest
+    dockerfile: ci/Dockerfile
     cpu: 1
     memory: 1
+
 
 # Execute all unit-tests in the repo
 cirrus-ci/test_task:
@@ -24,6 +26,7 @@ cirrus-ci/test_task:
         test_output_artifacts:
             path: '*.log'
 
+
 # Represent primary Cirrus-CI based testing (Required for merge)
 cirrus-ci/success_task:
     depends_on:
@@ -31,6 +34,7 @@ cirrus-ci/success_task:
     clone_script: mkdir -p "$CIRRUS_WORKING_DIR"
     script: >-
         echo "Required for Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
+
 
 # Represent secondary Github Action based testing (Required for merge)
 # N/B: NO other task should depend on this task. Doing so will prevent
