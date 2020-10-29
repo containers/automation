@@ -4,6 +4,16 @@
 
 set -e
 
+if [[ "$CIRRUS_CI" == "true" ]]; then
+    echo "Running under Cirrus-CI: Exporting all \$CIRRUS_* variables"
+    # Allow tests access to details presented by Cirrus-CI
+    for env_var in $(awk 'BEGIN{for(v in ENVIRON) print v}' | grep -E "^CIRRUS_")
+    do
+        echo "    $env_var=${!env_var}"
+        export $env_var="${!env_var}"
+    done
+fi
+
 this_script_filepath="$(realpath $0)"
 runner_script_filename="$(basename $0)"
 
