@@ -25,11 +25,11 @@ _rel_path() {
 # helper, not intended for use outside this file
 _ctx() {
     # Caller's caller details
-    local shortest_source_path=$(_rel_path "${BASH_SOURCE[4]}")
-    local grandparent_func="${FUNCNAME[4]}"
+    local shortest_source_path=$(_rel_path "${BASH_SOURCE[3]}")
+    local grandparent_func="${FUNCNAME[2]}"
     [[ -n "$grandparent_func" ]] || \
         grandparent_func="main"
-    echo "$shortest_source_path:${BASH_LINENO[3]} in ${FUNCNAME[4]}()"
+    echo "$shortest_source_path:${BASH_LINENO[2]} in ${FUNCNAME[3]}()"
 }
 
 # helper, not intended for use outside this file.
@@ -51,7 +51,9 @@ warn() {
 # usage: die <msg> [exit-code]
 die() {
     _fmt_ctx "$ERROR_MSG_PREFIX ${1:-no error message given}" > /dev/stderr
-    exit ${2:-1}
+    local exit_code=${2:-1}
+    ((exit_code==0)) || \
+        exit $exit_code
 }
 
 dbg() {

@@ -17,7 +17,7 @@ ACTIONS_STEP_DEBUG=true
 source $TEST_DIR/$SUBJ_FILENAME || exit 1  # can't continue w/o loaded library
 
 test_cmd "The debug message prefix is compatible with github actions commands" \
-    0 '::debug:: This is a test debug message.+common/test/testlib.sh' \
+    0 '::debug:: This is a test debug message' \
     dbg 'This is a test debug message'
 
 unset ACTIONS_STEP_DEBUG
@@ -30,7 +30,7 @@ test_cmd "No debug message shows when ACTIONS_STEP_DEBUG is undefined" \
     dbg 'This debug message should not appear'
 
 test_cmd "The warning message prefix is compatible with github actions commands" \
-    0 '::warning:: This is a test warning message.+testlib-github_common.sh' \
+    0 '::warning:: This is a test warning message' \
     warn 'This is a test warning message'
 
 test_cmd "The github actions command for setting output parameter is formatted as expected" \
