@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source $(dirname ${BASH_SOURCE[0]})/testlib.sh || exit 1
+SCRIPT_DIRPATH=$(dirname ${BASH_SOURCE[0]})
+source $SCRIPT_DIRPATH/testlib.sh || exit 1
 source "$TEST_DIR"/"$SUBJ_FILENAME" || exit 2
 
 test_message_text="This is the test text for a console_output library unit-test"
@@ -71,6 +72,29 @@ test_cmd \
 DEBUG=1
 basic_tests dbg 0 DEBUG
 DEBUG=0
+
+test_cmd \
+    "All primary output functions include the expected context information" \
+    0 "
+DEBUG: Test dbg message (console_output_test_helper.sh:21 in main())
+\*+
+WARNING: Test warning message  (console_output_test_helper.sh:22 in main())
+\*+
+Test msg message
+\*+
+ERROR: Test die message  (console_output_test_helper.sh:24 in main())
+\*+
+
+DEBUG: Test dbg message (console_output_test_helper.sh:15 in test_function())
+\*+
+WARNING: Test warning message  (console_output_test_helper.sh:16 in test_function())
+\*+
+Test msg message
+\*+
+ERROR: Test die message  (console_output_test_helper.sh:18 in test_function())
+\*+
+" \
+    bash "$SCRIPT_DIRPATH/console_output_test_helper.sh"
 
 export VAR1=foo VAR2=bar VAR3=baz
 test_cmd \
