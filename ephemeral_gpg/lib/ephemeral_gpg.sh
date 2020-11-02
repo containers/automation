@@ -167,8 +167,7 @@ ephemeral_env() {
     local gpg_key_uid="$(get_key_uid $_DEF_KEY_ID)"
     local unsets=$(for us in "${_UNSET_VARS[@]}"; do echo "--unset=$us"; done)
     cd $GNUPGHOME
-    env --default-signal \
-        ${unsets[@]} \
+    env ${unsets[@]} \
         DEBUG="$DEBUG" \
         TEST_DEBUG="$TEST_DEBUG" \
         PROMPT_DIRTRIM="$EPHEMERAL_ENV_PROMPT_DIRTRIM" \
