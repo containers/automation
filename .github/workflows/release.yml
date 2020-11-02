@@ -27,7 +27,7 @@ jobs:
                       exit 1
                   fi
 
-    unit-tests:
+    unit-tests:  # N/B: Duplicates `ubuntu_unit_tests.yml` - templating not supported
         runs-on: ubuntu-20.04
         steps:
             - uses: actions/checkout@v2
@@ -36,6 +36,11 @@ jobs:
                   fetch-depth: 0
                   persist-credentials: false
                   path: ./
+
+            - name: Install dependencies
+              run: |
+                sudo apt-get -qq update
+                sudo apt-get -qq -y install libtest-differences-perl libyaml-libyaml-perl
 
             - name: Execute helper library unit-tests using code from PR
               run: |
