@@ -1,0 +1,24 @@
+---
+
+on: [push, pull_request]
+
+jobs:
+    unit-tests:
+        runs-on: ubuntu-20.04
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+                  path: ./
+
+            - name: Install dependencies
+              run: |
+                sudo apt-get -qq update
+                sudo apt-get -qq -y install libtest-differences-perl libyaml-libyaml-perl
+
+            - name: Fetch all repository tags
+              run: git fetch --tags --force
+
+            - name: Execute all unit-tests
+              run: $GITHUB_WORKSPACE/bin/run_all_tests.sh
