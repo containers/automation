@@ -23,4 +23,4 @@ ENV GITHUB_ACTIONS="false" \
     PRIVATE_PASSPHRASE_FILEPATH="" \
     EPHEMERAL_CONTAINER=="1"
 WORKDIR /root
-ENTRYPOINT ["/bin/bash", "-c", "source /etc/profile && exec /usr/share/automation/bin/ephemeral_gpg.sh"]
+ENTRYPOINT ["/bin/bash", "-c", "source /etc/automation_environment && exec /usr/share/automation/bin/ephemeral_gpg.sh"]
