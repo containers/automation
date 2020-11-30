@@ -19,7 +19,9 @@ from urllib.parse import quote, unquote
 from os import makedirs
 from os.path import basename, dirname, join
 import re
+import aiohttp
 
+import requests
 # Ref: https://gql.readthedocs.io/en/latest/index.html
 # pip3 install --user --requirement ./requirements.txt
 # (and/or in a python virtual environment)
@@ -27,12 +29,14 @@ from gql import gql
 from gql.transport.requests import RequestsHTTPTransport
 from gql import Client as GQLClient
 
+# Ref: https://docs.aiohttp.org/en/stable/http_request_lifecycle.html
+import asyncio
 
 # Base URL for accessing google cloud storage buckets
 GCS_URL_BASE = "https://storage.googleapis.com"
 
 # GraphQL API URL for Cirrus-CI
-CCI_GQL_URL="https://api.cirrus-ci.com/graphql"
+CCI_GQL_URL = "https://api.cirrus-ci.com/graphql"
 
 
 def get_raw_taskinfo(gqlclient, build_id):
@@ -72,8 +76,15 @@ def art_to_url(tid, artifacts, repo, bucket):
     result = []
     # N/B: Structure comes from query in get_raw_taskinfo()
     for art in artifacts:
-        art_name = quote(art["name"])  # Safe use as URL component
-        art_files = art["files"]
+        try:
+            key="name"  # Also used by exception
+            art_name = quote(art[key])  # Safe use as URL component
+            key="files"
+            art_files = art[key]
+        except KeyError:
+            # Invalid artifact for some reason, skip it with warning.
+            sys.stderr.write(f"Warning: Encountered malformed artifact for TID {tid}, missing expected key '{key}'")
+            continue
         for art_file in art_files:
             art_path = quote(art_file["path"])  # NOT AN ACTUAL DIRECTORY STRUCTURE
             url = f"{GCS_URL_BASE}/{bucket}/artifacts/{repo}/{tid}/{art_name}/{art_path}"
@@ -93,32 +104,42 @@ def get_task_art_map(gqlclient, repo, bucket, build_id):
             tid_map[task["name"]] = art_names_urls
     return tid_map
 
-def download_artifact(art_url, dest_path):
-    """Create dest_path directory-components and download file from art_url"""
-    makedirs(dirname(dest_path), exist_ok=True)
-    req = requests.get(art_url)
-    with open(dest_path, "wb") as dest_file:
-        dest_file.write(req.content)
+async def download_artifact(session, art_url):
+    """Asynchronous download contents of art_url as a byte-stream"""
+    async with session.get(art_url) as response:
+        # ref: https://docs.aiohttp.org/en/stable/client_reference.html#aiohttp.ClientResponse.read
+        return await response.read()
 
-def download_artifacts(task_name, art_names_urls, path_rx=None):
-    """Format local download path, download artifact if path_rx unset or matches"""
-    for art_name, art_url in art_names_urls:
-        # Cirrus-CI Always/Only archives an artifacts path one-level deep
-        # (i.e. no subdirectories)
-        # The artifact name and filename were used in the URL, must decode them.
-        # see art_to_url() above
-        dest_path = join(task_name, unquote(art_name), basename(unquote(art_url)))
-        if path_rx is None or bool(path_rx.search(dest_path)):
-            print(f"Downloading '{dest_path}'")
-            download_artifact(art_url, dest_path)
+async def download_artifacts(task_name, art_names_urls, path_rx=None):
+    """Download artifact if path_rx unset or matches dest. path into CWD subdirs"""
+    async with aiohttp.ClientSession() as session:
+        for art_name, art_url in art_names_urls:
+            # Cirrus-CI Always/Only archives artifacts path one-level deep
+            # (i.e. no subdirectories).  The artifact name and filename were
+            # are part of the URL, so must decode them. See art_to_url() above
+            dest_path = join(task_name, unquote(art_name), basename(unquote(art_url)))
+            if path_rx is None or bool(path_rx.search(dest_path)):
+                print(f"Downloading '{dest_path}'")
+                sys.stderr.flush()
+                makedirs(dirname(dest_path), exist_ok=True)
+                with open(dest_path, "wb") as dest_file:
+                    data = await download_artifact(session, art_url)
+                    dest_file.write(data)
+
 
 def get_arg(index, name):
     """Return the value of command-line argument, raise error ref: name if empty"""
+    err_msg=f"Error: Missing/empty {name} argument\n\nUsage: {sys.argv[0]} <repo. owner/name> <bucket> <build ID> [path rx]"
     try:
-        return sys.argv[index]
+        result=sys.argv[index]
+        if bool(result):
+            return result
+        else:
+            raise ValueError(err_msg)
     except IndexError:
-        print(f"Error: Missing/empty {name} argument\n\nUsage: {sys.argv[0]} <repo. owner/name> <bucket> <build ID> [path rx]")
+        sys.stderr.write(f'{err_msg}\n')
         sys.exit(1)
+
 
 if __name__ == "__main__":
     repo = get_arg(1, "repo. owner/name")
@@ -137,5 +158,9 @@ if __name__ == "__main__":
                           fetch_schema_from_transport=True)
 
     task_art_map = get_task_art_map(gqlclient, repo, bucket, build_id)
+    loop = asyncio.get_event_loop()
+    download_tasks = []
     for task_name, art_names_urls in task_art_map.items():
-        download_artifacts(task_name, art_names_urls, path_rx)
+        download_tasks.append(loop.create_task(
+            download_artifacts(task_name, art_names_urls, path_rx)))
+    loop.run_until_complete(asyncio.gather(*download_tasks))
