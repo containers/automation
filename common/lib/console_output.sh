@@ -70,6 +70,14 @@ msg() {
     echo "${1:-No message specified}" &> /dev/stderr
 }
 
+# Mimic set +x for a single command, along with calling location and line.
+showrun() {
+    local -a context
+    context=($(caller 0))
+    echo "+ $@  # ${context[2]}:${context[0]} in ${context[1]}()" > /dev/stderr
+    "$@"
+}
+
 # Expects stdin, indents every input line right by 4 spaces
 indent(){
     cat - |& while IFS='' read -r LINE; do

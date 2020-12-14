@@ -148,5 +148,20 @@ test_cmd \
 
 unset env_vars SECRET_ENV_RE UPPERCASE super_secret nOrMaL_vAr
 
+test_cmd \
+    "The showrun function executes /bin/true as expected" \
+    0 "\+ /bin/true # \./testlib.sh:97 in test_cmd"\
+    showrun /bin/true
+
+test_cmd \
+    "The showrun function executes /bin/false as expected" \
+    1 "\+ /bin/false # \./testlib.sh:97 in test_cmd"\
+    showrun /bin/false
+
+test_cmd \
+    "The showrun function can call itself" \
+    0 "\+ /bin/true # .*console_output.sh:[0-9]+ in showrun" \
+    showrun showrun /bin/true
+
 # script is set +e
 exit_with_status
