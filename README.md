@@ -1,6 +1,18 @@
 # Automation scripts, libraries for re-use in other repositories
 
-## Usage
+
+## Dependencies
+
+The install script and `common` subdirectory components require the following
+system packages (or their equivalents):
+
+* bash
+* core-utils
+* git
+* install
+
+
+## Installation
 
 During build of an environment (VM, container image, etc), execute *any version*
 of [the install
@@ -16,12 +28,7 @@ url='https://github.com/containers/automation/releases/latest/download/install_a
 curl -sL "$url" | bash -s 1.1.3
 ```
 
-The basic install consists of copying the contents of the `common` (subdirectory) and
-the installer script into a central location on the system.  A global shell variable
-(`$AUTOMATION_LIB_PATH`) is set so that any dependent scripts can easily access the
-installed files.
-
-## Alt. Usage
+## Alt. Installation
 
 If a clone of the repository is already available locally, the installer can be invoked
 with the magic version number '0.0.0'.  Note that, while it will install the files
@@ -34,15 +41,14 @@ Though not recommended at all, it is also possible to specify the version as
 at the time.  Though it will probably work, it's best for stability to specify
 an explicit released version.
 
-## Dependencies
+## Usage
 
-The install script and `common` subdirectory components require the following
-system packages (or their equivalents):
+The basic install consists of copying the contents of the `common` (subdirectory) and
+the installer script into a central location on the system.  Because this location
+can vary, a global shell variable `$AUTOMATION_LIB_PATH` is widely used.  Therefore,
+it is highly recommended that all users and calling scripts explicitly load
+env. var.  definitions set in the file `/etc/automation_environment`.
 
-* bash
-* core-utils
-* git
-* install
 
 ## Subdirectories
 

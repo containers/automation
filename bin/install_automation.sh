@@ -33,6 +33,8 @@ MAGIC_LOCAL_VERSION='0.0.0'
 DEFAULT_INSTALL_PREFIX=/usr/local/share
 INSTALL_PREFIX="${INSTALL_PREFIX:-$DEFAULT_INSTALL_PREFIX}"
 INSTALL_PREFIX="${INSTALL_PREFIX%%/}"  # Make debugging path problems easier
+# When installing as root, allow sourcing env. vars. from this file
+INSTALL_ENV_FILEPATH="${INSTALL_ENV_FILEPATH:-/etc/automation_environment}"
 # Used internally here and in unit-testing, do not change without a really, really good reason.
 _ARGS="$@"
 _MAGIC_JUJU=${_MAGIC_JUJU:-XXXXX}
@@ -50,24 +52,11 @@ install_environment() {
         inst_perm_arg="-o root -g root"
     fi
     install -v $inst_perm_arg -D -t "$INSTALL_PREFIX/automation/" "$INSTALLATION_SOURCE/environment"
-    OS_RELEASE_ID="$(source /etc/os-release; echo $ID)"
     if [[ $UID -eq 0 ]]; then
-        case "$OS_RELEASE_ID" in
-            debian) ;&
-            ubuntu)
-                DEST_FILEPATH=/etc/environment
-                ;;
-            fedora)
-                DEST_FILEPATH=/etc/profile.d/zz_automation.sh
-                msg "Warning: Removing any existing, system-wide environment configuration"
-                rm -vf "$DEST_FILEPATH"
-                ;;
-            *) msg "Unknown/Unsupported OS '$OS_RELEASE_ID'"
-               exit 14
-               ;;
-        esac
-        msg "##### Making automation environment available by default, system-wide as $DEST_FILEPATH"
-        cat "$INSTALLATION_SOURCE/environment" >> "$DEST_FILEPATH"
+        # Since INSTALL_PREFIX can vary, this path must be static / hard-coded
+        # so callers always know where to find it, when installed globally (as root)
+        msg "##### Installing automation env. vars. into $INSTALL_ENV_FILEPATH"
+        cat "$INSTALLATION_SOURCE/environment" >> "$INSTALL_ENV_FILEPATH"
     fi
 }
 
@@ -122,8 +111,8 @@ install_automation() {
     cat <<EOF>"$INSTALLATION_SOURCE/environment"
 # Added on $(date --iso-8601=minutes) by $actual_inst_path/bin/$SCRIPT_FILENAME"
 # Any manual modifications will be lost upon upgrade or reinstall.
-export AUTOMATION_LIB_PATH="$actual_inst_path/lib"
-export PATH="$PATH:$actual_inst_path/bin"
+AUTOMATION_LIB_PATH="$actual_inst_path/lib"
+PATH="$PATH:$actual_inst_path/bin"
 EOF
 }
 

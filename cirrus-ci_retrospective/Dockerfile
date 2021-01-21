@@ -25,4 +25,4 @@ ENV AUTOMATION_LIB_PATH="" \
 # Optional (recommended) environment variables
 ENV OUTPUT_JSON_FILE=""
 WORKDIR /root
-ENTRYPOINT ["/bin/bash", "-c", "source /etc/profile && exec /usr/share/automation/bin/cirrus-ci_retrospective.sh"]
+ENTRYPOINT ["/bin/bash", "-c", "source /etc/automation_environment && exec /usr/share/automation/bin/cirrus-ci_retrospective.sh"]
