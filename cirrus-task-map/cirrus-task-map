@@ -583,6 +583,8 @@ sub _draw_boxes {
         $label .= '|' if $label;
         $label .= join('', @env_matrix);
     }
+
+    # Special cases (all hardcoded) for conditional tasks.
     if (my $only_if = $task->{yml}{only_if}) {
         $shape = 'record';
         $label .= '|' if $label;
@@ -597,22 +599,28 @@ sub _draw_boxes {
         elsif ($only_if eq q{$CIRRUS_PR == '' && $CIRRUS_CRON != ''}) {
             $label .= "[only if cron]";
         }
+        # used in podman
+        elsif ($only_if eq q{$CIRRUS_TAG != ''}) {
+            $label .= "[only if tag]";
+        }
         else {
             $label .= "[only if: $only_if]";
         }
     }
+
+    # Special cases (also hardcoded) for tasks that are skipped.
     if (my $skip = $task->{yml}{skip}) {
         $shape = 'record';
-#        use Data::Dumper;print Dumper($skip);
-        $label .= '|' if $label;
+        $label .= '|' if $label && $label !~ /SKIP/;
         my @reasons;
-        push @reasons, 'BRANCH'  if $skip =~ /CIRRUS_PR.*CIRRUS_TAG/;
-        push @reasons, 'CI:DOCS' if $skip =~ /CI:DOCS/;
+        push @reasons, 'BRANCH','TAG'  if $skip =~ /CIRRUS_PR.*CIRRUS_TAG/;
+        push @reasons, 'TAG'           if $skip eq q{$CIRRUS_TAG != ''};
+        push @reasons, 'CI:DOCS'       if $skip =~ /CI:DOCS/;
         if (@reasons) {
-            $label .= sprintf("[SKIP: %s]", join(' or ', @reasons));
+            $label .= join('', map { "[SKIP: $_]\\l" } @reasons);
         }
         else {
-            $label .= "[SKIPPABLE]";
+            $label .= "[SKIPPABLE: $skip]";
         }
     }
 
