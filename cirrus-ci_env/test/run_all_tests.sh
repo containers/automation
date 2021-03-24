@@ -5,6 +5,7 @@ set -e
 cd $(dirname ${BASH_SOURCE[0]})
 ./test_cirrus-ci_env.py
 ./testbin-cirrus-ci_env.sh
+./testbin-cirrus-ci_env-installer.sh
 
 if [[ "$GITHUB_ACTIONS" == "true" ]]; then
     echo "Lint/Style checking not supported under github actions: Skipping"
