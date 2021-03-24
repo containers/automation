@@ -1,0 +1,44 @@
+APIv2 test on fedora-33
+Alt Arch. Cross
+Build Each Commit
+Build Without CGO
+Build for fedora-33
+Build for ubuntu-2004
+Build for ubuntu-2010
+Check Automation
+Docker-py Compat.
+Ext. services
+OSX Cross
+Optional Release Test
+Static Build
+Test Bindings
+Test Code Consistency
+Test Swagger
+Test build RPM
+Total Success
+Unit tests on fedora-33
+Unit tests on ubuntu-2004
+Unit tests on ubuntu-2010
+Upgrade test: from v1.9.0
+Upgrade test: from v2.0.6
+Upgrade test: from v2.1.1
+VM img. keepalive
+Validate fedora-33 Build
+Verify Release
+Windows Cross
+compose test on fedora-33
+int podman fedora-33 root container
+int podman fedora-33 root host
+int podman fedora-33 rootless host
+int podman ubuntu-2004 root host
+int podman ubuntu-2010 root host
+int remote fedora-33 root host
+int remote ubuntu-2004 root host
+int remote ubuntu-2010 root host
+sys podman fedora-33 root host
+sys podman fedora-33 rootless host
+sys podman ubuntu-2004 root host
+sys podman ubuntu-2010 root host
+sys remote fedora-33 root host
+sys remote ubuntu-2004 root host
+sys remote ubuntu-2010 root host

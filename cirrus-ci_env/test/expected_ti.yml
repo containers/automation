@@ -1,0 +1,132 @@
+APIv2 test on fedora-33:
+- gcevm
+- fedora-c6524344056676352
+Alt Arch. Cross:
+- gcevm
+- fedora-c6524344056676352
+Build Each Commit:
+- gcevm
+- fedora-c6524344056676352
+Build Without CGO:
+- gcevm
+- fedora-c6524344056676352
+Build for fedora-33:
+- gcevm
+- fedora-c6524344056676352
+Build for ubuntu-2004:
+- gcevm
+- prior-ubuntu-c6524344056676352
+Build for ubuntu-2010:
+- gcevm
+- ubuntu-c6524344056676352
+Check Automation:
+- container
+- quay.io/libpod/fedora_podman:c6524344056676352
+Docker-py Compat.:
+- gcevm
+- fedora-c6524344056676352
+Ext. services:
+- container
+- quay.io/libpod/fedora_podman:c6524344056676352
+OSX Cross:
+- osx
+- catalina-base
+Optional Release Test:
+- gcevm
+- fedora-c6524344056676352
+Static Build:
+- gcevm
+- fedora-c6524344056676352
+Test Bindings:
+- gcevm
+- fedora-c6524344056676352
+Test Code Consistency:
+- container
+- quay.io/libpod/fedora_podman:c6524344056676352
+Test Swagger:
+- gcevm
+- fedora-c6524344056676352
+Test build RPM:
+- gcevm
+- fedora-c6524344056676352
+Total Success:
+- container
+- quay.io/libpod/fedora_podman:c6524344056676352
+Unit tests on fedora-33:
+- gcevm
+- fedora-c6524344056676352
+Unit tests on ubuntu-2004:
+- gcevm
+- prior-ubuntu-c6524344056676352
+Unit tests on ubuntu-2010:
+- gcevm
+- ubuntu-c6524344056676352
+'Upgrade test: from v1.9.0':
+- gcevm
+- fedora-c6524344056676352
+'Upgrade test: from v2.0.6':
+- gcevm
+- fedora-c6524344056676352
+'Upgrade test: from v2.1.1':
+- gcevm
+- fedora-c6524344056676352
+VM img. keepalive:
+- container
+- quay.io/libpod/imgts:c6524344056676352
+Validate fedora-33 Build:
+- gcevm
+- fedora-c6524344056676352
+Verify Release:
+- gcevm
+- fedora-c6524344056676352
+Windows Cross:
+- gcevm
+- fedora-c6524344056676352
+compose test on fedora-33:
+- gcevm
+- fedora-c6524344056676352
+int podman fedora-33 root container:
+- gcevm
+- fedora-c6524344056676352
+int podman fedora-33 root host:
+- gcevm
+- fedora-c6524344056676352
+int podman fedora-33 rootless host:
+- gcevm
+- fedora-c6524344056676352
+int podman ubuntu-2004 root host:
+- gcevm
+- prior-ubuntu-c6524344056676352
+int podman ubuntu-2010 root host:
+- gcevm
+- ubuntu-c6524344056676352
+int remote fedora-33 root host:
+- gcevm
+- fedora-c6524344056676352
+int remote ubuntu-2004 root host:
+- gcevm
+- prior-ubuntu-c6524344056676352
+int remote ubuntu-2010 root host:
+- gcevm
+- ubuntu-c6524344056676352
+sys podman fedora-33 root host:
+- gcevm
+- fedora-c6524344056676352
+sys podman fedora-33 rootless host:
+- gcevm
+- fedora-c6524344056676352
+sys podman ubuntu-2004 root host:
+- gcevm
+- prior-ubuntu-c6524344056676352
+sys podman ubuntu-2010 root host:
+- gcevm
+- ubuntu-c6524344056676352
+sys remote fedora-33 root host:
+- gcevm
+- fedora-c6524344056676352
+sys remote ubuntu-2004 root host:
+- gcevm
+- prior-ubuntu-c6524344056676352
+sys remote ubuntu-2010 root host:
+- gcevm
+- ubuntu-c6524344056676352

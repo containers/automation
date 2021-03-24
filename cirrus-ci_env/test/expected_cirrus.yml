@@ -1,0 +1,398 @@
+---
+
+global_env:
+  CIRRUS_SHELL: /bin/bash
+  CIRRUS_WORKING_DIR: /var/tmp/go/src/github.com/containers/podman
+  CTR_FQIN: None
+  DEST_BRANCH: master
+  DISTRO_NV: None
+  FEDORA_CACHE_IMAGE_NAME: fedora-c6524344056676352
+  FEDORA_CONTAINER_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+  FEDORA_NAME: fedora-33
+  GOBIN: /var/tmp/go/bin
+  GOCACHE: /var/tmp/go/cache
+  GOPATH: /var/tmp/go
+  GOSRC: /var/tmp/go/src/github.com/containers/podman
+  IMAGE_SUFFIX: c6524344056676352
+  PODBIN_NAME: podman
+  PRIOR_FEDORA_CACHE_IMAGE_NAME: prior-fedora-c6524344056676352
+  PRIOR_FEDORA_CONTAINER_FQIN: quay.io/libpod/prior-fedora_podman:c6524344056676352
+  PRIOR_FEDORA_NAME: fedora-32
+  PRIOR_UBUNTU_CACHE_IMAGE_NAME: prior-ubuntu-c6524344056676352
+  PRIOR_UBUNTU_CONTAINER_FQIN: quay.io/libpod/prior-ubuntu_podman:c6524344056676352
+  PRIOR_UBUNTU_NAME: ubuntu-2004
+  PRIV_NAME: root
+  SCRIPT_BASE: ./contrib/cirrus
+  STATS_LOGFILE: /var/tmp/go/src/github.com/containers/podman/${CIRRUS_TASK_NAME}-runner_stats.log
+  STATS_LOGFILE_SFX: runner_stats.log
+  TEST_ENVIRON: host
+  TEST_FLAVOR: None
+  UBUNTU_CACHE_IMAGE_NAME: ubuntu-c6524344056676352
+  UBUNTU_CONTAINER_FQIN: quay.io/libpod/ubuntu_podman:c6524344056676352
+  UBUNTU_NAME: ubuntu-2010
+  VM_IMAGE_NAME: None
+
+tasks:
+  APIv2 test on fedora-33:
+    alias: apiv2_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: apiv2
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Alt Arch. Cross:
+    alias: alt_build
+    env:
+      ALT_NAME: Alt Arch. Cross
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: altbuild
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Build Each Commit:
+    alias: alt_build
+    env:
+      ALT_NAME: Build Each Commit
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: altbuild
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Build Without CGO:
+    alias: alt_build
+    env:
+      ALT_NAME: Build Without CGO
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: altbuild
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Build for fedora-33:
+    alias: build
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: build
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Build for ubuntu-2004:
+    alias: build
+    env:
+      CTR_FQIN: quay.io/libpod/prior-ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2004
+      TEST_FLAVOR: build
+      VM_IMAGE_NAME: prior-ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2004-build-${CIRRUS_BUILD_ID}
+  Build for ubuntu-2010:
+    alias: build
+    env:
+      CTR_FQIN: quay.io/libpod/ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2010
+      TEST_FLAVOR: build
+      VM_IMAGE_NAME: ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2010-build-${CIRRUS_BUILD_ID}
+  Check Automation:
+    alias: automation
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      TEST_ENVIRON: container
+      TEST_FLAVOR: automation
+  Docker-py Compat.:
+    alias: docker-py_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_ENVIRON: container
+      TEST_FLAVOR: docker-py
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Ext. services:
+    alias: ext_svc_check
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      TEST_FLAVOR: ext_svc
+  OSX Cross:
+    alias: osx_alt_build
+    env:
+      ALT_NAME: OSX Cross
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: altbuild
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Optional Release Test:
+    alias: release_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: release
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Static Build:
+    alias: static_alt_build
+    env:
+      ALT_NAME: Static build
+      CTR_FQIN: docker.io/nixos/nix:2.3.6
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: altbuild
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Test Bindings:
+    alias: bindings
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: bindings
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Test Code Consistency:
+    alias: consistency
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_ENVIRON: container
+      TEST_FLAVOR: consistency
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Test Swagger:
+    alias: swagger
+    env:
+      CTR_FQIN: quay.io/libpod/gcsupld:c4813063494828032
+      DISTRO_NV: fedora-33
+      GCPPROJECT: libpod-218412
+      TEST_FLAVOR: swagger
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Test build RPM:
+    alias: alt_build
+    env:
+      ALT_NAME: Test build RPM
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: altbuild
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Total Success:
+    alias: success
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      TEST_ENVIRON: container
+  Unit tests on fedora-33:
+    alias: unit_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: unit
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Unit tests on ubuntu-2004:
+    alias: unit_test
+    env:
+      CTR_FQIN: quay.io/libpod/prior-ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2004
+      TEST_FLAVOR: unit
+      VM_IMAGE_NAME: prior-ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2004-build-${CIRRUS_BUILD_ID}
+  Unit tests on ubuntu-2010:
+    alias: unit_test
+    env:
+      CTR_FQIN: quay.io/libpod/ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2010
+      TEST_FLAVOR: unit
+      VM_IMAGE_NAME: ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2010-build-${CIRRUS_BUILD_ID}
+  'Upgrade test: from v1.9.0':
+    alias: upgrade_test
+    env:
+      DISTRO_NV: fedora-33
+      PODMAN_UPGRADE_FROM: v1.9.0
+      TEST_FLAVOR: upgrade_test
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  'Upgrade test: from v2.0.6':
+    alias: upgrade_test
+    env:
+      DISTRO_NV: fedora-33
+      PODMAN_UPGRADE_FROM: v2.0.6
+      TEST_FLAVOR: upgrade_test
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  'Upgrade test: from v2.1.1':
+    alias: upgrade_test
+    env:
+      DISTRO_NV: fedora-33
+      PODMAN_UPGRADE_FROM: v2.1.1
+      TEST_FLAVOR: upgrade_test
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  VM img. keepalive:
+    alias: meta
+    env:
+      BUILDID: ${CIRRUS_BUILD_ID}
+      GCPPROJECT: libpod-218412
+      IMGNAMES: fedora-c6524344056676352 prior-fedora-c6524344056676352 ubuntu-c6524344056676352
+        prior-ubuntu-c6524344056676352
+      REPOREF: ${CIRRUS_REPO_NAME}
+  Validate fedora-33 Build:
+    alias: validate
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: validate
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Verify Release:
+    alias: release
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: release
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Windows Cross:
+    alias: alt_build
+    env:
+      ALT_NAME: Windows Cross
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: altbuild
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  compose test on fedora-33:
+    alias: compose_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: compose
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  int podman fedora-33 root container:
+    alias: container_integration_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_ENVIRON: container
+      TEST_FLAVOR: int
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  int podman fedora-33 root host:
+    alias: local_integration_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: int
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  int podman fedora-33 rootless host:
+    alias: rootless_integration_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      PRIV_NAME: rootless
+      TEST_FLAVOR: int
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  int podman ubuntu-2004 root host:
+    alias: local_integration_test
+    env:
+      CTR_FQIN: quay.io/libpod/prior-ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2004
+      TEST_FLAVOR: int
+      VM_IMAGE_NAME: prior-ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2004-build-${CIRRUS_BUILD_ID}
+  int podman ubuntu-2010 root host:
+    alias: local_integration_test
+    env:
+      CTR_FQIN: quay.io/libpod/ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2010
+      TEST_FLAVOR: int
+      VM_IMAGE_NAME: ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2010-build-${CIRRUS_BUILD_ID}
+  int remote fedora-33 root host:
+    alias: remote_integration_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      PODBIN_NAME: remote
+      TEST_FLAVOR: int
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  int remote ubuntu-2004 root host:
+    alias: remote_integration_test
+    env:
+      CTR_FQIN: quay.io/libpod/prior-ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2004
+      PODBIN_NAME: remote
+      TEST_FLAVOR: int
+      VM_IMAGE_NAME: prior-ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2004-build-${CIRRUS_BUILD_ID}
+  int remote ubuntu-2010 root host:
+    alias: remote_integration_test
+    env:
+      CTR_FQIN: quay.io/libpod/ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2010
+      PODBIN_NAME: remote
+      TEST_FLAVOR: int
+      VM_IMAGE_NAME: ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2010-build-${CIRRUS_BUILD_ID}
+  sys podman fedora-33 root host:
+    alias: local_system_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: sys
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  sys podman fedora-33 rootless host:
+    alias: rootless_system_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      PRIV_NAME: rootless
+      TEST_FLAVOR: sys
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  sys podman ubuntu-2004 root host:
+    alias: local_system_test
+    env:
+      CTR_FQIN: quay.io/libpod/prior-ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2004
+      TEST_FLAVOR: sys
+      VM_IMAGE_NAME: prior-ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2004-build-${CIRRUS_BUILD_ID}
+  sys podman ubuntu-2010 root host:
+    alias: local_system_test
+    env:
+      CTR_FQIN: quay.io/libpod/ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2010
+      TEST_FLAVOR: sys
+      VM_IMAGE_NAME: ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2010-build-${CIRRUS_BUILD_ID}
+  sys remote fedora-33 root host:
+    alias: remote_system_test
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      PODBIN_NAME: remote
+      TEST_FLAVOR: sys
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  sys remote ubuntu-2004 root host:
+    alias: remote_system_test
+    env:
+      CTR_FQIN: quay.io/libpod/prior-ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2004
+      PODBIN_NAME: remote
+      TEST_FLAVOR: sys
+      VM_IMAGE_NAME: prior-ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2004-build-${CIRRUS_BUILD_ID}
+  sys remote ubuntu-2010 root host:
+    alias: remote_system_test
+    env:
+      CTR_FQIN: quay.io/libpod/ubuntu_podman:c6524344056676352
+      DISTRO_NV: ubuntu-2010
+      PODBIN_NAME: remote
+      TEST_FLAVOR: sys
+      VM_IMAGE_NAME: ubuntu-c6524344056676352
+      _BUILD_CACHE_HANDLE: ubuntu-2010-build-${CIRRUS_BUILD_ID}

@@ -5,7 +5,8 @@ RUN microdnf update -y && \
         perl-YAML perl-interpreter perl-open perl-Data-TreeDumper \
             perl-Test perl-Test-Simple perl-Test-Differences \
             perl-YAML-LibYAML perl-FindBin \
-        python3 python3-pip gcc python3-devel && \
+        python3 python3-pip gcc python3-devel \
+        python3-flake8 python3-pep8-naming python3-flake8-docstrings python3-flake8-import-order python3-flake8-polyfill python3-mccabe python3-pep8-naming && \
     microdnf clean all && \
     rm -rf /var/cache/dnf
 # Required by perl
