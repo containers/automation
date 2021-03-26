@@ -20,12 +20,12 @@ test_cmd "Verify missing mode-option results in help message and an error-exit" 
     $SUBJ_FILEPATH $SCRIPT_DIRPATH/actual_cirrus.yml
 
 test_cmd "Verify valid-YAML w/o tasks results in help message and an error-exit" \
-    1 "Error: No Cirrus-CI tasks found in" \
+    1 "ERROR: No Cirrus-CI tasks found in" \
     $SUBJ_FILEPATH --list $SCRIPT_DIRPATH/expected_cirrus.yml
 
 CIRRUS=$SCRIPT_DIRPATH/actual_cirrus.yml
 test_cmd "Verify invalid task name results in help message and an error-exit" \
-    1 "Error: Unknown task name 'foobarbaz' from" \
+    1 "ERROR: Unknown task name 'foobarbaz' from" \
     $SUBJ_FILEPATH --env foobarbaz $CIRRUS
 
 TASK_NAMES=$(<"$SCRIPT_DIRPATH/actual_task_names.txt")

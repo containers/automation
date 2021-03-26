@@ -3,16 +3,25 @@
 """Utility to provide canonical listing of Cirrus-CI tasks and env. vars."""
 
 import argparse
+import logging
 import re
 import sys
+from traceback import extract_stack
 from typing import Any, Mapping
 
 import yaml
 
 
-def err(msg: str):
+def dbg(msg: str) -> None:
+    """Shorthand for calling logging.debug()."""
+    caller = extract_stack(limit=2)[0]
+    logging.debug(msg, extra=dict(loc=f'(line {caller.lineno})'))
+
+
+def err(msg: str) -> None:
     """Print an error message to stderr and exit non-zero."""
-    print(f"\nError: {msg}", file=sys.stderr, flush=True)
+    caller = extract_stack(limit=2)[0]
+    logging.error(msg, extra=dict(loc=f'(line {caller.lineno})'))
     sys.exit(1)
 
 
@@ -48,8 +57,11 @@ class CirrusCfg:
             raise TypeError(f"Expected 'config' argument to be a dictionary, not a {whatsit}")
         # This makes a copy, doesn't touch the original
         self.global_env = self.render_env(config.get("env", dict()))
+        dbg(f"Rendered globals: {self.global_env}")
         self.global_type, self.global_image = self.get_type_image(config)
+        dbg(f"Using global type '{self.global_type}' and image '{self.global_image}'")
         self.tasks = self.render_tasks(config)
+        dbg(f"Processed {len(self.tasks)} tasks")
         self.names = list(self.tasks.keys())
         self.names.sort()
         self.names = tuple(self.names)  # help notice attempts to modify
@@ -104,9 +116,11 @@ class CirrusCfg:
             alias = v.get("alias", k.replace("_task", ""))
             name = v.get("name", alias)
             if "matrix" in v:
+                dbg(f"Processing matrix '{alias}'")
                 # Assume Cirrus-CI accepted this config., don't check name clashes
                 result.update(self.unroll_matrix(name, alias, v))
             else:
+                dbg(f"Processing task '{name}'")
                 task = dict(alias=alias)
                 task["env"] = self.render_env(v.get("env", dict()))
                 task_name = self.render_value(name, task["env"])
@@ -138,6 +152,7 @@ class CirrusCfg:
             matrix_task["env"].update(item.get("env", dict()))
             matrix_task["env"] = self.render_env(matrix_task["env"])
             matrix_name = self.render_value(matrix_name, matrix_task["env"])
+            dbg(f"    Unrolling matrix for '{matrix_name}'")
 
             # Matrix item overides task dict, overrides global defaults.
             _ = self.get_type_image(item, self.global_type, self.global_image)
@@ -182,7 +197,9 @@ class CirrusCfg:
                              f"({task_type}) or image ({task_image}) "
                              f"for task ({task})")
         task["inst_type"] = task_type
-        task["inst_image"] = self.render_value(task_image, task["env"])
+        inst_image = self.render_value(task_image, task["env"])
+        task["inst_image"] = inst_image
+        dbg(f"    Using type '{task_type}' and image '{inst_image}'")
 
 
 class CLI:
@@ -201,6 +218,16 @@ class CLI:
         """Initialize runtime context based on command-line options and parameters."""
         self.parser = self.args_parser()
         self.args = self.parser.parse_args()
+
+        # loc will be added at dbg() call time.
+        logging.basicConfig(format='{levelname}: {message} {loc}', style='{')
+        logger = logging.getLogger()
+        if self.args.debug:
+            logger.setLevel(logging.DEBUG)
+            dbg("Debugging enabled")
+        else:
+            logger.setLevel(logging.ERROR)
+
         self.ccfg = CirrusCfg(yaml.safe_load(self.args.filepath))
         if not len(self.ccfg.names):
             self.parser.print_help()
@@ -209,14 +236,17 @@ class CLI:
     def __call__(self) -> None:
         """Execute request command-line actions."""
         if self.args.list:
+            dbg("Will be listing task names")
             for task_name in self.ccfg.names:
                 sys.stdout.write(f"{task_name}\n")
         elif bool(self.args.inst):
+            dbg("Will be showing task inst. type and image")
             task = self.ccfg.tasks[self.valid_name()]
             inst_type = task['inst_type']
             inst_image = task['inst_image']
             sys.stdout.write(f"{inst_type} {inst_image}\n")
         elif bool(self.args.envs):
+            dbg("Will be listing task env. vars.")
             task = self.ccfg.tasks[self.valid_name()]
             env = self.ccfg.global_env.copy()
             env.update(task['env'])
@@ -236,6 +266,8 @@ class CLI:
         parser.add_argument('filepath', type=argparse.FileType("rt"),
                             help="File path to .cirrus.yml",
                             metavar='<filepath>')
+        parser.add_argument('--debug', action='store_true',
+                            help="Enable output of debbuging messages")
         mgroup = parser.add_mutually_exclusive_group(required=True)
         mgroup.add_argument('--list', action='store_true',
                             help="List canonical task names")
