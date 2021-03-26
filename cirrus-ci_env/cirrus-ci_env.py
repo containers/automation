@@ -159,7 +159,7 @@ class CirrusCfg:
                                  f" or matrix definition: {item}"
                                  f" for task definition: {task}")
             # default values for the rendered task - not mutable, needs a copy.
-            matrix_task = dict(alias=alias_default, env=task.get("env").copy())
+            matrix_task = dict(alias=alias_default, env=task.get("env", dict()).copy())
             matrix_name = item.get("name", name_default)
             CirrusCfg._working = matrix_name
 

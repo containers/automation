@@ -165,6 +165,19 @@ class TestRenderTasks(TestBase):
         result = self.CCfg(config).tasks
         self.assertDictEqual(result, expected)
 
+    def test_noenv_render(self):
+        """Verify rendering of task w/o local env. vars."""
+        task = dict(something="ignored")
+        config = dict(env=self.global_env, test_task=task)
+        expected = {
+            "test": {
+                "alias": "test",
+                "env": {}
+            }
+        }
+        result = self.CCfg(config).tasks
+        self.assertDictEqual(result, expected)
+
     def test_simple_matrix(self):
         """Verify unrolling of a simple matrix containing two tasks."""
         matrix1 = dict(name="test_matrix1", env=dict(item="${foo}bar"))
@@ -192,6 +205,22 @@ class TestRenderTasks(TestBase):
         for task_name in ('test_matrix1', 'test_matrix2'):
             self.assertIn(task_name, result)
             self.assertDictEqual(expected[task_name], result[task_name])
+        self.assertDictEqual(result, expected)
+
+    def test_noenv_matrix(self):
+        """Verify unrolling of single matrix w/o env. vars."""
+        matrix = dict(name="test_matrix")
+        task = dict(env=dict(something="untouched"), matrix=[matrix])
+        config = dict(env=self.global_env, test_task=task)
+        expected = {
+            "test_matrix": {
+                "alias": "test",
+                "env": {
+                    "something": "untouched"
+                }
+            }
+        }
+        result = self.CCfg(config).tasks
         self.assertDictEqual(result, expected)
 
     def test_rendered_name_matrix(self):
