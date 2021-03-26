@@ -50,11 +50,15 @@ class CirrusCfg:
     global_type = None
     global_image = None
 
+    # Tracks task-parsing status, internal-only, do not use.
+    _working = None
+
     def __init__(self, config: Mapping[str, Any]) -> None:
         """Create a new instance, given a parsed .cirrus.yml config object."""
         if not isinstance(config, dict):
             whatsit = config.__class__
             raise TypeError(f"Expected 'config' argument to be a dictionary, not a {whatsit}")
+        CirrusCfg._working = "global"
         # This makes a copy, doesn't touch the original
         self.global_env = self.render_env(config.get("env", dict()))
         dbg(f"Rendered globals: {self.global_env}")
@@ -103,7 +107,13 @@ class CirrusCfg:
         out = dict()
         for k, v in def_fmt.items():
             if k in env:  # Don't unnecessarily duplicate globals
-                out[k] = str(v).format_map(def_fmt)
+                try:
+                    out[k] = str(v).format_map(def_fmt)
+                except ValueError as xcpt:
+                    if k == 'matrix':
+                        err(f"Unsupported '{k}' key encountered in"
+                            f" 'env' attribute of '{CirrusCfg._working}' task")
+                    raise(xcpt)
         return out
 
     def render_tasks(self, tasks: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -117,16 +127,20 @@ class CirrusCfg:
             name = v.get("name", alias)
             if "matrix" in v:
                 dbg(f"Processing matrix '{alias}'")
+                CirrusCfg._working = alias
                 # Assume Cirrus-CI accepted this config., don't check name clashes
                 result.update(self.unroll_matrix(name, alias, v))
+                CirrusCfg._working = 'global'
             else:
                 dbg(f"Processing task '{name}'")
+                CirrusCfg._working = name
                 task = dict(alias=alias)
                 task["env"] = self.render_env(v.get("env", dict()))
                 task_name = self.render_value(name, task["env"])
                 _ = self.get_type_image(v, self.global_type, self.global_image)
                 self.init_task_type_image(task, *_)
                 result[task_name] = task
+                CirrusCfg._working = 'global'
         return result
 
     def unroll_matrix(self, name_default: str, alias_default: str,
@@ -147,12 +161,14 @@ class CirrusCfg:
             # default values for the rendered task - not mutable, needs a copy.
             matrix_task = dict(alias=alias_default, env=task.get("env").copy())
             matrix_name = item.get("name", name_default)
+            CirrusCfg._working = matrix_name
 
             # matrix item env. overwrites task env.
             matrix_task["env"].update(item.get("env", dict()))
             matrix_task["env"] = self.render_env(matrix_task["env"])
             matrix_name = self.render_value(matrix_name, matrix_task["env"])
             dbg(f"    Unrolling matrix for '{matrix_name}'")
+            CirrusCfg._working = matrix_name
 
             # Matrix item overides task dict, overrides global defaults.
             _ = self.get_type_image(item, self.global_type, self.global_image)

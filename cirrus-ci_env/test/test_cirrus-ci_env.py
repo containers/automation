@@ -2,11 +2,13 @@
 
 """Verify cirrus-ci_env.py functions as expected."""
 
+import contextlib
 import importlib.util
 import os
 import sys
 import unittest
 import unittest.mock as mock
+from io import StringIO
 
 import yaml
 
@@ -220,6 +222,17 @@ class TestRenderTasks(TestBase):
         }
         result = self.CCfg(config).tasks
         self.assertDictEqual(result, expected)
+
+    def test_bad_env_matrix(self):
+        """Verify old-style 'matrix' key of 'env' attr. throws helpful error."""
+        env = dict(foo="bar", matrix=dict(will="error"))
+        task = dict(env=env)
+        config = dict(env=self.global_env, test_task=task)
+        err = StringIO()
+        with contextlib.suppress(SystemExit), mock.patch.object(self.cci_env,
+                                                                'err', err.write):
+            self.assertRaises(ValueError, self.CCfg, config)
+        self.assertRegex(err.getvalue(), ".+'matrix'.+'env'.+'test'.+")
 
 
 class TestCirrusCfg(TestBase):
