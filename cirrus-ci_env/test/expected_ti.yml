@@ -28,9 +28,10 @@ Docker-py Compat.:
 Ext. services:
 - container
 - quay.io/libpod/fedora_podman:c6524344056676352
-OSX Cross:
+OSX Cross: &blahblah
 - osx
 - catalina-base
+MacOS Cross: *blahblah
 Optional Release Test:
 - gcevm
 - fedora-c6524344056676352

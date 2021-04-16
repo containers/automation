@@ -352,7 +352,7 @@ static_alt_build_task:
 
 
 # Confirm building the remote client, natively on a Mac OS-X VM.
-osx_alt_build_task:
+osx_alt_build_task: &blahblah
     name: "OSX Cross"
     alias: osx_alt_build
     depends_on:
@@ -371,6 +371,12 @@ osx_alt_build_task:
         - make install-podman-remote-darwin-docs
     always: *binary_artifacts
 
+macos_alt_build_task:
+    <<: *blahblah
+    name: "MacOS Cross"
+    alias: macos_alt_build
+    macos_instance:
+        image: 'catalina-base'
 
 # This task is a stub: In the future it will be used to verify
 # podman is compatible with the docker python-module.
