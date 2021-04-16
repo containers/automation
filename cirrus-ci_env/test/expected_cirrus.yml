@@ -121,6 +121,15 @@ tasks:
       TEST_FLAVOR: altbuild
       VM_IMAGE_NAME: fedora-c6524344056676352
       _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  MacOS Cross:
+    alias: macos_alt_build
+    env:
+      ALT_NAME: MacOS Cross
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: altbuild
+      VM_IMAGE_NAME: fedora-c6524344056676352
+      _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
   Optional Release Test:
     alias: release_test
     env:
