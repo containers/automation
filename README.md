@@ -37,7 +37,7 @@ retrieve tree-history details.  This is required for the installer to properly
 set the actual version-number as part of the process.
 
 Though not recommended at all, it is also possible to specify the version as
-`latest`.  This will clone down whatever happens to be on the master branch
+`latest`.  This will clone down whatever happens to be on the 'main' branch
 at the time.  Though it will probably work, it's best for stability to specify
 an explicit released version.
 

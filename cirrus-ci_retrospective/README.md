@@ -13,7 +13,7 @@ to tests passing on a tagged commit.
 
 # Example Github Action Workflow
 
-On the master (default) branch of a repository (previously setup and running
+On the 'main' (default) branch of a repository (previously setup and running
 tasks in Cirrus-CI), add the following file:
 
 `.github/workflows/cirrus-ci_retrospective.yml`
@@ -38,7 +38,7 @@ jobs:
 
 ## Dependencies:
 
-In addition to the basic `common` requirements (see [top-level README.md](../master/README.md))
+In addition to the basic `common` requirements (see [top-level README.md](../README.md))
 the following system packages (or their equivalents) are needed:
 
 * curl
@@ -66,7 +66,7 @@ the following system packages (or their equivalents) are needed:
 ## Warning
 
 Due to security concerns, Github Actions only supports execution vs check_suite events
-from workflows already committed on the master branch.  This makes it difficult to
+from workflows already committed on the 'main' branch.  This makes it difficult to
 test implementations, since they will not execute until merged.
 
 However, the output JSON does provide all the necessary details to re-create, then possibly
@@ -128,7 +128,7 @@ action will not execute again, irrespective of pass, fail or any other manual ta
 Also, if any task in Cirrus-CI is dependent on a manual task, the build itself will not
 conclude until the manual task is triggered and completes (pass, fail, or other).
 
-## After merging pull request 34 into master branch (merge commit added)
+## After merging pull request 34 into main branch (merge commit added)
 
 ```json
     {
@@ -136,7 +136,7 @@ conclude until the manual task is triggered and completes (pass, fail, or other)
         "build": {
             "id": "foobarbaz"
             "changeIdInRepo": "232bae5d8ffb6082393e7543e4e53f978152f98a",
-            "branch": "master",
+            "branch": "main",
             "pullRequest": null,
             ...cut...
         }
@@ -169,6 +169,6 @@ Given a "conclusion" task name in Cirrus-CI (e.g. `cirrus-ci/test_success`):
   `'.[] | select(.name == "cirrus-ci/test_success") | .build.pullRequest'`
 
 * Obtain the HEAD commit ID used by Cirrus-CI for the build (always available)
-  '.[] | select(.name == "cirrus-ci/test_success") | .build.changeIdInRepo'
+  `'.[] | select(.name == "cirrus-ci/test_success") | .build.changeIdInRepo'`
 
 * ...todo: add more

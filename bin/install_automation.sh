@@ -15,7 +15,7 @@ set +x
 # install
 
 AUTOMATION_REPO_URL=${AUTOMATION_REPO_URL:-https://github.com/containers/automation.git}
-AUTOMATION_REPO_BRANCH=${AUTOMATION_REPO_BRANCH:-master}
+AUTOMATION_REPO_BRANCH=${AUTOMATION_REPO_BRANCH:-main}
 # This must be hard-coded for executing via pipe to bash
 SCRIPT_FILENAME=install_automation.sh
 # When non-empty, contains the installation source-files
