@@ -44,6 +44,22 @@ msg() { echo -e "${1:-No Message given}" > /dev/stderr; }
 
 dbg() { if ((DEBUG)); then msg "\n# $1"; fi }
 
+# On 5/14/2021 the default branch was renamed to 'main'.
+# Since prior versions of the installer reference the old
+# default branch, the version-specific installer could fail.
+# Work around this with some inline editing of the downloaded
+# script, before re-exec()ing it.
+fix_branch_ref() {
+    local filepath="$1"
+    if [[ ! -w "$filepath" ]]; then
+        msg "Error updating default branch name in installer script at '$filepath'"
+        exit 19
+    fi
+    sed -i -r -e \
+        's/^(AUTOMATION_REPO_BRANCH.+)master/\1main/' \
+        "$filepath"
+}
+
 # System-wide access to special environment, not used during installer testing.
 install_environment() {
     msg "##### Installing automation environment file."
@@ -170,6 +186,7 @@ exec_installer() {
     # Full path is required so script can find and install itself
     DOWNLOADED_INSTALLER="$INSTALLATION_SOURCE/bin/$SCRIPT_FILENAME"
     if [[ -x "$DOWNLOADED_INSTALLER" ]]; then
+        fix_branch_ref "$DOWNLOADED_INSTALLER"
         msg "Executing installer version '$version_arg'\n"
         dbg "Using \$INSTALL_PREFIX '$INSTALL_PREFIX'; installer '$DOWNLOADED_INSTALLER'"
         # Execution likely trouble-free, cancel removal on exit
