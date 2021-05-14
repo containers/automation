@@ -43,11 +43,11 @@ jobs:
               env:
                 GITHUB_TOKEN: ${{ github.token }}
 
-            - name: Clone latest master branch repository code
+            - name: Clone latest main branch repository code
               uses: actions/checkout@v2
               with:
                   fetch-depth: 1
-                  path: ./master
+                  path: ./main
                   # DO NOT build-in any unnecessary permissions
                   persist-credentials: 'false'
 
@@ -56,7 +56,7 @@ jobs:
               env:
                   DEBUG: 1
               run: |
-                  source ./master/$HELPER_LIB
+                  source ./main/$HELPER_LIB
                   load_ccir $GITHUB_WORKSPACE
                   set_ccir
 
@@ -80,7 +80,7 @@ jobs:
                       [${{ steps.retro.outputs.sha }}](https://github.com/${{github.repository}}/pull/${{steps.retro.outputs.prn}}/commits/${{steps.retro.outputs.sha}})
                       in this pull request.
 
-            # Since we're executing from the master branch, github will silently
+            # Since we're executing from the main branch, github will silently
             # block allow direct checkout of PR code.
             - if: steps.retro.outputs.do_intg == 'true'
               name: Clone all repository code
@@ -94,7 +94,7 @@ jobs:
                   # DO NOT build-in any unnecessary permissions
                   persist-credentials: 'false'
 
-            # This workflow always runs from the master branch, this is not helpful
+            # This workflow always runs from the main branch, this is not helpful
             # for PR authors wanting to change the container or script's behavior.
             # Clone down a copy of the code from the PR, so it may be utilized for
             # a test-build and secondary execution of cirrus-ci_retrospective
