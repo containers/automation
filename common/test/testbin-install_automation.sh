@@ -28,6 +28,16 @@ test_cmd \
     $INSTALLER_FILEPATH 99.99.99
 
 test_cmd \
+    "The installer successfully installs the oldest tag" \
+    0 "installer version 'v1.0.0'.+exec.+AUTOMATION_REPO_BRANCH=main.+Installation complete" \
+    $INSTALLER_FILEPATH 1.0.0
+
+test_cmd \
+    "The oldest installed installer's default branch was modified" \
+    0 "" \
+    grep -Eqm1 '^AUTOMATION_REPO_BRANCH=.+main' "$INSTALL_PREFIX/automation/bin/$SUBJ_FILENAME"
+
+test_cmd \
     "The installer detects incompatible future installer source version by an internal mechanism" \
     10 "Error.+incompatible.+99.99.99" \
     env _MAGIC_JUJU=TESTING$(uuidgen)TESTING $INSTALLER_FILEPATH 99.99.99
