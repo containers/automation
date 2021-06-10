@@ -1,0 +1,51 @@
+---
+
+name: 'Registry namespace, image name, and login details lookup'
+description: |
+    Set output values for 'namespace', 'image_name', 'username', and 'password'
+    based upon the 'secret_prefix' value and repository name.
+inputs:
+    source_name:
+        description: 'Image build subdirectory name (upstream, testing, or stable)'
+    secret_prefix:
+        description: 'Prefix to the _QUAY_USERNAME and _QUAY_PASSWORD github secret names'
+        required: true
+    reponame_quay_username:
+        description: 'Registry login username for the repository quay robot account.'
+        required: true
+    reponame_quay_password:
+        description: 'Registry login password for the repository quay robot account.'
+        required: true
+    containers_quay_username:
+        description: 'Registry login username for the containers quay robot account.'
+        required: true
+    containers_quay_password:
+        description: 'Registry login password for the containers quay robot account.'
+        required: true
+outputs:
+    namespace:
+        value: ${{ steps.lookup.outputs.namespace }}
+    image_name:
+        value: ${{ steps.lookup.outputs.image_name }}
+    username:
+        value: ${{ steps.lookup.outputs.username }}
+    password:
+        value: ${{ steps.lookup.outputs.password }}
+runs:
+    using: "composite"
+    steps:
+        - id: lookup
+          shell: bash
+          # Unlike EVERY OTHER action type, composite actions must
+          # manually map inputs to env. vars.  Maintain use of the
+          # 'INPUT_' name prefix for consistency with other actions.
+          # Thanks github.
+          # https://github.com/actions/runner/issues/665
+          env:
+              INPUT_SOURCE_NAME: ${{ inputs.source_name }}
+              INPUT_SECRET_PREFIX: ${{ inputs.secret_prefix }}
+              INPUT_REPONAME_QUAY_USERNAME: ${{ inputs.reponame_quay_username }}
+              INPUT_REPONAME_QUAY_PASSWORD: ${{ inputs.reponame_quay_password }}
+              INPUT_CONTAINERS_QUAY_USERNAME: ${{ inputs.containers_quay_username }}
+              INPUT_CONTAINERS_QUAY_PASSWORD: ${{ inputs.containers_quay_password }}
+          run: ${{ github.action_path }}/action.sh
