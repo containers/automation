@@ -1,0 +1,56 @@
+---
+
+name: 'Multi-arch container image build and selective push'
+description: |
+    Build container image for multiple architectures,
+    extract version number, then conditionally push
+    to a registry server.
+inputs:
+    registry_namespace:
+        description: 'Registry domain-name, "/", and namespace value for image.'
+        required: true
+    image_name:
+        description: 'Name of image to push (without a tag suffix)'
+        required: true
+    source_name:
+        description: 'Name of build context subdir to use under contrib/<repo>image/'
+        required: true
+    registry_username:
+        description: 'Registry username with access to push images'
+        required: true
+    registry_password:
+        description: 'Registry password corresponding to username'
+        required: true
+    build_arches:
+        description: 'Space separated list of architectures to build'
+        required: true
+        default: "amd64"
+
+runs:
+    # At this time the "composite" type only supports executing multiple
+    # shell steps and not nesting other github actions.
+    using: "composite"
+    steps:
+        - id: setup
+          shell: bash
+          # Unlike EVERY OTHER action type, composite actions must
+          # manually map inputs to env. vars.  Maintain use of the
+          # 'INPUT_' name prefix for consistency with other actions.
+          # Thanks github.
+          # https://github.com/actions/runner/issues/665
+          env:
+              INPUT_REGISTRY_NAMESPACE: ${{ inputs.registry_namespace }}
+              INPUT_IMAGE_NAME: ${{ inputs.image_name }}
+              INPUT_SOURCE_NAME: ${{ inputs.source_name }}
+              INPUT_REGISTRY_USERNAME: ${{ inputs.registry_username }}
+              INPUT_REGISTRY_PASSWORD: ${{ inputs.registry_password }}
+              INPUT_BUILD_ARCHES: ${{ inputs.build_arches }}
+          run: ${{ github.action_path }}/setup.sh
+
+        - id: build
+          shell: bash
+          run: ${{ github.action_path }}/parallel_build.sh
+
+        - id: push
+          shell: bash
+          run: ${{ github.action_path }}/conditional_push.sh
