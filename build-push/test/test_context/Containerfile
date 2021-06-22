@@ -1,0 +1,4 @@
+FROM registry.fedoraproject.org/fedora-minimal:latest
+RUN /bin/true
+ENTRYPOINT /bin/false
+# WARNING: testbuilds.sh depends on the number of build steps

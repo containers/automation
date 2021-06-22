@@ -16,7 +16,7 @@ container:
 
 
 # Execute all unit-tests in the repo
-cirrus-ci/test_task:
+cirrus-ci/unit-test_task:
     env:
         CIRRUS_CLONE_DEPTH: 0
     script:
@@ -26,11 +26,58 @@ cirrus-ci/test_task:
         test_output_artifacts:
             path: '*.log'
 
+# This is the same setup as used for Buildah CI
+gcp_credentials: ENCRYPTED[fc95bcc9f4506a3b0d05537b53b182e104d4d3979eedbf41cf54205be6397ca0bce0831d0d47580cf578dae5776548a5]
+
+cirrus-ci/build-push_test_task:
+    depends_on:
+        - cirrus-ci/unit-test
+    gce_instance:
+        cpu: 2
+        memory: "4Gb"
+        disk: 200  # Gigabytes, do not set less as per gcloud warning message
+                   # re: I/O performance
+        # This repo. is subsequently used in and for building custom VM images
+        # in containers/automation_images.  Avoid circular dependencies by using
+        # only stock, google-managed generic image.  This also avoids needing to
+        # update custom-image last-used timestamps.
+        image_project: centos-cloud
+        image_family: centos-stream-8
+    timeout_in: 20
+    env:
+        # Need buildah version 1.23 or later (unreleased as of this commit)
+        # TODO: Use a version-tagged image when avail for CI-stability.
+        CIMG: quay.io/buildah/upstream:latest
+        TEST_FQIN: quay.io/buildah/do_not_use
+        # Robot account credentials for test-push to
+        # $TEST_FQIN registry by build-push/test/testbuilds.sh
+        BUILDAH_USERNAME: ENCRYPTED[53fd8becb599dda19f335d65cb067c46da3f0907eb83281a10554def11efc89925f7ca145ba7436afc3c32d936575142]
+        BUILDAH_PASSWORD: ENCRYPTED[aa6352251eba46e389e4cfc6e93eee3852008ecff67b940cba9197fd8bf95de15d498a6df2e7d5edef052e97d9b93bf0]
+    setup_script:
+        - dnf install -y podman
+        - bash build-push/test/qemusetup.sh
+        - >-
+            podman run --detach --name=buildah
+            --net=host --ipc=host --pid=host
+            --cgroupns=host --privileged
+            --security-opt label=disable
+            --security-opt seccomp=unconfined
+            --device /dev/fuse:rw
+            -v $PWD:$PWD:Z -w $PWD
+            -e BUILD_PUSH_TEST_BUILDS=true
+            -e CIRRUS_CI -e TEST_FQIN
+            -e BUILDAH_USERNAME -e BUILDAH_PASSWORD
+            $CIMG
+            sh -c 'while true ;do sleep 2h ; done'
+        - podman exec -i buildah dnf install -y jq skopeo
+    test_script:
+        - podman exec -i buildah ./build-push/test/run_all_tests.sh
+
 
 # Represent primary Cirrus-CI based testing (Required for merge)
 cirrus-ci/success_task:
     depends_on:
-        - cirrus-ci/test
+        - cirrus-ci/build-push_test
     clone_script: mkdir -p "$CIRRUS_WORKING_DIR"
     script: >-
         echo "Required for Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
@@ -51,7 +98,7 @@ github-actions/success_task:
     # Only required for PRs, never tag or branch testing
     only_if: $CIRRUS_PR =~ '.*[0-9]+.*'
     depends_on:
-        - cirrus-ci/test
+        - cirrus-ci/build-push_test
     clone_script: mkdir -p "$CIRRUS_WORKING_DIR"
     script: >-
         echo "Triggered by Github Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
