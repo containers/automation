@@ -40,7 +40,7 @@ _ARGS="$@"
 _MAGIC_JUJU=${_MAGIC_JUJU:-XXXXX}
 _DEFAULT_MAGIC_JUJU=d41d844b68a14ee7b9e6a6bb88385b4d
 
-msg() { echo -e "${1:-No Message given}" > /dev/stderr; }
+msg() { echo -e "${1:-No Message given}"; }
 
 dbg() { if ((DEBUG)); then msg "\n# $1"; fi }
 
@@ -202,7 +202,7 @@ exec_installer() {
             _MAGIC_JUJU="$_DEFAULT_MAGIC_JUJU" \
             /bin/bash "$DOWNLOADED_INSTALLER" "$version_arg" $_ARGS
     else
-        msg "Error: '$DOWNLOADED_INSTALLER' does not exist or is not executable" > /dev/stderr
+        msg "Error: '$DOWNLOADED_INSTALLER' does not exist or is not executable"
         # Allow exi
         exit 8
     fi
@@ -273,7 +273,7 @@ elif [[ "$_MAGIC_JUJU" == "$_DEFAULT_MAGIC_JUJU" ]]; then
         echo -n "##### Finalizing successful installation of version "
         echo -n "$AUTOMATION_VERSION" | tee "$AUTOMATION_LIB_PATH/../AUTOMATION_VERSION"
         echo " of 'common'${_ARGS:+,  and subcomponents: $_ARGS}"
-    ) > /dev/stderr
+    )
 else # Something has gone horribly wrong
     msg "Error: The installer script is incompatible with version $AUTOMATION_VERSION"
     msg "Please obtain and use a newer version of $SCRIPT_FILENAME which supports ID $_MAGIC_JUJU"

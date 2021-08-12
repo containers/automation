@@ -64,6 +64,11 @@ test_cmd \
     0 "$(git describe HEAD)" \
     cat "$INSTALL_PREFIX/automation/AUTOMATION_VERSION"
 
+test_cmd \
+    "The installer script doesn't redirect to 'stderr' anywhere." \
+    1 "" \
+    grep -q '> /dev/stderr' $INSTALLER_FILEPATH
+
 load_example_environment() {
     local _args="$@"
     # Don't disturb testing
