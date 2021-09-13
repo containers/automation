@@ -109,7 +109,7 @@ test_cmd \
     '^4 $' \
     cat "$TEST_JSON_FILE"
 
-# Makes checking temp-files writen by curl_post() easier
+# Makes checking temp-files written by curl_post() easier
 TMPDIR=$(mktemp -d -p "$_TMPDIR" "tmpdir_curl_XXXXX")
 # Set up a mock for argument checking
 _CURL="$CURL"

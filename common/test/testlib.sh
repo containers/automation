@@ -6,7 +6,7 @@
 # Set non-zero to enable
 TEST_DEBUG=${TEST_DEBUG:-0}
 
-# Test subject filename and directory name are derrived from test-script filename
+# Test subject filename and directory name are derived from test-script filename
 SUBJ_FILENAME=$(basename $0)
 if [[ "$SUBJ_FILENAME" =~ "testlib-" ]]; then
     SUBJ_FILENAME="${SUBJ_FILENAME#testlib-}"

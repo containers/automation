@@ -54,7 +54,7 @@ done
     usage "The number of retry attempts must be greater than 1, not '$attempts'"
 
 ((sleep_ms>10)) || \
-    usage "The number of miliseconds must be greater than 10, not '$sleep_ms'"
+    usage "The number of milliseconds must be greater than 10, not '$sleep_ms'"
 
 for exit_code in "${exit_codes[@]}"; do
     if ((exit_code<0)) || ((exit_code>254)); then

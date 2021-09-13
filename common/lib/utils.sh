@@ -1,5 +1,5 @@
 
-# Library of utility functions for manipulating/controling bash-internals
+# Library of utility functions for manipulating/controlling bash-internals
 # Not intended to be executed directly
 
 source $(dirname $(realpath "${BASH_SOURCE[0]}"))/console_output.sh
@@ -56,7 +56,7 @@ not_contains(){
 # Usage: err_retry <attempts> <sleep ms> <exit_code> <command> <args>
 # Where:
 #   attempts: The number of attempts to make.
-#   sleep ms: Number of miliseconds to sleep (doubles every attempt)
+#   sleep ms: Number of milliseconds to sleep (doubles every attempt)
 #   exit_code: Space separated list of exit codes to retry. If empty
 #              then any non-zero code will be considered for retry.
 #

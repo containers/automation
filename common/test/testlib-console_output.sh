@@ -108,7 +108,7 @@ test_cmd \
     1 "Environment variable 'VAR2' is required" \
     req_env_vars VAR1 VAR2 VAR3
 
-VAR1="    
+VAR1="
      "
 test_cmd \
     "The req_env_vars function catches a whitespace-full VAR1 value" \

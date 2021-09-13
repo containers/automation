@@ -26,7 +26,7 @@ for path_var in AUTOMATION_LIB_PATH AUTOMATION_ROOT SCRIPT_PATH; do
     test_cmd "\$$path_var is defined and non-empty: ${!path_var}" \
         0 "" \
         test -n "${!path_var}"
-    test_cmd "\$$path_var referrs to existing directory" \
+    test_cmd "\$$path_var refers to existing directory" \
         0 "" \
         test -d "${!path_var}"
 done
