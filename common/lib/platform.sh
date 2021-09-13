@@ -1,5 +1,5 @@
 
-# Library of os/platform related defintions and functions
+# Library of os/platform related definitions and functions
 # Not intended to be executed directly
 
 OS_RELEASE_VER="$(source /etc/os-release; echo $VERSION_ID | tr -d '.')"

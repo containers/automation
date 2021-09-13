@@ -23,7 +23,7 @@ test_cmd \
     $INSTALLER_FILEPATH "not a version number"
 
 test_cmd \
-    "The installer exits non-zero with a helpful message about an non-existant version" \
+    "The installer exits non-zero with a helpful message about an non-existent version" \
     128 "fatal.+v99.99.99.*not found" \
     $INSTALLER_FILEPATH 99.99.99
 

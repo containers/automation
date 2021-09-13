@@ -73,11 +73,11 @@ TEST_TEMP=$(mktemp -d -p '' .tmp_$(basename ${BASH_SOURCE[0]})_XXXX)
 
 test_cmd "Confirm digest can be obtained from 'latest' manifest list" \
     0 ".+" \
-    bash -c "$RUNTIME manifest inspect locahost/foo/bar:latest | jq -r '.manifest[0].digest' | tee $TEST_TEMP/latest_digest"
+    bash -c "$RUNTIME manifest inspect localhost/foo/bar:latest | jq -r '.manifest[0].digest' | tee $TEST_TEMP/latest_digest"
 
 test_cmd "Confirm digest can be obtained from '9.8.7-testing' manifest list" \
     0 ".+" \
-    bash -c "$RUNTIME manifest inspect locahost/foo/bar:9.8.7-testing | jq -r '.manifest[0].digest' | tee $TEST_TEMP/tagged_digest"
+    bash -c "$RUNTIME manifest inspect localhost/foo/bar:9.8.7-testing | jq -r '.manifest[0].digest' | tee $TEST_TEMP/tagged_digest"
 
 test_cmd "Verify tagged manifest image digest matches the same in latest" \
     0 "" \

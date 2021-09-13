@@ -74,7 +74,7 @@ content-type: application/json
 ${token:+authorization: Bearer $token}
 EOF
 
-    # Avoid needing to pass large strings on te command-line
+    # Avoid needing to pass large strings on the command-line
     local data_tmpf=$(tmpfile data)
     echo "$data" > "$data_tmpf"
 
@@ -101,7 +101,7 @@ filter_json() {
     local tmp_json_file=$(tmpfile json)
     if ! jq . < "$json_file" > "$tmp_json_file"; then
         rm -f "$tmp_json_file"
-        # JQ has alrady shown an error message
+        # JQ has already shown an error message
         die "Error from jq relating to JSON: $(cat $json_file)"
     else
         dbg "### JSON found to be valid"
@@ -111,7 +111,7 @@ filter_json() {
 
     dbg "### Applying filter '$filter'"
     if ! jq --indent 4 "$filter" < "$json_file" > "$tmp_json_file"; then
-        # JQ has alrady shown an error message
+        # JQ has already shown an error message
         rm -f "$tmp_json_file"
         die "Error from jq relating to JSON: $(cat $json_file)"
     fi

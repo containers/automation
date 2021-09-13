@@ -170,7 +170,7 @@ class CirrusCfg:
             dbg(f"    Unrolling matrix for '{matrix_name}'")
             CirrusCfg._working = matrix_name
 
-            # Matrix item overides task dict, overrides global defaults.
+            # Matrix item overrides task dict, overrides global defaults.
             _ = self.get_type_image(item, self.global_type, self.global_image)
             matrix_type, matrix_image = self.get_type_image(task, *_)
             self.init_task_type_image(matrix_task, matrix_type, matrix_image)

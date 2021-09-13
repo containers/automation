@@ -77,7 +77,7 @@ Directory containing workflows for Github Actions.
 
 ### `bin`
 
-Ths directory contains scripts intended for execution under multiple environments,
+This directory contains scripts intended for execution under multiple environments,
 pertaining to operations on this whole repository.  For example, executing all
 unit tests, installing components, etc.
 

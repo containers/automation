@@ -123,7 +123,7 @@ containing multiple `tasks`.
 ```
 
 *Important note about manual tasks:* Manually triggering an independent the task
-***will not*** result in a new `check_suite`.  Therefor, the cirrus-ci_retrospective
+***will not*** result in a new `check_suite`.  Therefore, the cirrus-ci_retrospective
 action will not execute again, irrespective of pass, fail or any other manual task status.
 Also, if any task in Cirrus-CI is dependent on a manual task, the build itself will not
 conclude until the manual task is triggered and completes (pass, fail, or other).
