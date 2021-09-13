@@ -7,7 +7,7 @@ AUTOMATION_LIB_PATH="${AUTOMATION_LIB_PATH:-$(dirname ${BASH_SOURCE[0]})}"
 
 # Filename list must be hard-coded
 # When installed, other files may be present in lib directory
-COMMON_LIBS="anchors.sh defaults.sh utils.sh console_output.sh"
+COMMON_LIBS="anchors.sh defaults.sh platform.sh utils.sh console_output.sh"
 for filename in $COMMON_LIBS; do
     source $(dirname "$BASH_SOURCE[0]}")/$filename
 done
