@@ -23,25 +23,26 @@ it may be useful on its own, this is not its primary purpose.
 
 ## QEMU-user-static Emulation
 
-On platforms/distro's that support it, this is a handy way to enable
-non-native binary execution.  This can therefore be used to support
-building container images for other architectures.  Though other
-techniques may be possible, there are [handy/dandy scripts and
-container images available to help configure
-this.](https://github.com/multiarch/qemu-user-static#multiarchqemu-user-static-images)
+On platforms/distro's that support it (Like F34+) this is a handy
+way to enable non-native binary execution.  It can therefore be
+used to build container images for other non-native architectures.
+Though setup may vary by distro/version, in F34 all that's needed
+is to install the `qemu-user-static` package.  It will take care
+of automatically registering the emulation executables with the
+kernel.
 
-Using this in a reliable way under automation suggests pointing it
-at the host's qemu-user-staic binaries instead of those bundled in
-the container image (which may not even match the host platform).
-Fortunately passing those in via volume-mount is pretty trivial.
-Something like this (as **root** in Fedora):
+Otherwise, you may find these [handy/dandy scripts and
+container images useful](https://github.com/multiarch/qemu-user-static#multiarchqemu-user-static-images) for environments without native support (like
+CentOS and RHEL).  However, be aware I cannot atest to the safety
+or quality of those binaries/images, so use them at your own risk.
+Something like this (as **root**):
 
 ```bash
-$ sudo dnf install -y qemu-user-static
-$ qemu_setup_fqin="docker.io/multiarch/qemu-user-static:latest"
-$ vol_awk='{print "-v "$1":"$1""}'
-$ bin_vols=$(find /usr/bin -name 'qemu-*-static' | awk -e "$vol_awk" | tr '\n' ' ')
-$ sudo podman run --rm --privileged $bin_vols $qemu_setup_fqin --reset -p yes
+~# install qemu user static binaries somehow
+~# qemu_setup_fqin="docker.io/multiarch/qemu-user-static:latest"
+~# vol_awk='{print "-v "$1":"$1""}'
+~# bin_vols=$(find /usr/bin -name 'qemu-*-static' | awk -e "$vol_awk" | tr '\n' ' ')
+~# podman run --rm --privileged $bin_vols $qemu_setup_fqin --reset -p yes
 ```
 
 Note: You may need to alter `$vol_awk` or the `podman` command line
