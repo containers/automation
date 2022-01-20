@@ -45,9 +45,7 @@ cirrus-ci/build-push_test_task:
         image_family: centos-stream-8
     timeout_in: 20
     env:
-        # Need buildah version 1.23 or later (unreleased as of this commit)
-        # TODO: Use a version-tagged image when avail for CI-stability.
-        CIMG: quay.io/buildah/upstream:latest
+        CIMG: quay.io/buildah/stable:v1.23.0
         TEST_FQIN: quay.io/buildah/do_not_use
         # Robot account credentials for test-push to
         # $TEST_FQIN registry by build-push/test/testbuilds.sh

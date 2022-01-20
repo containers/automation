@@ -8,6 +8,7 @@ source $TEST_SOURCE_DIRPATH/testlib.sh || exit 1
 SUBJ_FILEPATH="$TEST_DIR/$SUBJ_FILENAME"
 TEST_CONTEXT="$TEST_SOURCE_DIRPATH/test_context"
 EMPTY_CONTEXT=$(mktemp -d -p '' .tmp_$(basename ${BASH_SOURCE[0]})_XXXX)
+export NATIVE_GOARCH=$($RUNTIME info --format='{{.host.arch}}')
 
 test_cmd "Verify error when automation library not found" \
     2 'ERROR: Expecting \$AUTOMATION_LIB_PATH' \
@@ -16,16 +17,10 @@ test_cmd "Verify error when automation library not found" \
 export AUTOMATION_LIB_PATH="$TEST_SOURCE_DIRPATH/../../common/lib"
 
 test_cmd "Verify error when buildah can't be found" \
-    1 "ERROR:.+find buildah.+/usr/local/bin" \
+    1 "ERROR: Unable to find.+/usr/local/bin" \
     bash -c "RUNTIME=/bin/true $SUBJ_FILEPATH 2>&1"
 
-# Support basic testing w/o a buildah binary available
-export RUNTIME="${RUNTIME:-$(type -P buildah)}"
-export NATIVE_GOARCH="${NATIVE_GOARCH:-$($RUNTIME info --format='{{.host.arch}}')}"
-export PARALLEL_JOBS="${PARALLEL_JOBS:-$($RUNTIME info --format='{{.host.cpus}}')}"
-
 # These tests don't actually need to actually build/run anything
-export OLD_RUNTIME="$RUNTIME"
 export RUNTIME="$TEST_SOURCE_DIRPATH/fake_buildah.sh"
 
 test_cmd "Verify error when executed w/o any arguments" \
@@ -74,11 +69,29 @@ for arg in 'prepcmd' 'modcmd'; do
         bash -c "BAR_USERNAME=snafu BAR_PASSWORD=ufans $SUBJ_FILEPATH foo/bar/baz $TEST_CONTEXT --$arg notgoingtowork 2>&1"
 done
 
+test_cmd "Verify numeric \$PARALLEL_JOBS is handled properly" \
+    0 "FAKEBUILDAH.+--jobs=42 " \
+    bash -c "PARALLEL_JOBS=42 $SUBJ_FILEPATH localhost/foo/bar --nopush $TEST_CONTEXT 2>&1"
+
+test_cmd "Verify non-numeric \$PARALLEL_JOBS is handled properly" \
+    0 "FAKEBUILDAH.+--jobs=[0-9]+ " \
+    bash -c "PARALLEL_JOBS=badvalue $SUBJ_FILEPATH localhost/foo/bar --nopush $TEST_CONTEXT 2>&1"
+
+PREPCMD='echo "#####${ARCHES}#####"'
+test_cmd "Verify \$ARCHES value is available to prep-command" \
+    0 "#####amd64 correct horse battery staple#####.+FAKEBUILDAH.+test_context" \
+    bash -c "$SUBJ_FILEPATH --arches=correct,horse,battery,staple localhost/foo/bar --nopush --prepcmd='$PREPCMD' $TEST_CONTEXT 2>&1"
+
+rx="FAKEBUILDAH build \\$'--test-build-arg=one \\\"two\\\" three\\\nfour' --anotherone=foo\\\ bar"
+test_cmd "Verify special characters preserved in build-args" \
+    0 "$rx" \
+    bash -c "PARALLEL_JOBS=badvalue $SUBJ_FILEPATH localhost/foo/bar $TEST_CONTEXT --test-build-arg=\"one \\\"two\\\" three
+four\" --nopush --anotherone=\"foo bar\" 2>&1"
+
 # A specialized non-container environment required to run these
 if [[ -n "$BUILD_PUSH_TEST_BUILDS" ]]; then
-    unset RUNTIME NATIVE_GOARCH PARALLEL_JOBS
-    RUNTIME="$OLD_RUNTIME"
-    export RUNTIME
+    export RUNTIME=$(type -P buildah)
+    export PARALLEL_JOBS=$($RUNTIME info --format='{{.host.cpus}}')
 
     source $(dirname "${BASH_SOURCE[0]}")/testbuilds.sh
 else

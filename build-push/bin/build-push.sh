@@ -33,13 +33,10 @@ SCRIPT_FILEPATH=$(realpath "${BASH_SOURCE[0]}")
 # Useful for non-standard installations & testing
 RUNTIME="${RUNTIME:-$(type -P buildah||echo /bin/true)}"  # see check_dependencies()
 
-# Must be declared here, value set in init()
-declare -a ARCHES
-
 # List of variable names to export for --prepcmd and --modcmd
+# N/B: Bash cannot export arrays
 _CMD_ENV="SCRIPT_FILEPATH RUNTIME PLATFORMOS FQIN CONTEXT
-PUSH ARCHES BUILD_ARGS REGSERVER NAMESPACE IMGNAME
-PREPCMD MODCMD"
+PUSH ARCHES REGSERVER NAMESPACE IMGNAME PREPCMD MODCMD"
 
 # Simple error-message strings
 E_FQIN="Must specify a valid 3-component FQIN w/o a tag, not:"
@@ -129,11 +126,15 @@ die_help() {
 }
 
 init() {
-    if [[ "$RUNTIME" =~ true ]]; then
-        die_help "Unable to find buildah (\$RUNTIME) on path: $PATH"
+    # /bin/true is used by unit-tests
+    if [[ "$RUNTIME" =~ true ]] || [[ ! $(type -P "$RUNTIME") ]]; then
+        die_help "Unable to find \$RUNTIME ($RUNTIME) on path: $PATH"
+    fi
+    if [[ -n "$PARALLEL_JOBS" ]] && [[ ! "$PARALLEL_JOBS" =~ ^[0-9]+$ ]]; then
+        PARALLEL_JOBS=""
     fi
     # Can't use $(uname -m) because (for example) "x86_64" != "amd64" in registries
-    # This will be verified, see check_dependencies()
+    # This will be verified, see check_dependencies().
     NATIVE_GOARCH="${NATIVE_GOARCH:-$($RUNTIME info --format='{{.host.arch}}')}"
     PARALLEL_JOBS="${PARALLEL_JOBS:-$($RUNTIME info --format='{{.host.cpus}}')}"
 
@@ -153,7 +154,7 @@ init() {
     FQIN=""                   # required (fully-qualified-image-name)
     CONTEXT=""                # required (directory path)
     PUSH=1                    # optional (1 means push, 0 means do not)
-    ARCHES=("$NATIVE_GOARCH") # optional (Native architecture default)
+    ARCHES="$NATIVE_GOARCH"   # optional (Native architecture default)
     PREPCMD=""                # optional (--prepcmd)
     MODCMD=""                 # optional (--modcmd)
     declare -a BUILD_ARGS
@@ -177,7 +178,6 @@ parse_args() {
     local -a args
     local arg
     local archarg
-    local -a archargs
     local nsu_var
     local nsp_var
 
@@ -194,10 +194,7 @@ parse_args() {
             --arches=*)
                 archarg=$(tr ',' ' '<<<"${arg:9}")
                 if [[ -z "$archarg" ]]; then die_help "$E_ONEARCH '$arg'"; fi
-                archargs+=($archarg)
-                IFS=$'\n' ARCHES+=($(sort -u <<<"${archargs[*]}"))
-                # Don't leave this hanging around, weird things will happen!
-                unset IFS
+                ARCHES="$ARCHES $archarg"
                 ;;
             --arches)
                 # Argument format not supported (to simplify parsing logic)
@@ -231,7 +228,8 @@ parse_args() {
                     dbg "Grabbing Context parameter: '$arg'."
                     CONTEXT=$(realpath -e -P $arg || die_help "$E_CONTEXT '$arg'")
                 else
-                    BUILD_ARGS+=("$arg")
+                    # Properly handle any embedded special characters
+                    BUILD_ARGS+=($(printf "%q" "$arg"))
                 fi
                 ;;
         esac
@@ -274,9 +272,9 @@ parse_args() {
     FQIN='$FQIN'
     CONTEXT='$CONTEXT'
     PUSH='$PUSH'
-    ARCHES='${ARCHES[@]}'
+    ARCHES='$ARCHES'
     MODCMD='$MODCMD'
-    BUILD_ARGS='${BUILD_ARGS[@]}'
+    BUILD_ARGS=$(echo -n "${BUILD_ARGS[@]}")
     REGSERVER='$REGSERVER'
     NAMESPACE='$NAMESPACE'
     IMGNAME='$IMGNAME'
@@ -306,28 +304,26 @@ parallel_build() {
     local platforms=""
     local output
     local _fqin
-    local -a _cmd
+    local -a _args
 
     _fqin="$1"
     dbg "in parallel_build($_fqin)"
     req_env_vars FQIN ARCHES CONTEXT REGSERVER NAMESPACE IMGNAME
     req_env_vars PARALLEL_JOBS PLATFORMOS RUNTIME _fqin
 
-
-    for arch in "${ARCHES[@]}"; do
+    for arch in $ARCHES; do
         platforms="${platforms:+$platforms,}$PLATFORMOS/$arch"
     done
 
-    # This is possibly very complex command, show it to the user
-    # to assist in automation-debugging
-    _cmd=("$RUNTIME" build "${BUILD_ARGS[@]}" --layers --force-rm
-          --jobs="$PARALLEL_JOBS" --platform="$platforms"
-          --manifest="$_fqin" "$CONTEXT")
-    stage_notice "Executing build command: '${_cmd[@]}'"
+    # Need to build up the command from parts b/c array conversion is handled
+    # in strange and non-obvious ways when it comes to embedded whitespace.
+    _args=(--layers --force-rm --jobs="$PARALLEL_JOBS" --platform="$platforms"
+           --manifest="$_fqin" "$CONTEXT")
 
     # Keep user-specified BUILD_ARGS near the beginning so errors are easy to spot
     # Provide a copy of the output in case something goes wrong in a complex build
-    "${_cmd[@]}"
+    stage_notice "Executing build command: '$RUNTIME build ${BUILD_ARGS[@]} ${_args[@]}'"
+    "$RUNTIME" build "${BUILD_ARGS[@]}" "${_args[@]}"
 }
 
 confirm_arches() {
@@ -343,7 +339,7 @@ confirm_arches() {
                  sed -z '$ s/[\n ]$//')
     dbg "Found manifest arches: $maniarches"
 
-    for arch in "${ARCHES[@]}"; do
+    for arch in $ARCHES; do
         grep -q "$arch" <<<"$maniarches" || \
             die "Failed to locate the $arch arch. in the $FQIN:latest manifest-list: $maniarches"
     done
