@@ -698,7 +698,10 @@ sub _draw_boxes {
     if (my $only_if = $task->{yml}{only_if}) {
         $shape = 'record';
         $label .= '|' if $label;
-        if ($only_if =~ /CI:DOCS/) {
+        if ($only_if =~ /CI:DOCS.*CI:BUILD/) {
+            $label .= "[SKIP: CI:BUILD]\\l[SKIP: CI:DOCS]\\l";
+        }
+        elsif ($only_if =~ /CI:DOCS/) {
             $label .= "[SKIP: CI:DOCS]\\l";
         }
         # 2020-10 used in automation_images repo
@@ -712,6 +715,10 @@ sub _draw_boxes {
         # used in podman
         elsif ($only_if eq q{$CIRRUS_TAG != ''}) {
             $label .= "[only if tag]";
+        }
+        # PR #13114
+        elsif ($only_if =~ /CIRRUS_CHANGE.*release.*bump/i) {
+            $label .= "[only on release PR]";
         }
         else {
             $label .= "[only if: $only_if]";
