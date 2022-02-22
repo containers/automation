@@ -79,7 +79,7 @@ test_cmd "Verify non-numeric \$PARALLEL_JOBS is handled properly" \
 
 PREPCMD='echo "#####${ARCHES}#####"'
 test_cmd "Verify \$ARCHES value is available to prep-command" \
-    0 "#####amd64 correct horse battery staple#####.+FAKEBUILDAH.+test_context" \
+    0 "#####correct horse battery staple#####.+FAKEBUILDAH.+test_context" \
     bash -c "$SUBJ_FILEPATH --arches=correct,horse,battery,staple localhost/foo/bar --nopush --prepcmd='$PREPCMD' $TEST_CONTEXT 2>&1"
 
 rx="FAKEBUILDAH build \\$'--test-build-arg=one \\\"two\\\" three\\\nfour' --anotherone=foo\\\ bar"

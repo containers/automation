@@ -194,7 +194,7 @@ parse_args() {
             --arches=*)
                 archarg=$(tr ',' ' '<<<"${arg:9}")
                 if [[ -z "$archarg" ]]; then die_help "$E_ONEARCH '$arg'"; fi
-                ARCHES="$ARCHES $archarg"
+                ARCHES="$archarg"
                 ;;
             --arches)
                 # Argument format not supported (to simplify parsing logic)
@@ -335,6 +335,7 @@ confirm_arches() {
     req_env_vars FQIN ARCHES RUNTIME
     maniarches=$($RUNTIME manifest inspect "containers-storage:$FQIN:latest" | \
                  jq -r "$filter" | \
+                 grep -v 'null' | \
                  tr -s '[:space:]' ' ' | \
                  sed -z '$ s/[\n ]$//')
     dbg "Found manifest arches: $maniarches"
