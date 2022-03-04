@@ -1,6 +1,6 @@
 FROM registry.fedoraproject.org/fedora-minimal:latest
 RUN microdnf update -y && \
-    microdnf install -y findutils jq git curl && \
+    microdnf install -y findutils jq git curl python3 && \
     microdnf clean all && \
     rm -rf /var/cache/dnf
 # Assume build is for development/manual testing purposes by default (automation should override with fixed version)
