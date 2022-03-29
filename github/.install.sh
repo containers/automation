@@ -27,6 +27,6 @@ install -v $INST_PERM_ARG -D -t "$INSTALL_PREFIX/lib" ./lib/*
 # Needed for installer testing
 cat <<EOF>>"./environment"
 # Added on $(date --iso-8601=minutes) by 'github' subcomponent installer
-GITHUB_ACTION_LIB=$INSTALL_PREFIX/lib/github.sh
+export GITHUB_ACTION_LIB=$INSTALL_PREFIX/lib/github.sh
 EOF
 echo "Successfully installed $INSTALL_NAME"
