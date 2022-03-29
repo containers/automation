@@ -127,8 +127,8 @@ install_automation() {
     cat <<EOF>"$INSTALLATION_SOURCE/environment"
 # Added on $(date --iso-8601=minutes) by $actual_inst_path/bin/$SCRIPT_FILENAME"
 # Any manual modifications will be lost upon upgrade or reinstall.
-AUTOMATION_LIB_PATH="$actual_inst_path/lib"
-PATH="$PATH:$actual_inst_path/bin"
+export AUTOMATION_LIB_PATH="$actual_inst_path/lib"
+export PATH="$PATH:$actual_inst_path/bin"
 EOF
 }
 
