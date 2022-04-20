@@ -20,24 +20,24 @@ test_ci() {
     CI="$prev_CI"
 }
 
-# DEBUG must default to 0 or non-zero
+# A_DEBUG must default to 0 or non-zero
 # usage: <expected non-zero> [initial_value]
 test_debug() {
     local exp_non_zero=$1
     local init_value="$2"
     [[ -z "$init_value" ]] || \
-        DEBUG=$init_value
-    local desc_pfx="The \$DEBUG env. var initialized '$init_value', after loading library is"
+        A_DEBUG=$init_value
+    local desc_pfx="The \$A_DEBUG env. var initialized '$init_value', after loading library is"
 
     source "$TEST_DIR"/"$SUBJ_FILENAME"
     if ((exp_non_zero)); then
         test_cmd "$desc_pfx non-zero" \
             0 "" \
-            test "$DEBUG" -ne 0
+            test "$A_DEBUG" -ne 0
     else
         test_cmd "$desc_pfx zero" \
             0 "" \
-            test "$DEBUG" -eq 0
+            test "$A_DEBUG" -eq 0
     fi
 }
 

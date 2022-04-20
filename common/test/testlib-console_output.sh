@@ -58,20 +58,20 @@ test_cmd "The indent function indents it's own output" \
     0 "$EXPECTED_SUM" \
     bash -c "echo '$TEST_STRING' | indent | indent | sha256sum"
 
-DEBUG=0
+A_DEBUG=0
 test_cmd \
-    "The dbg function has no output when \$DEBUG is zero and no message is given" \
+    "The dbg function has no output when \$A_DEBUG is zero and no message is given" \
     0 "" \
     dbg
 
 test_cmd \
-    "The dbg function has no output when \$DEBUG is zero and a test message is given" \
+    "The dbg function has no output when \$A_DEBUG is zero and a test message is given" \
     0 "" \
     dbg "$test_message_text"
 
-DEBUG=1
+A_DEBUG=1
 basic_tests dbg 0 DEBUG
-DEBUG=0
+A_DEBUG=0
 
 test_cmd \
     "All primary output functions include the expected context information" \

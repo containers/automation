@@ -54,7 +54,7 @@ jobs:
             - name: Load cirrus-ci_retrospective JSON and set action output variables
               id: retro
               env:
-                  DEBUG: 1
+                  A_DEBUG: 1
               run: |
                   source ./main/$HELPER_LIB
                   load_ccir $GITHUB_WORKSPACE

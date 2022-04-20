@@ -22,7 +22,7 @@ test_cmd 'Default shell variables are initialized empty/false' \
     echo -n "${prn}${tid}${sha}${tst}${was_pr}${do_intg}"
 
 # Remaining tests all require debugging output to be enabled
-DEBUG=1
+A_DEBUG=1
 
 test_cmd 'The debugging function does not throw any errors and uses special debug output' \
     0 '::debug::' \
@@ -92,7 +92,7 @@ for regex in '"id": "10"' $MONITOR_TASK $ACTION_TASK '"branch": "pull/12"' \
 done
 
 # Remaining tests all require debugging output disabled
-DEBUG=0
+A_DEBUG=0
 
 write_ccir 1 2 3 PAUSED COMPLETED
 load_ccir "$TESTTEMPDIR"
