@@ -12,13 +12,13 @@ source "$AUTOMATION_LIB_PATH/common_lib.sh"
 set +e
 
 test_function() {
-    DEBUG=1 dbg "Test dbg message"
+    A_DEBUG=1 dbg "Test dbg message"
     warn "Test warning message"
     msg "Test msg message"
     die "Test die message" 0
 }
 
-DEBUG=1 dbg "Test dbg message"
+A_DEBUG=1 dbg "Test dbg message"
 warn "Test warning message"
 msg "Test msg message"
 die "Test die message" 0

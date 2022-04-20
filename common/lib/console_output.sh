@@ -57,7 +57,7 @@ die() {
 }
 
 dbg() {
-    if ((DEBUG)); then
+    if ((A_DEBUG)); then
         local shortest_source_path=$(_rel_path "${BASH_SOURCE[1]}")
         (
         echo

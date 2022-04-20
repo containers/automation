@@ -24,7 +24,7 @@ INSTALLATION_SOURCE="${INSTALLATION_SOURCE:-}"
 AUTOMATION_VERSION="$1"
 shift || true  # ignore if no more args
 # Set non-zero to enable
-DEBUG=${DEBUG:-0}
+A_DEBUG=${A_DEBUG:-0}
 # Save some output eyestrain (if script can be found)
 OOE=$(realpath $(dirname "${BASH_SOURCE[0]}")/../common/bin/ooe.sh 2>/dev/null || echo "")
 # Sentinel value representing whatever version is present in the local repository
@@ -42,7 +42,7 @@ _DEFAULT_MAGIC_JUJU=d41d844b68a14ee7b9e6a6bb88385b4d
 
 msg() { echo -e "${1:-No Message given}"; }
 
-dbg() { if ((DEBUG)); then msg "\n# $1"; fi }
+dbg() { if ((A_DEBUG)); then msg "\n# $1"; fi }
 
 # On 5/14/2021 the default branch was renamed to 'main'.
 # Since prior versions of the installer reference the old
@@ -194,7 +194,7 @@ exec_installer() {
         # _MAGIC_JUJU set to signal actual installation work should commence
         set -x
         exec env \
-            DEBUG="$DEBUG" \
+            A_DEBUG="$A_DEBUG" \
             INSTALLATION_SOURCE="$INSTALLATION_SOURCE" \
             INSTALL_PREFIX="$INSTALL_PREFIX" \
             AUTOMATION_REPO_URL="$AUTOMATION_REPO_URL" \
@@ -257,7 +257,7 @@ elif [[ "$_MAGIC_JUJU" == "$_DEFAULT_MAGIC_JUJU" ]]; then
             env AUTOMATION_LIB_PATH=$AUTOMATION_LIB_PATH \
                 AUTOMATION_VERSION=$AUTOMATION_VERSION \
                 INSTALLATION_SOURCE=$INSTALLATION_SOURCE \
-                DEBUG=$DEBUG \
+                A_DEBUG=$A_DEBUG \
                 MAGIC_JUJU=$_MAGIC_JUJU \
                 /bin/bash $CHAIN_TO
             msg "##### Installation complete for '$arg' subcomponent"

@@ -76,7 +76,7 @@ load_example_environment() {
         source "$INSTALL_PREFIX/automation/environment" || return 99
         echo "AUTOMATION_LIB_PATH ==> ${AUTOMATION_LIB_PATH:-UNDEFINED}"
         echo "PATH ==> ${PATH:-EMPTY}"
-        [[ -z "$_args" ]] || DEBUG=1 $_args
+        [[ -z "$_args" ]] || A_DEBUG=1 $_args
     )
 }
 

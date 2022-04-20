@@ -33,7 +33,7 @@ test_cmd "Confirm error output and exit(42) from --prepcmd" \
 
 test_cmd "Confirm building native-arch test image w/ --nopush" \
     0 "STEP 3/3: ENTRYPOINT /bin/false.+COMMIT" \
-    bash -c "DEBUG=1 $SUBJ_FILEPATH localhost/foo/bar $TEST_CONTEXT --nopush 2>&1"
+    bash -c "A_DEBUG=1 $SUBJ_FILEPATH localhost/foo/bar $TEST_CONTEXT --nopush 2>&1"
 
 native_arch=$($RUNTIME info --format='{{.host.arch}}')
 test_cmd "Confirm native_arch was set to non-empty string" \
@@ -46,7 +46,7 @@ test_cmd "Confirm built image manifest contains the native arch '$native_arch'" 
 
 test_cmd "Confirm rebuilding with same command uses cache" \
     0 "STEP 3/3.+Using cache" \
-    bash -c "DEBUG=1 $SUBJ_FILEPATH localhost/foo/bar $TEST_CONTEXT --nopush 2>&1"
+    bash -c "A_DEBUG=1 $SUBJ_FILEPATH localhost/foo/bar $TEST_CONTEXT --nopush 2>&1"
 
 test_cmd "Confirm manifest-list can be removed by name" \
     0 "untagged: localhost/foo/bar:latest" \
@@ -54,12 +54,12 @@ test_cmd "Confirm manifest-list can be removed by name" \
 
 test_cmd "Verify expected partial failure when passing bogus architectures" \
      125 "error creating build.+architecture staple" \
-    bash -c "DEBUG=1 $SUBJ_FILEPATH --arches=correct,horse,battery,staple localhost/foo/bar --nopush $TEST_CONTEXT 2>&1"
+    bash -c "A_DEBUG=1 $SUBJ_FILEPATH --arches=correct,horse,battery,staple localhost/foo/bar --nopush $TEST_CONTEXT 2>&1"
 
 MODCMD='$RUNTIME tag $FQIN:latest $FQIN:9.8.7-testing'
 test_cmd "Verify --modcmd is able to tag the manifest" \
     0 "Executing mod-command" \
-    bash -c "DEBUG=1 $SUBJ_FILEPATH localhost/foo/bar $TEST_CONTEXT --nopush --modcmd='$MODCMD' 2>&1"
+    bash -c "A_DEBUG=1 $SUBJ_FILEPATH localhost/foo/bar $TEST_CONTEXT --nopush --modcmd='$MODCMD' 2>&1"
 
 test_cmd "Verify the tagged manifest is also present" \
     0 "[a-zA-Z0-9]+" \
@@ -95,7 +95,7 @@ $RUNTIME images && \
 # - causing it to exit(0) as it should
 test_cmd "Verify --modcmd can execute a long string with substitutions" \
     125 "AllGone" \
-    bash -c "DEBUG=1 $SUBJ_FILEPATH --modcmd='$MODCMD' localhost/foo/bar --nopush $TEST_CONTEXT 2>&1"
+    bash -c "A_DEBUG=1 $SUBJ_FILEPATH --modcmd='$MODCMD' localhost/foo/bar --nopush $TEST_CONTEXT 2>&1"
 
 test_cmd "Verify previous --modcmd removed the 'latest' tagged image" \
     125 "image not known" \
@@ -111,7 +111,7 @@ MODCMD="set -ex;
 \$RUNTIME manifest rm \$FQIN:latest;"
 test_cmd "Verify e2e workflow w/ additional build-args" \
     0 "Pushing $TEST_FQIN:$FAKE_VERSION" \
-    bash -c "env DEBUG=1 $SUBJ_FILEPATH \
+    bash -c "env A_DEBUG=1 $SUBJ_FILEPATH \
         --prepcmd='touch $TEST_SOURCE_DIRPATH/test_context/Containerfile' \
         --modcmd='$MODCMD' \
         --arches=amd64,s390x,arm64,ppc64le \
