@@ -99,7 +99,7 @@ filter_json() {
     dbg "### Validating JSON in '$json_file'"
     # Confirm input json is valid and make filter problems easier to debug (below)
     local tmp_json_file=$(tmpfile json)
-    if ! jq . < "$json_file" > "$tmp_json_file"; then
+    if ! jq -e . < "$json_file" > "$tmp_json_file"; then
         rm -f "$tmp_json_file"
         # JQ has already shown an error message
         die "Error from jq relating to JSON: $(cat $json_file)"
@@ -146,11 +146,6 @@ url_query_filter_test() {
     dbg "## Curl output file: $curl_outputf)"
     [[ "$ret" -eq "0" ]] || \
         die "Curl command exited with non-zero code: $ret"
-
-    if grep -q "error" "$curl_outputf"; then
-        # Barely passable attempt to catch GraphQL query errors
-        die "Found the word 'error' in curl output: $(cat $curl_outputf)"
-    fi
 
     # Validates both JSON and filter, updates $curl_outputf
     filter_json "$filter" "$curl_outputf"
