@@ -23,13 +23,13 @@ it may be passed `latest` to install the HEAD of the main branch.
 
 For example, to install the `v1.1.3` release, run:
 ```bash
-~# url='https://github.com/containers/automation/releases/latest/download/install_automation.sh'
+~# url='https://raw.githubusercontent.com/containers/automation/master/bin/install_automation.sh'
 ~# curl -sL "$url" | bash -s 1.1.3
 ```
 
 To install `latest`, run:
 ```bash
-~# url='https://github.com/containers/automation/releases/latest/download/install_automation.sh'
+~# url='https://raw.githubusercontent.com/containers/automation/master/bin/install_automation.sh'
 ~# curl -sL "$url" | bash -s latest
 ```
 
@@ -52,7 +52,7 @@ install system-wide.  Available components are simply any subdirectory in the re
 which contain a `.install.sh` file.  For example, to install the latest `build-push` system-wide run:
 
 ```bash
-~# url='https://github.com/containers/automation/releases/latest/download/install_automation.sh'
+~# url='https://raw.githubusercontent.com/containers/automation/master/bin/install_automation.sh'
 ~# curl -sL "$url" | bash -s latest build-push
 ```
 
