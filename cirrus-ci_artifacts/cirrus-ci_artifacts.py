@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 
 """
-Download all artifacts from a Cirrus-CI Build into $PWD
+Download all artifacts from a Cirrus-CI Build into a subdirectory named
+<build ID>/<task-name>/<artifact-name>/<file-path>
 
 Input arguments (in order):
-    Repo owner/name - string, from github.
-                      e.g. "containers/podman"
-    Bucket - Name of the GCS bucket storing Cirrus-CI logs/artifacts.
-             e.g. "cirrus-ci-6707778565701632-fcae48" for podman
     Build ID - string, the build containing tasks w/ artifacts to download
                e.g. "5790771712360448"
-    Path RX - Optional, regular expression to include, matched against path
-              format as: task_name/artifact_name/file_name
+    Path RX - Optional, regular expression to match against task,
+              artifact, and/or file path.  Input string will be
+              of the form task_name/artifact_name/file_path
 """
 
 import sys
 from urllib.parse import quote, unquote
 from os import makedirs
-from os.path import basename, dirname, join
+from os.path import split
 import re
-import aiohttp
+from argparse import ArgumentParser
+import asyncio
+# Ref: https://docs.aiohttp.org/en/stable/http_request_lifecycle.html
+from aiohttp import ClientSession
 
-import requests
 # Ref: https://gql.readthedocs.io/en/latest/index.html
 # pip3 install --user --requirement ./requirements.txt
 # (and/or in a python virtual environment)
@@ -29,24 +29,28 @@ from gql import gql
 from gql.transport.requests import RequestsHTTPTransport
 from gql import Client as GQLClient
 
-# Ref: https://docs.aiohttp.org/en/stable/http_request_lifecycle.html
-import asyncio
-
-# Base URL for accessing google cloud storage buckets
-GCS_URL_BASE = "https://storage.googleapis.com"
 
 # GraphQL API URL for Cirrus-CI
 CCI_GQL_URL = "https://api.cirrus-ci.com/graphql"
 
+# Artifact download base-URL for Cirrus-CI.
+# Download URL will be formed by appending:
+# "/<CIRRUS_BUILD_ID>/<TASK NAME OR ALIAS>/<ARTIFACTS_NAME>/<PATH>"
+CCI_ART_URL = "https://api.cirrus-ci.com/v1/artifact/build"
 
-def get_raw_taskinfo(gqlclient, build_id):
+# Set True when --verbose is first argument
+VERBOSE = False
+
+def get_tasks(gqlclient, buildId):
     """Given a build ID, return a list of task objects"""
+    # Ref: https://cirrus-ci.org/api/
     query = gql('''
-        query tasksByBuildID($build_id: ID!) {
-          build(id: $build_id) {
+        query tasksByBuildId($buildId: ID!) {
+          build(id: $buildId) {
             tasks {
               name,
               id,
+              buildId,
               artifacts {
                 name,
                 files {
@@ -57,110 +61,92 @@ def get_raw_taskinfo(gqlclient, build_id):
           }
         }
     ''')
-    query_vars = dict(build_id=build_id)
-    result = gqlclient.execute(query, variable_values=query_vars)
-    if "build" in result and result["build"]:
-        result = result["build"]
-        if "tasks" in result and len(result["tasks"]):
-            return result["tasks"]
-        else:
-            raise RuntimeError(f"No tasks found for build with id {build_id}")
-    else:
-        raise RuntimeError(f"No Cirrus-CI build found with id {build_id}")
+    query_vars = {"buildId": buildId}
+    tasks = gqlclient.execute(query, variable_values=query_vars)
+    if "build" in tasks and tasks["build"]:
+        b = tasks["build"]
+        if "tasks" in b and len(b["tasks"]):
+            return b["tasks"]
+        raise RuntimeError(f"No tasks found for build with ID {build_id}")
+    raise RuntimeError(f"No Cirrus-CI build found with id {build_id}")
 
-
-def art_to_url(tid, artifacts, repo, bucket):
-    """Given an list of artifacts from a task object, return tuple of names and urls"""
-    if "/" not in repo:
-        raise RuntimeError(f"Expecting slash sep. repo. owner and name: '{repo}'")
+def task_art_url_sfxs(task):
+    """Given a task dict return list CCI_ART_URL suffixes for all artifacts"""
     result = []
-    # N/B: Structure comes from query in get_raw_taskinfo()
-    for art in artifacts:
-        try:
-            key="name"  # Also used by exception
-            art_name = quote(art[key])  # Safe use as URL component
-            key="files"
-            art_files = art[key]
-        except KeyError:
-            # Invalid artifact for some reason, skip it with warning.
-            sys.stderr.write(f"Warning: Encountered malformed artifact for TID {tid}, missing expected key '{key}'")
-            continue
-        for art_file in art_files:
-            art_path = quote(art_file["path"])  # NOT AN ACTUAL DIRECTORY STRUCTURE
-            url = f"{GCS_URL_BASE}/{bucket}/artifacts/{repo}/{tid}/{art_name}/{art_path}"
-            # Prevent clashes if/when same file/path (part of URL) is contained
-            # in several named artifacts.
-            result.append((art_name, url))
+    bid = task["buildId"]
+    tname = quote(task["name"])  # Make safe for URLs
+    for art in task["artifacts"]:
+        aname=quote(art["name"])
+        for _file in art["files"]:
+            fpath = quote(_file["path"])
+            result.append(f"{bid}/{tname}/{aname}/{fpath}")
     return result
 
-def get_task_art_map(gqlclient, repo, bucket, build_id):
-    """Rreturn map of task name/artifact name to list of artifact URLs"""
-    tid_map = {}
-    for task in get_raw_taskinfo(gqlclient, build_id):
-        tid = task["id"]
-        artifacts = task["artifacts"]
-        art_names_urls = art_to_url(tid, artifacts, repo, bucket)
-        if len(art_names_urls):
-            tid_map[task["name"]] = art_names_urls
-    return tid_map
-
-async def download_artifact(session, art_url):
+async def download_artifact(session, dest_path, dl_url):
     """Asynchronous download contents of art_url as a byte-stream"""
-    async with session.get(art_url) as response:
-        # ref: https://docs.aiohttp.org/en/stable/client_reference.html#aiohttp.ClientResponse.read
-        return await response.read()
+    # Last path component assumed to be the filename
+    makedirs(split(dest_path)[0], exist_ok=True)  # os.path.split
+    async with session.get(dl_url) as response:
+        with open(dest_path, "wb") as dest_file:
+            dest_file.write(await response.read())
 
-async def download_artifacts(task_name, art_names_urls, path_rx=None):
-    """Download artifact if path_rx unset or matches dest. path into CWD subdirs"""
-    async with aiohttp.ClientSession() as session:
-        for art_name, art_url in art_names_urls:
-            # Cirrus-CI Always/Only archives artifacts path one-level deep
-            # (i.e. no subdirectories).  The artifact name and filename were
-            # are part of the URL, so must decode them. See art_to_url() above
-            dest_path = join(task_name, unquote(art_name), basename(unquote(art_url)))
+async def download_artifacts(task, path_rx=None):
+    """Given a task dict, download all artifacts or matches to path_rx"""
+    downloaded=[]
+    skipped=[]
+    async with ClientSession() as session:
+        for art_url_sfx in task_art_url_sfxs(task):
+            dest_path = unquote(art_url_sfx)  # Strip off URL encoding
+            dl_url = f"{CCI_ART_URL}/{dest_path}"
             if path_rx is None or bool(path_rx.search(dest_path)):
-                print(f"Downloading '{dest_path}'")
-                sys.stderr.flush()
-                makedirs(dirname(dest_path), exist_ok=True)
-                with open(dest_path, "wb") as dest_file:
-                    data = await download_artifact(session, art_url)
-                    dest_file.write(data)
+                if VERBOSE:
+                    print(f"    Downloading '{dest_path}'")
+                    sys.stdout.flush()
+                await download_artifact(session, dest_path, dl_url)
+                downloaded.append(dest_path)
+            else:
+                if VERBOSE:
+                    print(f"       Skipping '{dest_path}'")
+                skipped.append(dest_path)
+    return {"downloaded":downloaded, "skipped":skipped}
 
+def get_args(argv):
+    """Return parsed argument namespace object"""
+    parser = ArgumentParser(prog="cirrus-ci_artifacts",
+        description=('Download Cirrus-CI artifacts by Build ID number, into'
+        ' a subdirectory of the form <Build ID>/<Task Name>/<Artifact Name>'
+        '/<File Path>'))
+    parser.add_argument('-v', '--verbose',
+        dest='verbose', action='store_true', default=False,
+        help='Show "Downloaded" | "Skipped" + relative artifact file-path.')
+    parser.add_argument('buildId', nargs=1, metavar='<Build ID>', type=int,
+        help="A Cirrus-CI Build ID number.")
+    parser.add_argument('path_rx', nargs='?', default=None, metavar='[Reg. Exp.]',
+        help="Reg. exp. include only <task>/<artifact>/<file-path> matches.")
+    return parser.parse_args(args=argv[1:])
 
-def get_arg(index, name):
-    """Return the value of command-line argument, raise error ref: name if empty"""
-    err_msg=f"Error: Missing/empty {name} argument\n\nUsage: {sys.argv[0]} <repo. owner/name> <bucket> <build ID> [path rx]"
-    try:
-        result=sys.argv[index]
-        if bool(result):
-            return result
-        else:
-            raise ValueError(err_msg)
-    except IndexError:
-        sys.stderr.write(f'{err_msg}\n')
-        sys.exit(1)
+async def download(tasks, path_rx=None):
+    """Main async entrypoint function with nested async download tasks"""
+    # Python docs say to retain a reference to all tasks so they aren't
+    # "garbage-collected" while still active.
+    results = []
+    for task in tasks:
+        if len(task["artifacts"]):
+            results.append(asyncio.create_task(download_artifacts(task, path_rx)))
+    await asyncio.gather(*results)
+    return results
 
+def main(buildId, path_rx=None):
+    if path_rx is not None:
+        path_rx = re.compile(path_rx)
+    transport = RequestsHTTPTransport(url=CCI_GQL_URL, verify=True, retries=3)
+    with GQLClient(transport=transport, fetch_schema_from_transport=True) as gqlclient:
+        tasks = get_tasks(gqlclient, buildId)
+    transport.close()
+    async_results = asyncio.run(download(tasks, path_rx))
+    return [r.result() for r in async_results]
 
 if __name__ == "__main__":
-    repo = get_arg(1, "repo. owner/name")
-    bucket = get_arg(2, "bucket")
-    build_id = get_arg(3, "build ID")
-    path_rx = None
-    if len(sys.argv) >= 5:
-        path_rx = re.compile(get_arg(4, "path rx"))
-
-    # Ref: https://cirrus-ci.org/api/
-    cirrus_graphql_xport = RequestsHTTPTransport(
-        url=CCI_GQL_URL,
-        verify=True,
-        retries=3)
-    gqlclient = GQLClient(transport=cirrus_graphql_xport,
-                          fetch_schema_from_transport=True)
-
-    task_art_map = get_task_art_map(gqlclient, repo, bucket, build_id)
-    loop = asyncio.get_event_loop()
-    download_tasks = []
-    for task_name, art_names_urls in task_art_map.items():
-        download_tasks.append(loop.create_task(
-            download_artifacts(task_name, art_names_urls, path_rx)))
-    loop.run_until_complete(asyncio.gather(*download_tasks))
+    args = get_args(sys.argv)
+    VERBOSE = args.verbose
+    main(args.buildId[0], args.path_rx)
