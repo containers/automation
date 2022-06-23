@@ -4,143 +4,181 @@
 Verify contents of .cirrus.yml meet specific expectations
 """
 
-import sys
 import os
+from tempfile import TemporaryDirectory
+import re
 from io import StringIO
 import unittest
-import importlib.util
 from contextlib import redirect_stderr, redirect_stdout
-from unittest.mock import Mock, patch
-from urllib.parse import quote
+from unittest.mock import MagicMock, patch, mock_open
 import yaml
+import asyncio
+import ccia
 
-# Assumes directory structure of this file relative to repo.
-TEST_DIRPATH = os.path.dirname(os.path.realpath(__file__))
-SCRIPT_FILENAME = os.path.basename(__file__).replace('test_','')
-SCRIPT_DIRPATH = os.path.realpath(os.path.join(TEST_DIRPATH, '..', SCRIPT_FILENAME))
+def fake_makedirs(*args, **dargs):
+    return None
 
-# Script otherwise not intended to be loaded as a module
-spec = importlib.util.spec_from_file_location("cci_arts", SCRIPT_DIRPATH)
-cci_arts = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cci_arts)
+# Needed for testing asyncio functions and calls
+# ref: https://agariinc.medium.com/strategies-for-testing-async-code-in-python-c52163f2deab
+class AsyncMock(MagicMock):
+    async def __call__(self, *args, **dargs):
+        return super().__call__(*args, **dargs)
 
+class AsyncContextManager(MagicMock):
+    async def __aenter__(self, *args, **dargs):
+        return self.__enter__(*args, **dargs)
+    async def __aexit__(self, *args, **dargs):
+        return self.__exit__(*args, **dargs)
 
 class TestBase(unittest.TestCase):
 
-    FAKE_GCS = "ftp://foo.bar"
-    FAKE_CCI = "sql://sna.fu"
-
-    ORIGINAL_GCS = cci_arts.GCS_URL_BASE
-    ORIGINAL_CCI = cci_arts.CCI_GQL_URL
+    FAKE_CCI = "sql://fake.url.invalid/graphql"
+    FAKE_API = "smb://fake.url.invalid/artifact"
 
     def setUp(self):
-        cci_arts.GCS_URL_BASE = self.FAKE_GCS
-        cci_arts.CCI_GQL_URL = self.FAKE_CCI
-
-    def tearDown(self):
-        cci_arts.GCS_URL_BASE = self.ORIGINAL_GCS
-        cci_arts.CCI_GQL_URL = self.ORIGINAL_CCI
-
+        ccia.VERBOSE = True
+        patch('ccia.CCI_GQL_URL', new=self.FAKE_CCI).start()
+        patch('ccia.CCI_ART_URL', new=self.FAKE_API).start()
+        self.addCleanup(patch.stopall)
 
 class TestUtils(TestBase):
 
     # YAML is easier on human eyeballs
     # Ref: https://github.com/cirruslabs/cirrus-ci-web/blob/master/schema.graphql
     # type Artifacts and ArtifactFileInfo
-    TEST_ARTIFACTS_YAML = """
-        - name: test_art-0
-          type: test_type-0
-          format: art_format-0
-          files:
-            - path: path/test/art/0
-              size: 0
-        - name: test_art-1
-          type: test_type-1
-          format: art_format-1
-          files:
-            - path: path/test/art/1
-              size: 1
-        - name: test_art-2
-          type: test_type-2
-          format: art_format-2
-          files:
-            - path: path/test/art/2
-              size: 2
+    TEST_TASK_YAML = """
+        - &test_task
+          name: task_1
+          id: 1
+          buildId: 0987654321
+          artifacts:
+            - name: test_art-0
+              type: test_type-0
+              format: art_format-0
+              files:
+                - path: path/test/art/0
+                  size: 0
+            - name: test_art-1
+              type: test_type-1
+              format: art_format-1
+              files:
+                - path: path/test/art/1
+                  size: 1
+                - path: path/test/art/2
+                  size: 2
+            - name: test_art-2
+              type: test_type-2
+              format: art_format-2
+              files:
+                - path: path/test/art/3
+                  size: 3
+                - path: path/test/art/4
+                  size: 4
+                - path: path/test/art/5
+                  size: 5
+                - path: path/test/art/6
+                  size: 6
+        - <<: *test_task
+          name: task_2
+          id: 2
     """
-    TEST_ARTIFACTS = yaml.safe_load(TEST_ARTIFACTS_YAML)
+    TEST_TASKS = yaml.safe_load(TEST_TASK_YAML)
+    TEST_URL_RX = re.compile(r"987654321/task_.+/test_art-.+/path/test/art/.+")
+
+    def test_task_art_url_sfxs(self):
+        test_tasks = self.TEST_TASKS
+        for test_task in self.TEST_TASKS:
+            actual = ccia.task_art_url_sfxs(test_task)
+            with self.subTest(test_task=test_task):
+                for url in actual:
+                    with self.subTest(url=url):
+                        self.assertRegex(url, self.TEST_URL_RX)
+
+    # N/B: The ClientSession mock causes a (probably) harmless warning:
+    # ResourceWarning: unclosed transport <_SelectorSocketTransport fd=7>
+    # I have no idea how to fix or hide this, leaving it as-is.
+    def test_download_artifacts_all(self):
+        for test_task in self.TEST_TASKS:
+            with self.subTest(test_task=test_task), \
+                patch('ccia.download_artifact', new_callable=AsyncMock), \
+                patch('ccia.ClientSession', new_callable=AsyncContextManager), \
+                patch('ccia.makedirs', new=fake_makedirs), \
+                patch('ccia.open', new=mock_open()):
+
+                # N/B: This makes debugging VERY difficult, comment out for pdb use
+                fake_stdout = StringIO()
+                fake_stderr = StringIO()
+                with redirect_stderr(fake_stderr), redirect_stdout(fake_stdout):
+                    asyncio.run(ccia.download_artifacts(test_task))
+                self.assertEqual(fake_stderr.getvalue(), '')
+                for line in fake_stdout.getvalue().splitlines():
+                    with self.subTest(line=line):
+                        self.assertRegex(line.strip(), self.TEST_URL_RX)
+
+
+class TestMain(unittest.TestCase):
 
     def setUp(self):
-        super().setUp()
+        ccia.VERBOSE = True
+        try:
+            self.bid = os.environ["CIRRUS_BUILD_ID"]
+        except KeyError as xcpt:
+            self.skipTest("Requires running under Cirrus-CI")
+        self.tmp = TemporaryDirectory(prefix="test_ccia_tmp")
+        self.cwd = os.getcwd()
+        os.chdir(self.tmp.name)
 
-    def test_get_arg(self):
-        argv=('test0', 'test1', 'test2', 'test3', 'test4', 'test5')
-        with patch('sys.argv', new=argv):
-            for arg_n in range(0,6):
-                with self.subTest(arg_n=arg_n):
-                    expected = f"test{arg_n}"
-                    self.assertEqual(
-                        cci_arts.get_arg(arg_n, "foobar"),
-                        expected)
+    def tearDown(self):
+        os.chdir(self.cwd)
+        self.tmp.cleanup()
 
-    def test_empty_get_arg(self):
-        argv=('test1', '')
-        with patch('sys.argv', new=argv):
-            self.assertRaisesRegex(ValueError, f"Usage: {argv[0]}",
-                cci_arts.get_arg, 1, "empty")
+    def main_result_has(self, results, stdout_filepath, action="downloaded"):
+        for result in results:
+            for action_filepath in result[action]:
+                if action_filepath == stdout_filepath:
+                    exists=os.path.isfile(os.path.join(self.tmp.name, action_filepath))
+                    if "downloaded" in action:
+                        self.assertTrue(exists,
+                            msg=f"Downloaded not found: '{action_filepath}'")
+                        return
+                    # action==skipped
+                    self.assertFalse(exists,
+                        msg=f"Skipped file found: '{action_filepath}'")
+                    return
+        self.fail(f"Expecting to find {action_filepath} entry in main()'s {action} results")
 
-    def test_empty_get_arg(self):
-        argv=('test2', '')
-        fake_exit = Mock()
+    def test_cirrus_ci_download_all(self):
+        expect_rx = re.compile(f".+'{self.bid}/[^/]+/[^/]+/.+'")
+        # N/B: This makes debugging VERY difficult, comment out for pdb use
         fake_stdout = StringIO()
         fake_stderr = StringIO()
-        with patch('sys.argv', new=argv), patch('sys.exit', new=fake_exit):
-            # N/B: This makes debugging VERY difficult
-            with redirect_stderr(fake_stderr), redirect_stdout(fake_stdout):
-                cci_arts.get_arg(2, "unset")
-        self.assertEqual(fake_stdout.getvalue(), '')
-        self.assertRegex(fake_stderr.getvalue(), r'Error: Missing')
-        fake_exit.assert_called_with(1)
-
-    def test_art_to_url(self, test_arts=TEST_ARTIFACTS):
-        exp_tid=1234
-        exp_repo="foo/bar"
-        exp_bucket="snafu"
-        args = (exp_tid, test_arts, exp_repo, exp_bucket)
-        actual = cci_arts.art_to_url(*args)
-        for art_n, act_name_url in enumerate(actual):
-            exp_name = f"test_art-{art_n}"
-            act_name = act_name_url[0]
-            with self.subTest(exp_name=exp_name, act_name=act_name):
-                self.assertEqual(exp_name, act_name)
-
-            # Name and path must be url-encoded
-            exp_q_name = quote(exp_name)
-            exp_q_path = quote(test_arts[art_n]["files"][0]["path"])
-            # No shortcut here other than duplicating the well-established format
-            exp_url = f"{self.FAKE_GCS}/{exp_bucket}/artifacts/{exp_repo}/{exp_tid}/{exp_q_name}/{exp_q_path}"
-            act_url = act_name_url[1]
-            with self.subTest(exp_url=exp_url, act_url=act_url):
-                self.assertEqual(exp_url, act_url)
-
-    def test_bad_art_to_url(self):
-        broken_artifacts = yaml.safe_load(TestUtils.TEST_ARTIFACTS_YAML)
-        del broken_artifacts[0]["files"]  # Ref #1 (below)
-        broken_artifacts[1]["files"] = {}
-        broken_artifacts[2] = {}  # Ref #2 (below)
-        fake_stdout = StringIO()
-        fake_stderr = StringIO()
-        # N/B: debugging VERY difficult
         with redirect_stderr(fake_stderr), redirect_stdout(fake_stdout):
-            self.test_art_to_url(test_arts=broken_artifacts)
+            results = ccia.main(self.bid)
+        self.assertEqual(fake_stderr.getvalue(), '')
+        for line in fake_stdout.getvalue().splitlines():
+            with self.subTest(line=line):
+                s_line = line.lower().strip()
+                filepath = line.split(sep="'", maxsplit=3)[1]
+                self.assertRegex(s_line, expect_rx)
+                if s_line.startswith("download"):
+                    self.main_result_has(results, filepath)
+                elif s_line.startswith("skip"):
+                    self.main_result_has(results, filepath, "skipped")
+                else:
+                    self.fail(f"Unexpected stdout line: '{s_line}'")
 
-        stderr = fake_stderr.getvalue()
-        stdout = fake_stdout.getvalue()
-        self.assertEqual(stdout, '')
-        # Ref #1 (above)
-        self.assertRegex(stderr, r"Warning:.+TID 1234.+key 'files'")
-        # Ref #2 (above)
-        self.assertRegex(stderr, r"Warning:.+TID 1234.+key 'name'")
-
+    def test_cirrus_ci_download_none(self):
+        # N/B: This makes debugging VERY difficult, comment out for pdb use
+        fake_stdout = StringIO()
+        fake_stderr = StringIO()
+        with redirect_stderr(fake_stderr), redirect_stdout(fake_stdout):
+            results = ccia.main(self.bid, r"this-will-match-nothing")
+        for line in fake_stdout.getvalue().splitlines():
+            with self.subTest(line=line):
+                s_line = line.lower().strip()
+                filepath = line.split(sep="'", maxsplit=3)[1]
+                self.assertRegex(s_line, r"skipping")
+                self.main_result_has(results, filepath, "skipped")
 
 if __name__ == "__main__":
     unittest.main()
