@@ -1,7 +1,10 @@
+#!/bin/bash
 
 # Installs 'build-push' script system-wide.  NOT intended to be used directly
 # by humans, should only be used indirectly by running
 # ../bin/install_automation.sh <ver> build-push
+
+set -eo pipefail
 
 source "$AUTOMATION_LIB_PATH/anchors.sh"
 source "$AUTOMATION_LIB_PATH/console_output.sh"

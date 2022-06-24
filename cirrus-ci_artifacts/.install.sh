@@ -1,8 +1,11 @@
+#!/bin/bash
 
 # Installs cirrus-ci_artifacts and a python virtual environment
 # to execute with.  NOT intended to be used directly
 # by humans, should only be used indirectly by running
 # ../bin/install_automation.sh <ver> cirrus-ci_artifacts
+
+set -eo pipefail
 
 source "$AUTOMATION_LIB_PATH/anchors.sh"
 source "$AUTOMATION_LIB_PATH/console_output.sh"
@@ -25,11 +28,11 @@ if [[ $UID -eq 0 ]]; then
 fi
 
 cd $(dirname $(realpath "${BASH_SOURCE[0]}"))
-virtualenv --quiet --clear --download --activators bash \
+virtualenv --clear --download \
     $AUTOMATION_LIB_PATH/ccia.venv
 (
     source $AUTOMATION_LIB_PATH/ccia.venv/bin/activate
-    pip3 install --quiet --requirement ./requirements.txt
+    pip3 install --requirement ./requirements.txt
     deactivate
 )
 install -v $INST_PERM_ARG -m '0644' -D -t "$INSTALL_PREFIX/lib/ccia.venv/bin" \

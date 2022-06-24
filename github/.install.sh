@@ -1,7 +1,10 @@
+#!/bin/bash
 
 # Installs common Github Action utilities system-wide.  NOT intended to be used directly
 # by humans, should only be used indirectly by running
 # ../bin/install_automation.sh <ver> github
+
+set -eo pipefail
 
 source "$AUTOMATION_LIB_PATH/anchors.sh"
 source "$AUTOMATION_LIB_PATH/console_output.sh"
@@ -21,7 +24,6 @@ if [[ $UID -eq 0 ]]; then
 fi
 
 cd $(dirname $(realpath "${BASH_SOURCE[0]}"))
-install -v $INST_PERM_ARG -D -t "$INSTALL_PREFIX/bin" ./bin/*
 install -v $INST_PERM_ARG -D -t "$INSTALL_PREFIX/lib" ./lib/*
 
 # Needed for installer testing
