@@ -1,34 +1,41 @@
 #!/usr/bin/env python3
 
-"""
-Verify contents of .cirrus.yml meet specific expectations
-"""
+"""Verify contents of .cirrus.yml meet specific expectations."""
 
+import asyncio
 import os
-from tempfile import TemporaryDirectory
 import re
-from io import StringIO
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
-from unittest.mock import MagicMock, patch, mock_open
-import yaml
-import asyncio
+from io import StringIO
+from tempfile import TemporaryDirectory
+from unittest.mock import MagicMock, mock_open, patch
+
 import ccia
+
+import yaml
+
 
 def fake_makedirs(*args, **dargs):
     return None
 
+
 # Needed for testing asyncio functions and calls
 # ref: https://agariinc.medium.com/strategies-for-testing-async-code-in-python-c52163f2deab
 class AsyncMock(MagicMock):
+
     async def __call__(self, *args, **dargs):
         return super().__call__(*args, **dargs)
 
+
 class AsyncContextManager(MagicMock):
+
     async def __aenter__(self, *args, **dargs):
         return self.__enter__(*args, **dargs)
+
     async def __aexit__(self, *args, **dargs):
         return self.__exit__(*args, **dargs)
+
 
 class TestBase(unittest.TestCase):
 
@@ -40,6 +47,7 @@ class TestBase(unittest.TestCase):
         patch('ccia.CCI_GQL_URL', new=self.FAKE_CCI).start()
         patch('ccia.CCI_ART_URL', new=self.FAKE_API).start()
         self.addCleanup(patch.stopall)
+
 
 class TestUtils(TestBase):
 
@@ -86,7 +94,6 @@ class TestUtils(TestBase):
     TEST_URL_RX = re.compile(r"987654321/task_.+/test_art-.+/path/test/art/.+")
 
     def test_task_art_url_sfxs(self):
-        test_tasks = self.TEST_TASKS
         for test_task in self.TEST_TASKS:
             actual = ccia.task_art_url_sfxs(test_task)
             with self.subTest(test_task=test_task):
@@ -100,10 +107,10 @@ class TestUtils(TestBase):
     def test_download_artifacts_all(self):
         for test_task in self.TEST_TASKS:
             with self.subTest(test_task=test_task), \
-                patch('ccia.download_artifact', new_callable=AsyncMock), \
-                patch('ccia.ClientSession', new_callable=AsyncContextManager), \
-                patch('ccia.makedirs', new=fake_makedirs), \
-                patch('ccia.open', new=mock_open()):
+                    patch('ccia.download_artifact', new_callable=AsyncMock), \
+                    patch('ccia.ClientSession', new_callable=AsyncContextManager), \
+                    patch('ccia.makedirs', new=fake_makedirs), \
+                    patch('ccia.open', new=mock_open()):
 
                 # N/B: This makes debugging VERY difficult, comment out for pdb use
                 fake_stdout = StringIO()
@@ -122,7 +129,7 @@ class TestMain(unittest.TestCase):
         ccia.VERBOSE = True
         try:
             self.bid = os.environ["CIRRUS_BUILD_ID"]
-        except KeyError as xcpt:
+        except KeyError:
             self.skipTest("Requires running under Cirrus-CI")
         self.tmp = TemporaryDirectory(prefix="test_ccia_tmp")
         self.cwd = os.getcwd()
@@ -136,14 +143,14 @@ class TestMain(unittest.TestCase):
         for result in results:
             for action_filepath in result[action]:
                 if action_filepath == stdout_filepath:
-                    exists=os.path.isfile(os.path.join(self.tmp.name, action_filepath))
+                    exists = os.path.isfile(os.path.join(self.tmp.name, action_filepath))
                     if "downloaded" in action:
                         self.assertTrue(exists,
-                            msg=f"Downloaded not found: '{action_filepath}'")
+                                        msg=f"Downloaded not found: '{action_filepath}'")
                         return
                     # action==skipped
                     self.assertFalse(exists,
-                        msg=f"Skipped file found: '{action_filepath}'")
+                                     msg=f"Skipped file found: '{action_filepath}'")
                     return
         self.fail(f"Expecting to find {action_filepath} entry in main()'s {action} results")
 
@@ -179,6 +186,7 @@ class TestMain(unittest.TestCase):
                 filepath = line.split(sep="'", maxsplit=3)[1]
                 self.assertRegex(s_line, r"skipping")
                 self.main_result_has(results, filepath, "skipped")
+
 
 if __name__ == "__main__":
     unittest.main()
