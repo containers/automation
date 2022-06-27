@@ -259,7 +259,7 @@ elif [[ "$_MAGIC_JUJU" == "$_DEFAULT_MAGIC_JUJU" ]]; then
                 INSTALLATION_SOURCE=$INSTALLATION_SOURCE \
                 A_DEBUG=$A_DEBUG \
                 MAGIC_JUJU=$_MAGIC_JUJU \
-                /bin/bash $CHAIN_TO
+                $CHAIN_TO
             msg "##### Installation complete for '$arg' subcomponent"
         else
             msg "Warning: Cannot find installer for $CHAIN_TO"

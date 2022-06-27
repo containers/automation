@@ -8,7 +8,7 @@ source $TEST_SOURCE_DIRPATH/testlib.sh || exit 1
 SUBJ_FILEPATH="$TEST_DIR/$SUBJ_FILENAME"
 TEST_CONTEXT="$TEST_SOURCE_DIRPATH/test_context"
 EMPTY_CONTEXT=$(mktemp -d -p '' .tmp_$(basename ${BASH_SOURCE[0]})_XXXX)
-export NATIVE_GOARCH=$($RUNTIME info --format='{{.host.arch}}')
+export NATIVE_GOARCH=$(buildah info --format='{{.host.arch}}')
 
 test_cmd "Verify error when automation library not found" \
     2 'ERROR: Expecting \$AUTOMATION_LIB_PATH' \
