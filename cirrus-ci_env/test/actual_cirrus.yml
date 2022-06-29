@@ -31,6 +31,7 @@ env:
 
     # Google-cloud VM Images
     IMAGE_SUFFIX: "c6524344056676352"
+    FEDORA_AMI_ID: "ami-04f37091c3ec43890"
     FEDORA_CACHE_IMAGE_NAME: "fedora-${IMAGE_SUFFIX}"
     PRIOR_FEDORA_CACHE_IMAGE_NAME: "prior-fedora-${IMAGE_SUFFIX}"
     UBUNTU_CACHE_IMAGE_NAME: "ubuntu-${IMAGE_SUFFIX}"
@@ -60,6 +61,8 @@ timeout_in: 60m
 
 
 gcp_credentials: ENCRYPTED[a28959877b2c9c36f151781b0a05407218cda646c7d047fc556e42f55e097e897ab63ee78369dae141dcf0b46a9d0cdd]
+
+aws_credentials: ENCRYPTED[4ca070bffe28eb9b27d63c568b52970dd46f119c3a83b8e443241e895dbf1737580b4d84eed27a311a2b74287ef9f79f]
 
 
 # Default/small container image to execute tasks with
@@ -555,6 +558,33 @@ rootless_integration_test_task:
     always: *int_logs_artifacts
 
 
+podman_machine_task:
+    name: *std_name_fmt
+    alias: podman_machine
+    # FIXME: Added for speedy-testing
+    only_if: $CIRRUS_CHANGE_TITLE =~ '.*CI:BUILD.*'
+    depends_on:
+        - build
+        - local_integration_test
+        - remote_integration_test
+        - container_integration_test
+        - rootless_integration_test
+    ec2_instance:
+        image: "${VM_IMAGE_NAME}"
+        type: m5zn.metal  # Bare-metal instance is required
+        region: us-east-1
+    env:
+      TEST_FLAVOR: "machine"
+      PRIV_NAME: "rootless"  # intended use-case
+      DISTRO_NV: "${FEDORA_NAME}"
+      VM_IMAGE_NAME: "${FEDORA_AMI_ID}"
+    clone_script: *noop  # Comes from cache
+    gopath_cache: *ro_gopath_cache
+    setup_script: *setup
+    main_script: *main
+    always: *int_logs_artifacts
+
+
 # Always run subsequent to integration tests.  While parallelism is lost
 # with runtime, debugging system-test failures can be more challenging
 # for some golang developers.  Otherwise the following tasks run across
@@ -690,6 +720,7 @@ success_task:
         - remote_integration_test
         - rootless_integration_test
         - container_integration_test
+        - podman_machine
         - local_system_test
         - remote_system_test
         - rootless_system_test

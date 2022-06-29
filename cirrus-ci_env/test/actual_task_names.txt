@@ -35,6 +35,7 @@ int podman ubuntu-2010 root host
 int remote fedora-33 root host
 int remote ubuntu-2004 root host
 int remote ubuntu-2010 root host
+machine podman fedora-33 rootless host
 sys podman fedora-33 root host
 sys podman fedora-33 rootless host
 sys podman ubuntu-2004 root host

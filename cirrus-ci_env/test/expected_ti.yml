@@ -110,6 +110,9 @@ int remote ubuntu-2004 root host:
 int remote ubuntu-2010 root host:
 - gcevm
 - ubuntu-c6524344056676352
+machine podman fedora-33 rootless host:
+- ec2vm
+- ami-04f37091c3ec43890
 sys podman fedora-33 root host:
 - gcevm
 - fedora-c6524344056676352
