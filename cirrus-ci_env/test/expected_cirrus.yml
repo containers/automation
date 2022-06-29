@@ -345,6 +345,14 @@ tasks:
       TEST_FLAVOR: int
       VM_IMAGE_NAME: ubuntu-c6524344056676352
       _BUILD_CACHE_HANDLE: ubuntu-2010-build-${CIRRUS_BUILD_ID}
+  machine podman fedora-33 rootless host:
+    alias: podman_machine
+    env:
+      CTR_FQIN: quay.io/libpod/fedora_podman:c6524344056676352
+      DISTRO_NV: fedora-33
+      TEST_FLAVOR: machine
+      PRIV_NAME: rootless
+      VM_IMAGE_NAME: ami-04f37091c3ec43890
   sys podman fedora-33 root host:
     alias: local_system_test
     env:

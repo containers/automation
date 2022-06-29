@@ -190,6 +190,8 @@ class CirrusCfg:
         # Order is significant, VMs always override containers
         if "gce_instance" in item:
             return "gcevm", item["gce_instance"].get("image_name", default_image)
+        if "ec2_instance" in item:
+            return "ec2vm", item["ec2_instance"].get("image", default_image)
         elif "osx_instance" in item or "macos_instance" in item:
             _ = item.get("osx_instance", item.get("macos_instance"))
             return "osx", _.get("image", default_image)
