@@ -36,6 +36,22 @@ our @Colors = qw(
                     slateblue1 yellow4 brown chartreuse seagreen3 darkgreen
             );
 
+# Color overrides: use sys/int/etc colors from github-ci-highlight Greasemonkey
+#
+#   https://github.com/edsantiago/greasemonkey/tree/master/github-ci-highlight
+#
+# No sane way to fetch colors automatically, so, just duplicate.
+our %Color_Override = (
+    #               FG  BG
+    apiv2       => 'fff:c0c',
+    bud         => '000:fc0',
+    compose     => '660:fff',
+    integration => '000:960',
+    system      => '000:cf9',
+    unit        => '000:f99',
+    upgrade     => 'f0c:fff',
+);
+
 # END   user-customizable section
 ###############################################################################
 
@@ -668,13 +684,27 @@ sub _draw_boxes {
     my $node = $task->{name};
     return if $self->{_gv}{done}{$node}++;
 
-    # Terminal nodes: pop from the end of the color list (expect greens)
     my $color;
-    if (! $task->depended_on_by) {
-        $color = pop @{$self->{_gv}{colors}};
+    my $fill = '';
+    for my $term (sort keys %Color_Override) {
+        if ($node =~ /(^|_)${term}_/) {
+            my ($fg, $bg) = split ':', $Color_Override{$term};
+            $fg =~ s/(.)/${1}0/g;
+            $bg =~ s/(.)/${1}0/g;
+            $color = qq{"#$fg\"};
+            $fill  = qq{ fillcolor="#$bg" style=filled};
+            last;
+        }
     }
-    else {
-        $color = shift @{$self->{_gv}{colors}};
+
+    # Terminal nodes: pop from the end of the color list (expect greens)
+    if (! $color) {
+        if (! $task->depended_on_by) {
+            $color = pop @{$self->{_gv}{colors}};
+        }
+        else {
+            $color = shift @{$self->{_gv}{colors}};
+        }
     }
     if (! $color) {
         warn "$ME: Ran out of colors\n";
@@ -751,13 +781,21 @@ sub _draw_boxes {
         }
     }
 
-    $self->{_gv}{dot} .= "  \"$node\" [shape=$shape style=bold color=$color fontcolor=$color";
+    $self->{_gv}{dot} .= "  \"$node\" [shape=$shape style=bold color=$color$fill fontcolor=$color";
     $self->{_gv}{dot} .= " label=\"$node$trigger\\l\|$label\""
         if $trigger || $label;
     $self->{_gv}{dot} .= "]\n";
 
     for my $dep ($task->depended_on_by) {
-        $self->{_gv}{dot} .= "  \"$node\" -> \"$dep->{name}\" [color=$color]\n";
+        my $c = $color;
+        # For custom-override boxes, when FG is black or very light, use
+        # background color for arrow.
+        if ($c =~ /000000/ || $c =~ /f.f.f./) {
+            if ($fill =~ /\"#([0-9a-f]{6})\"/) {
+                $c = qq{"#$1"};
+            }
+        }
+        $self->{_gv}{dot} .= "  \"$node\" -> \"$dep->{name}\" [color=$c]\n";
         $self->_draw_boxes($dep);
     }
 }
