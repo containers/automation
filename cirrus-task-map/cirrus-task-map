@@ -782,8 +782,10 @@ sub _draw_boxes {
     }
 
     $self->{_gv}{dot} .= "  \"$node\" [shape=$shape style=bold color=$color$fill fontcolor=$color";
-    $self->{_gv}{dot} .= " label=\"$node$trigger\\l\|$label\""
-        if $trigger || $label;
+    if ($label) {
+        (my $nodename = $node) =~ s/_/ /g;
+        $self->{_gv}{dot} .= " label=\"$nodename$trigger\\l\|$label\"";
+    }
     $self->{_gv}{dot} .= "]\n";
 
     for my $dep ($task->depended_on_by) {
