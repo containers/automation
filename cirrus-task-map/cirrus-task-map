@@ -720,6 +720,10 @@ sub _draw_boxes {
         elsif ($only_if =~ /CIRRUS_CHANGE.*release.*bump/i) {
             $label .= "[only on release PR]";
         }
+        # swagger
+        elsif ($only_if =~ /CIRRUS_CHANGE_TITLE.*CI:BUILD.*CIRRUS_CRON.*multiarch/) {
+            $label .= "[SKIP: CI:BUILD or cron-multiarch]";
+        }
         else {
             $label .= "[only if: $only_if]";
         }
