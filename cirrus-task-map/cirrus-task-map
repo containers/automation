@@ -725,6 +725,12 @@ sub _draw_boxes {
         }
     }
 
+    # Special case for manual (or other??) trigger type
+    my $trigger = '';
+    if (my $t = $task->{yml}{trigger_type}) {
+        $trigger = "\\l(TRIGGER: " . uc($t) . ")";
+    }
+
     # Special cases (also hardcoded) for tasks that are skipped.
     if (my $skip = $task->{yml}{skip}) {
         $shape = 'record';
@@ -742,7 +748,8 @@ sub _draw_boxes {
     }
 
     $self->{_gv}{dot} .= "  \"$node\" [shape=$shape style=bold color=$color fontcolor=$color";
-    $self->{_gv}{dot} .= " label=\"$node\\l\|$label\"" if $label;
+    $self->{_gv}{dot} .= " label=\"$node$trigger\\l\|$label\""
+        if $trigger || $label;
     $self->{_gv}{dot} .= "]\n";
 
     for my $dep ($task->depended_on_by) {
