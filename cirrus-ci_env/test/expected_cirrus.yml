@@ -259,6 +259,12 @@ tasks:
       TEST_FLAVOR: release
       VM_IMAGE_NAME: fedora-c6524344056676352
       _BUILD_CACHE_HANDLE: fedora-33-build-${CIRRUS_BUILD_ID}
+  Verify Win Installer Build:
+    alias: win_installer
+    env:
+      PATH: "${PATH};C:\\ProgramData\\chocolatey\\bin"
+      CIRRUS_SHELL: powershell
+      WIN_INST_VER: 9.9.9
   Windows Cross:
     alias: alt_build
     env:

@@ -290,6 +290,7 @@ class TestCirrusCfg(TestBase):
         self.assertEqual(len(actual_cfg.tasks), len(expected_ti))
         actual_ti = {k: [v["inst_type"], v["inst_image"]]
                      for (k, v) in actual_cfg.tasks.items()}
+        self.maxDiff = None  # show the full dif
         self.assertDictEqual(actual_ti, expected_ti)
 
 

@@ -102,11 +102,18 @@ class CirrusCfg:
         for k, v in env.items():
             if "ENCRYPTED" in str(v):
                 continue
+            elif k == "PATH":
+                # Handled specially by Cirrus, preserve value as-is.
+                def_fmt[k] = str(v)
+                continue
             _ = def_fmt.dollarcurly_env_var.sub(rep, str(v))
             def_fmt[k] = def_fmt.dollar_env_var.sub(rep, _)
         out = dict()
         for k, v in def_fmt.items():
             if k in env:  # Don't unnecessarily duplicate globals
+                if k == "PATH":
+                    out[k] = str(v)
+                    continue
                 try:
                     out[k] = str(v).format_map(def_fmt)
                 except ValueError as xcpt:
@@ -195,15 +202,17 @@ class CirrusCfg:
         elif "osx_instance" in item or "macos_instance" in item:
             _ = item.get("osx_instance", item.get("macos_instance"))
             return "osx", _.get("image", default_image)
+        elif "image" in item.get("windows_container", ""):
+            return "wincntnr", item["windows_container"].get("image", default_image)
         elif "image" in item.get("container", ""):
             return "container", item["container"].get("image", default_image)
         elif "dockerfile" in item.get("container", ""):
             return "dockerfile", item["container"].get("dockerfile", default_image)
         else:
-            inst_type = None
+            inst_type = "unsupported"
             if self.global_type is not None:
                 inst_type = default_type
-            inst_image = None
+            inst_image = "unknown"
             if self.global_image is not None:
                 inst_image = default_image
             return inst_type, inst_image
