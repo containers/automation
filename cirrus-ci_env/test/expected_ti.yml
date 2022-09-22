@@ -80,6 +80,9 @@ Validate fedora-33 Build:
 Verify Release:
 - gcevm
 - fedora-c6524344056676352
+Verify Win Installer Build:
+- wincntnr
+- cirrusci/windowsservercore:2019
 Windows Cross:
 - gcevm
 - fedora-c6524344056676352

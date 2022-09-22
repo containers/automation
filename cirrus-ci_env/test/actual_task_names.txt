@@ -25,6 +25,7 @@ Upgrade test: from v2.1.1
 VM img. keepalive
 Validate fedora-33 Build
 Verify Release
+Verify Win Installer Build
 Windows Cross
 compose test on fedora-33
 int podman fedora-33 root container
