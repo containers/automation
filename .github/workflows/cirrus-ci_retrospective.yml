@@ -44,7 +44,7 @@ jobs:
                 GITHUB_TOKEN: ${{ github.token }}
 
             - name: Clone latest main branch repository code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v3
               with:
                   fetch-depth: 1
                   path: ./main
@@ -84,7 +84,7 @@ jobs:
             # block allow direct checkout of PR code.
             - if: steps.retro.outputs.do_intg == 'true'
               name: Clone all repository code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v3
               with:
                   # Get ALL available history to avoid problems during any run of
                   # 'git describe' from any script in the repo.
@@ -230,7 +230,7 @@ jobs:
             # Provide an archive of files for debugging/analysis.
             - if: always() && steps.retro.outputs.do_intg == 'true'
               name: Archive event, build, and debugging output
-              uses: actions/upload-artifact@v1.0.0
+              uses: actions/upload-artifact@v3.1.0
               with:
                   name: pr_${{ steps.retro.outputs.prn }}_debug.zip
                   path: ./test_artifacts
