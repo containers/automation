@@ -1,0 +1,13 @@
+Renovate is a service similar to GitHub Dependabot, but with
+(fantasticly) more configuration options.  So many options
+in fact, there is a "presets" feature which permits re-use
+of common option-sets.
+
+Monitoring Dashboard:
+https://app.renovatebot.com/dashboard#github/containers
+
+Configuration Reference:
+https://docs.renovatebot.com/configuration-options/
+
+Configuration change process:
+https://docs.renovatebot.com/getting-started/installing-onboarding/#reconfigure-via-pr

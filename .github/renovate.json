@@ -1,0 +1,12 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "config:semverAllMonthly"
+  ],
+  "reviewers": ["cevich"],
+  "commitMessagePrefix": "[skip ci]",
+  "prBodyNotes": "\n```release-note\n{{{commitMessageAction}}} {{{commitMessageTopic}}} {{commitMessageExtra}} {{commitMessageSuffix}}\n```\n",
+  "draftPR": true,
+  "prHourlyLimit": 1
+}
