@@ -30,7 +30,7 @@ jobs:
     unit-tests:  # N/B: Duplicates `ubuntu_unit_tests.yml` - templating not supported
         runs-on: ubuntu-20.04
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   # Testing installer requires a full repo. history
                   fetch-depth: 0
@@ -70,14 +70,14 @@ jobs:
 
             - id: create_release  # Pre-req for upload-release-asset below
               name: Create a new Github Release item for tag
-              uses: actions/create-release@v1.0.1
+              uses: actions/create-release@v1.1.4
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                 tag_name: ${{ steps.get_tag.outputs.TAG_NAME }}
                 release_name: ${{ steps.get_tag.outputs.TAG_NAME }}
 
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   fetch-depth: 0
                   path: ./
@@ -102,7 +102,7 @@ jobs:
             REPO_USER: libpod
             REPO_NAME: cirrus-ci_retrospective
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
               with:
                   fetch-depth: 0
                   path: ./
@@ -145,7 +145,7 @@ jobs:
               run: jq --indent 4 --color-output . ${{ github.event_path }}
 
             - if: always()
-              uses: actions/upload-artifact@v1.0.0
+              uses: actions/upload-artifact@v3.1.0
               name: Archive triggering event JSON
               with:
                   name: event.json.zip
