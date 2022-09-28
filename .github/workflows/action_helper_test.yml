@@ -16,7 +16,7 @@ env:
     ACTIONS_STEP_DEBUG: '${{ secrets.ACTIONS_STEP_DEBUG }}'
 
 jobs:
-    unit-test:
+    helper_unit-test:
         runs-on: ubuntu-latest
         steps:
             - name: Clone the repository code
