@@ -1,13 +1,41 @@
 Renovate is a service similar to GitHub Dependabot, but with
-(fantasticly) more configuration options.  So many options
+(fantastically) more configuration options.  So many options
 in fact, there is a "presets" feature which permits re-use
 of common option-sets.
 
-Monitoring Dashboard:
-https://app.renovatebot.com/dashboard#github/containers
+Since the configuration is in JSON, this readme file serves
+as both general reference and documentation for the current
+configuration settings.
+
+Configuration changes:
+N/B: Changes should be pushed to renovate/configure branch.
+     Please remember to update this readme as well!
+https://docs.renovatebot.com/getting-started/installing-onboarding/#reconfigure-via-pr
 
 Configuration Reference:
 https://docs.renovatebot.com/configuration-options/
 
-Configuration change process:
-https://docs.renovatebot.com/getting-started/installing-onboarding/#reconfigure-via-pr
+
+Monitoring Dashboard:
+https://app.renovatebot.com/dashboard#github/containers
+
+################################################
+##### Current configuration comments/notes #####
+################################################
+
+Extends:
+    - The "config:base" preset brings in a sensible set of
+      defaults as a good starting point.
+    - ":preserveSemverRanges" preset causes Renovate to
+      respect any specification of Semantic versions by
+      range (e.g. "1.2.*" or "~> 3" depending on language)
+    - "group:all" preset causes Renovate to open a single
+      PR with all necessary updates, according to schedule
+      and rate-limit.
+
+reviewers: Hard-coded list of reviewers to auto-assign
+to update PRs.
+
+draftPR: What the name says
+
+prHourlyLimit: Number of PRs Renovate is allowed to open per hour.
