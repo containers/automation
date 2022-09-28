@@ -6,8 +6,6 @@
     "group:all"
   ],
   "reviewers": ["cevich"],
-  "commitMessagePrefix": "[CI:BUILD]",
-  "prBodyNotes": "\n```release-note\n{{{commitMessageAction}}} {{{commitMessageTopic}}} {{commitMessageExtra}} {{commitMessageSuffix}}\n```\n",
   "draftPR": true,
   "prHourlyLimit": 1
 }
