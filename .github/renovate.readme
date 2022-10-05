@@ -29,9 +29,6 @@ Extends:
     - ":preserveSemverRanges" preset causes Renovate to
       respect any specification of Semantic versions by
       range (e.g. "1.2.*" or "~> 3" depending on language)
-    - "group:all" preset causes Renovate to open a single
-      PR with all necessary updates, according to schedule
-      and rate-limit.
 
 reviewers: Hard-coded list of reviewers to auto-assign
 to update PRs.
