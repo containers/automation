@@ -36,8 +36,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   // Re-use predefined sets of configuration options to DRY
   "extends": [
-    // https://github.com/containers/automation/blob/main/default.json
-    "github>containers/automation"
+    // https://github.com/containers/automation/blob/main/renovate/defaults.json5
+    "github>containers/automation//renovate/defaults.json5"
   ],
   /*************************************************
    *** Repository-specific configuration options ***
