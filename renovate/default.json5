@@ -3,10 +3,8 @@
                   reduce the amount of boiler-plate configuration\
                   that otherwise would need to be duplicated.  It\
                   should be referenced under the 'extends' section\
-                  as github>containers/automation//renovate(<name>)\
-                  optionally with a '#vX.Y.Z' tag reference.  Where\
-                  '<name>' is the name of a github user or group\
-                  that should be assigned to dependency update prs."
+                  as github>containers/automation//renovate/default\
+                  optionally with a '#vX.Y.Z' tag reference.\
 
   /*************************************************
    ****** Global/general configuration options *****
@@ -28,11 +26,6 @@
   // Don't swamp CI, rate-limit opening of PRs w/in schedule limits.
   "prHourlyLimit": 1,
 
-  /*************************************************
-   *** Repository-specific configuration options ***
-   *************************************************/
   // Make renovate PRs stand out from the crowd
   "labels": ["dependencies_update"],
-  // Don't leave dep. update. PRs "hanging", assign them to people.
-  "assignees": ["{{arg0}}"],
 }
