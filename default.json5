@@ -3,8 +3,8 @@
                   reduce the amount of boiler-plate configuration\
                   that otherwise would need to be duplicated.  It\
                   should be referenced under the 'extends' section\
-                  as github>containers/automation optionally with\
-                  a '#vX.Y.Z' tag reference.\
+                  as github>containers/automation:default.json5\
+                  optionally with a '#vX.Y.Z' tag reference."
 
   /*************************************************
    ****** Global/general configuration options *****
