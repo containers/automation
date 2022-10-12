@@ -36,5 +36,5 @@
   "prHourlyLimit": 1,
 
   // Make renovate PRs stand out from the crowd
-  "labels": ["dependencies_update"],
+  "labels": ["dependencies"],
 }
