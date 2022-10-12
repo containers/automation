@@ -1,12 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
-    ":preserveSemverRanges",
-    ":gitSignOff",
-    ":rebaseStalePrs",
-    "schedule:weekly"
-  ],
-  "prHourlyLimit": 1,
-  "labels": ["dependencies_update"]
+    "github>containers/automation//renovate/defaults.json5"
+  ]
 }
