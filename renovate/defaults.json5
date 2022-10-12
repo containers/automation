@@ -4,11 +4,11 @@
   "description": "This is a basic preset intended\
   for reuse to reduce the amount of boiler-plate\
   configuration that otherwise would need to be\
-  duplicated.  The default-preset for this repository\
-  redirects here (because json5 cannot be used in the\
-  default).  It should be referenced by other configs.\
-  under the 'extends' section as:\
-  github>containers/automation",
+  duplicated. It should be referenced from other\
+  repositories renovate config under the 'extends'\
+  section as:\
+  github>containers/automation//renovate/defaults.json5\
+  (optionally with a '#X.Y.Z' version-tag suffix).",
 
   /*************************************************
    ****** Global/general configuration options *****
