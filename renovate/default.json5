@@ -1,0 +1,38 @@
+{
+  "description": "This is a basic preset intended for reuse to\
+                  reduce the amount of boiler-plate configuration\
+                  that otherwise would need to be duplicated.  It\
+                  should be referenced under the 'extends' section\
+                  as github>containers/automation//renovate(<name>)\
+                  optionally with a '#vX.Y.Z' tag reference.  Where\
+                  '<name>' is the name of a github user or group\
+                  that should be assigned to dependency update prs."
+
+  /*************************************************
+   ****** Global/general configuration options *****
+   *************************************************/
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  // Re-use predefined sets of configuration options to DRY
+  "extends": [
+    // https://docs.renovatebot.com/presets-config/#configbase
+    "config:base",
+    // https://docs.renovatebot.com/presets-default/#preservesemverranges
+    ":preserveSemverRanges",
+    // https://docs.renovatebot.com/presets-default/#gitsignoff
+    ":gitSignOff",
+    // Always rebase dep. update PRs from `main` when PR is stale
+    ":rebaseStalePrs",
+    // https://docs.renovatebot.com/presets-schedule/#scheduleweekly
+    "schedule:weekly"
+  ],
+  // Don't swamp CI, rate-limit opening of PRs w/in schedule limits.
+  "prHourlyLimit": 1,
+
+  /*************************************************
+   *** Repository-specific configuration options ***
+   *************************************************/
+  // Make renovate PRs stand out from the crowd
+  "labels": ["dependencies_update"],
+  // Don't leave dep. update. PRs "hanging", assign them to people.
+  "assignees": ["{{arg0}}"],
+}

@@ -36,25 +36,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   // Re-use predefined sets of configuration options to DRY
   "extends": [
-    // https://docs.renovatebot.com/presets-config/#configbase
-    "config:base",
-    // https://docs.renovatebot.com/presets-default/#preservesemverranges
-    ":preserveSemverRanges",
-    // https://docs.renovatebot.com/presets-default/#gitsignoff
-    ":gitSignOff",
-    // Always rebase dep. update PRs from `main` when PR is stale
-    ":rebaseStalePrs",
-    // https://docs.renovatebot.com/presets-schedule/#scheduleweekly
-    "schedule:weekly"
+    // https://github.com/containers/automation/blob/main/renovate/default.json5
+    "github>containers/automation//renovate(cevich)"
   ],
-  // Don't swamp CI, rate-limit opening of PRs w/in schedule limits.
-  "prHourlyLimit": 1,
-
-  /*************************************************
-   *** Repository-specific configuration options ***
-   *************************************************/
-  // Make renovate PRs stand out from the crowd
-  "labels": ["dependencies_update"],
-  // Don't leave dep. update. PRs "hanging", assign them to people.
-  "reviewers": ["cevich"],
 }
