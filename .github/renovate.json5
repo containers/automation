@@ -37,6 +37,6 @@
   // Re-use predefined sets of configuration options to DRY
   "extends": [
     // https://github.com/containers/automation/blob/main/renovate/default.json5
-    "github>containers/automation//renovate:default(cevich)"
+    "github>containers/automation//renovate/default(cevich)"
   ],
 }
