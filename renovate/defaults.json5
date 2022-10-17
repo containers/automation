@@ -1,3 +1,14 @@
+/*
+
+Validate this file before commiting with (from repository root):
+
+    podman run -it \
+        -v ./renovate/defaults.json5:/usr/src/app/renovate.json5:z \
+        docker.io/renovate/renovate:latest \
+        renovate-config-validator
+
+*/
+
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
 
@@ -27,9 +38,6 @@
 
     // Always rebase dep. update PRs from `main` when PR is stale
     ":rebaseStalePrs",
-
-    // https://docs.renovatebot.com/presets-schedule/#scheduleweekly
-    "schedule:weekly",
   ],
 
   // The default setting is ambiguous, explicitly base schedules on UTC
@@ -38,6 +46,9 @@
   // Don't swamp CI, rate-limit opening of PRs w/in schedule limits.
   "prHourlyLimit": 1,
 
+  // Allow PRs to open (@ hourly rate) one day per week.
+  "schedule": "after 1am and before 11am on Monday",
+
   // Make renovate PRs stand out from the crowd
   "labels": ["dependencies"],
 
@@ -45,5 +56,6 @@
   // such that security-alert PRs may be opened immediately.
   "vulnerabilityAlerts": {
     "schedule": ["at any time"],
+    "labels": ["dependencies", "security"],
   }
 }
