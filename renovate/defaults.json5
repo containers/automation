@@ -1,3 +1,14 @@
+/*
+
+Validate this file before commiting with (from repository root):
+
+    podman run -it \
+        -v ./renovate/defaults.json5:/usr/src/app/renovate.json5:z \
+        docker.io/renovate/renovate:latest \
+        renovate-config-validator
+
+*/
+
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
 
