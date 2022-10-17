@@ -32,9 +32,18 @@
     "schedule:weekly",
   ],
 
+  // The default setting is ambiguous, explicitly base schedules on UTC
+  "timezone": "UTC",
+
   // Don't swamp CI, rate-limit opening of PRs w/in schedule limits.
   "prHourlyLimit": 1,
 
   // Make renovate PRs stand out from the crowd
   "labels": ["dependencies"],
+
+  // Default setting is an "empty" schedule.  Explicitly set this
+  // such that security-alert PRs may be opened immediately.
+  "vulnerabilityAlerts": {
+    "schedule": ["at any time"],
+  }
 }
