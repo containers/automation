@@ -66,7 +66,7 @@ jobs:
             # context data.
             - id: get_tag
               name: Retrieve the tag name
-              run: printf "::set-output name=TAG_NAME::%s\n" $(basename "$GITHUB_REF")
+              run: printf "TAG_NAME=%s\n" $(basename "$GITHUB_REF") >> $GITHUB_OUTPUT
 
             - id: create_release  # Pre-req for upload-release-asset below
               name: Create a new Github Release item for tag
@@ -128,7 +128,7 @@ jobs:
 
             - name: Retrieve the tag name
               id: get_tag
-              run: printf "::set-output name=TAG_NAME::%s\n" $(basename "$GITHUB_REF" | tee /dev/stderr)
+              run: printf "TAG_NAME=%s\n" $(basename "$GITHUB_REF" | tee /dev/stderr) >> $GITHUB_OUTPUT
 
             - name: Tag and push cirrus-ci_retrospective container image to registry
               run: |

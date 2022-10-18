@@ -21,6 +21,7 @@ source $AUTOMATION_LIB_PATH/common_lib.sh || exit 1
 
 # usage: set_out_var <name> [value...]
 set_out_var() {
+    req_env_vars GITHUB_OUTPUT
     name=$1
     shift
     value="$@"
@@ -28,5 +29,6 @@ set_out_var() {
         die "Expecting first parameter to be non-empty value for the output variable name"
     dbg "Setting Github Action step output variable '$name' to '$value'"
     # Special string recognized by Github Actions
-    printf "\n::set-output name=$name::%s\n" "$value"
+    # Ref: https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-output-parameter
+    echo "$name=$value" >> $GITHUB_OUTPUT
 }
