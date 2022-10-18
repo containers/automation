@@ -7,17 +7,14 @@ env:
     # Name of the typical destination branch for PRs.
     DEST_BRANCH: "main"
 
-
-# Default task runtime environment
-container:
-    dockerfile: ci/Dockerfile
-    cpu: 1
-    memory: 1
-
-
 # Execute all unit-tests in the repo
 cirrus-ci/unit-test_task:
     only_if: &not_docs $CIRRUS_CHANGE_TITLE !=~ '.*CI:DOCS.*'
+    # Default task runtime environment
+    container: &ci_container
+        dockerfile: ci/Dockerfile
+        cpu: 1
+        memory: 1
     env:
         CIRRUS_CLONE_DEPTH: 0
     script:
@@ -27,11 +24,23 @@ cirrus-ci/unit-test_task:
         test_output_artifacts:
             path: '*.log'
 
+cirrus-ci/renovate_validation_task:
+    only_if: *not_docs
+    container:
+        image: docker.io/renovate/renovate:latest
+    env:
+        RCV: /usr/local/bin/renovate-config-validator
+    preset_validate_script:
+        - $RCV $CIRRUS_WORKING_DIR/renovate/defaults.json5
+    repo_validate_script:
+        - $RCV $CIRRUS_WORKING_DIR/.github/renovate.json5
+
 # This is the same setup as used for Buildah CI
 gcp_credentials: ENCRYPTED[fc95bcc9f4506a3b0d05537b53b182e104d4d3979eedbf41cf54205be6397ca0bce0831d0d47580cf578dae5776548a5]
 
 cirrus-ci/build-push_test_task:
     only_if: *not_docs
+    container: *ci_container
     depends_on:
         - cirrus-ci/unit-test
     gce_instance:
@@ -76,8 +85,11 @@ cirrus-ci/build-push_test_task:
 
 # Represent primary Cirrus-CI based testing (Required for merge)
 cirrus-ci/success_task:
-    depends_on:
+    container: *ci_container
+    depends_on: &everything
+        - cirrus-ci/unit-test
         - cirrus-ci/build-push_test
+        - cirrus-ci/renovate_validation
     clone_script: mkdir -p "$CIRRUS_WORKING_DIR"
     script: >-
         echo "Required for Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
@@ -90,6 +102,7 @@ cirrus-ci/success_task:
 #      fire since the manual task has dependencies that cannot be
 #      satisfied.
 github-actions/success_task:
+    container: *ci_container
     # Note: ***DO NOT*** manually trigger this task under normal circumstances.
     #       It is triggered automatically by the cirrus-ci_retrospective
     #       Github Action.  This action is responsible for testing the PR changes
@@ -97,8 +110,7 @@ github-actions/success_task:
     trigger_type: manual
     # Only required for PRs, never tag or branch testing
     only_if: $CIRRUS_CHANGE_TITLE !=~ '.*CI:DOCS.*' && $CIRRUS_PR != ''
-    depends_on:
-        - cirrus-ci/build-push_test
+    depends_on: *everything
     clone_script: mkdir -p "$CIRRUS_WORKING_DIR"
     script: >-
         echo "Triggered by Github Action Workflow: https://github.com/${CIRRUS_REPO_FULL_NAME}/actions/runs/${GITHUB_CHECK_SUITE_ID}"
