@@ -33,9 +33,10 @@ test_cmd "The warning message prefix is compatible with github actions commands"
     0 '::warning:: This is a test warning message' \
     warn 'This is a test warning message'
 
-test_cmd "The github actions command for setting output parameter is formatted as expected" \
-    0 '::set-output name=TESTING_NAME::TESTING VALUE' \
-    set_out_var TESTING_NAME TESTING VALUE
+set_out_var TESTING_NAME TESTING VALUE
+test_cmd "The set_out_var function properly sets output value" \
+    0 'TESTING_NAME=TESTING VALUE' \
+    cat $GITHUB_OUTPUT
 
 # Must be the last command in this file
 exit_with_status
