@@ -12,7 +12,7 @@ test_cmd "Verify cirrus-ci_retrospective can be installed under $TEMPDIR" \
     env INSTALL_PREFIX=$TEMPDIR $INSTALL_SCRIPT 0.0.0 github cirrus-ci_retrospective
 
 test_cmd "Verify executing cirrus-ci_retrospective.sh gives 'Expecting' error message" \
-    2 '::error::.+Expecting' \
+    2 '::error.+Expecting' \
     env AUTOMATION_LIB_PATH=$TEMPDIR/automation/lib $TEMPDIR/automation/bin/cirrus-ci_retrospective.sh
 
 trap "rm -rf $TEMPDIR" EXIT

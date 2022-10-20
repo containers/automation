@@ -45,7 +45,7 @@ for required_var in ${req_env_vars[@]}; do
     export $required_var="$invalid_value"
     test_cmd \
         "Verify exeuction w/ \$$required_var='$invalid_value' (instead of '$valid_value') fails with helpful error message." \
-        2 "::error::.+\\\$$required_var.+'$invalid_value'" \
+        2 "::error.+\\\$$required_var.+'$invalid_value'" \
         $SUBJ_FILEPATH
     export $required_var="$valid_value"
 done
@@ -61,21 +61,21 @@ EOF
 export GITHUB_EVENT_PATH=$MOCK_EVENT_JSON_FILEPATH
 
 test_cmd "Verify expected error when fed empty mock event JSON file" \
-    1 "::error::.+check_suite.+key" \
+    1 "::error.+check_suite.+key" \
     $SUBJ_FILEPATH
 
 cat << EOF > "$MOCK_EVENT_JSON_FILEPATH"
 {"check_suite":{}}
 EOF
 test_cmd "Verify expected error when fed invalid check_suite value in mock event JSON file" \
-    1 "::error::.+check_suite.+type.+null" \
+    1 "::error.+check_suite.+type.+null" \
     $SUBJ_FILEPATH
 
 cat << EOF > "$MOCK_EVENT_JSON_FILEPATH"
 {"check_suite": {}, "action": "foobar"}
 EOF
 test_cmd "Verify error and message containing incorrect value from mock event JSON file" \
-    1 "::error::.+check_suite.+foobar" \
+    1 "::error.+check_suite.+foobar" \
     $SUBJ_FILEPATH
 
 cat << EOF > "$MOCK_EVENT_JSON_FILEPATH"
@@ -89,7 +89,7 @@ cat << EOF > "$MOCK_EVENT_JSON_FILEPATH"
 {"check_suite": {"app":{"id":null}}, "action": "completed"}
 EOF
 test_cmd "Verify expected error when 'app' id is wrong type in mock event JSON file" \
-    1 "::error::.+integer.+null" \
+    1 "::error.+integer.+null" \
     $SUBJ_FILEPATH
 
 # Must always happen last
