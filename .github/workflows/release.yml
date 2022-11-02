@@ -145,7 +145,7 @@ jobs:
               run: jq --indent 4 --color-output . ${{ github.event_path }}
 
             - if: always()
-              uses: actions/upload-artifact@v3.1.0
+              uses: actions/upload-artifact@v3.1.1
               name: Archive triggering event JSON
               with:
                   name: event.json.zip
