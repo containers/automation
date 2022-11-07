@@ -46,9 +46,6 @@ Validate this file before commiting with (from repository root):
   // Don't swamp CI, rate-limit opening of PRs w/in schedule limits.
   "prHourlyLimit": 1,
 
-  // Allow PRs to open (@ hourly rate) one day per week.
-  "schedule": "after 1am and before 11am on Monday",
-
   // Make renovate PRs stand out from the crowd
   "labels": ["dependencies"],
 
@@ -100,5 +97,16 @@ Validate this file before commiting with (from repository root):
       // due to major bug or security issue).
       "rollbackPrs": true,
     },
+
+    // Github-action updates cannot consistently be tested in a PR.
+    // This is caused by an unfixable architecture-flaw: Execution
+    // context always depends on trigger, and we (obvious) can't know
+    // that ahead of time for all workflows.  Abandon all hope and
+    // mark github-action dep. update PRs '[skip-ci]'
+    {
+      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["action"],
+      "commitMessagePrefix": "[skip-ci]"
+    }
   ],
 }
