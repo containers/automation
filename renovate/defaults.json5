@@ -52,9 +52,13 @@ Validate this file before commiting with (from repository root):
   // Default setting is an "empty" schedule.  Explicitly set this
   // such that security-alert PRs may be opened immediately.
   "vulnerabilityAlerts": {
-    "schedule": ["at any time"],
     "labels": ["dependencies", "security"],
   },
+
+  // On a busy repo, automatic-rebasing will swamp the CI system.
+  // Turn it off here, then allow individual repos. to override/enable
+  // it as appropriate.
+  "rebaseWhen": "never",
 
   /*************************************************
    ***** Golang-specific configuration options *****
