@@ -29,7 +29,7 @@ our $Default_Yml = '.cirrus.yml';
 # Try to leave one or two greens at the end: these will be used
 # for terminal nodes (e.g. "success")
 our @Colors = qw(
-                    blue orange red darkgoldenrod firebrick1 orangered4
+                    orange red darkgoldenrod firebrick1 orangered4
                     darkturquoise deeppink deepskyblue3 coral dodgerblue
                     bisque2 indigo darkorchid1 palevioletred2 slateblue4
                     cornsilk4 deepskyblue4 navajowhite2
@@ -42,14 +42,19 @@ our @Colors = qw(
 #
 # No sane way to fetch colors automatically, so, just duplicate.
 our %Color_Override = (
-    #               FG  BG
-    apiv2       => 'fff:c0c',
-    bud         => '000:fc0',
-    compose     => '660:fff',
-    integration => '000:960',
-    system      => '000:cf9',
-    unit        => '000:f99',
-    upgrade     => 'f0c:fff',
+    #                       FG  BG
+    apiv2               => 'fff:c0c',
+    bud                 => '000:fc0',
+    compose             => '660:fff',
+    integration         => '000:960',
+    system              => '000:cf9',
+    unit                => '000:f99',
+    upgrade             => 'f0c:fff',
+    '(?<!image.)build'  => '00f:fff',
+    'image.build'       => 'f85:fff',
+    validate            => '0c0:fff',
+    machine             => '330:0ff',
+    success             => '000:0f0',
 );
 
 # END   user-customizable section
@@ -443,8 +448,18 @@ sub subtasks {
     my @subtasks;
     if (my $m = $self->{yml}{matrix}) {
         for my $item (@$m) {
-            my $name = $self->_expand_matrix_name( $item );
+            my $name = $self->_expand_name( $item );
             push @subtasks, "- " . $name . '\l';
+        }
+    }
+    elsif (my $name = $self->{yml}{name}) {
+        if ($name =~ /\$/) {
+            # A name with dollars, like "$TEST_FLAVOR $PODBIN $DISTRO_NV etc",
+            # is worth a box entry showing that expansion. This will be only
+            # one line (as opposed to one or more for matrix stanzas) but
+            # the expansion is still useful so reader can know what arch
+            # and OS this is running on.
+            push @subtasks, '= ' . $self->_expand_name( $name ) . '\l';
         }
     }
 
@@ -479,9 +494,13 @@ sub env_matrix {
 }
 
 
-sub _expand_matrix_name {
+##################
+#  _expand_name  #  Iteratively expand $FOO or ${FOO} or a matrix name
+##################
+sub _expand_name {
     my $self = shift;
-    my $matrix_item = shift;
+    my $item = shift;
+    my $name;
 
     # Environment: start with top-level env defined for entire yml file
     my %env;
@@ -494,18 +513,26 @@ sub _expand_matrix_name {
         %env = (%env, %$env);
     }
 
-    # ...then finally with env in the matrix
-    if (my $m_env = $matrix_item->{env}) {
-        %env = (%env, %$m_env);
+    # ...then finally, if this is a matrix item, with its env
+    if ((ref($item)||'') eq 'HASH') {
+        if (my $m_env = $item->{env}) {
+            %env = (%env, %$m_env);
+        }
+        $name = $item->{name};
     }
 
-    my $name = $matrix_item->{name} || $self->{yml}{name} || $self->name || '?';
+    $name //= $self->{yml}{name} || $self->name || '?';
 
-    # FIXME: need to clean this up!
-    $name =~ s/\$\{(.*?)\}/$env{$1} || "\$$1"/ge;
-    $name =~ s/\$([A-Z_]+)/$env{$1} || "\$$1"/ge;
-    $name =~ s/\$\{(.*?)\}/$env{$1} || "\$$1"/ge;     # and again with curlies
-    $name =~ s/\$([A-Z_]+)/$env{$1} || "\$$1"/ge;     # and again without
+    while ($name =~ /\$/) {
+        my $name_old = $name;
+
+        $name =~ s/\$\{(.*?)\}/$env{$1} || "\$$1"/ge;
+        $name =~ s/\$([A-Z_]+)/$env{$1} || "\$$1"/ge;
+
+        # Don't infinite-loop
+        last if $name_old eq $name;
+        print "$name_old -> $name\n"            if $debug;
+    }
 
     return $name;
 }
@@ -687,7 +714,7 @@ sub _draw_boxes {
     my $color;
     my $fill = '';
     for my $term (sort keys %Color_Override) {
-        if ($node =~ /(^|_)${term}_/) {
+        if ($node =~ /(^|_)${term}(_|$)/) {
             my ($fg, $bg) = split ':', $Color_Override{$term};
             $fg =~ s/(.)/${1}0/g;
             $bg =~ s/(.)/${1}0/g;
@@ -741,6 +768,20 @@ sub _draw_boxes {
         # 2020-10 used in automation_images repo
         elsif ($only_if eq q{$CIRRUS_PR == '' && $CIRRUS_CRON != ''}) {
             $label .= "[only if cron]";
+        }
+        # 2022-09
+        elsif ($only_if eq q{$CIRRUS_PR != '' && $CIRRUS_CHANGE_TITLE =~ '.*CI:BUILD.*'}) {
+            $label .= "[only if PR + CI:BUILD]";
+        }
+        elsif ($only_if eq q{${CIRRUS_CRON} == 'main'}) {
+            $label .= "[only if cron on main]";
+        }
+        # 2022-09
+        elsif ($only_if eq q{$CIRRUS_CRON == 'multiarch'}) {
+            $label .= "[only if cron multiarch]";
+        }
+        elsif ($only_if eq q{$CIRRUS_CRON != 'multiarch'}) {
+            $label .= "[SKIP: cron multiarch]";
         }
         # used in podman
         elsif ($only_if eq q{$CIRRUS_TAG != ''}) {
@@ -849,7 +890,11 @@ sub _mergekeys
             foreach my $inherit (@$inherits)
             {
                 $inherit = _mergekeys($inherit, $resolveStack);
-                %$ref = (%$inherit, %$ref);
+
+                # ** changed by esm **: shallow hash merge fails for
+                #    remote_sys_aarch64 (as of 2022-11) because it just <<'s
+                #    the entire local_sys_aarch64 including its env hash
+                deepmerge($ref, $inherit);
             }
             delete $ref->{'<<'};
         }
@@ -866,6 +911,77 @@ sub _mergekeys
 
     return $ref;
 }
+
+
+###############
+#  deepmerge  #  deep recursive merge for hashes; needed for cirrus matrices
+###############
+sub deepmerge {
+    my ($ref, $inherit) = @_;
+
+    for my $k (keys %$inherit) {
+        my $r_ref = ref($ref->{$k})     || '';
+        my $i_ref = ref($inherit->{$k}) || '';
+
+        if ($i_ref eq 'HASH') {
+            # Two hashes
+            deepmerge($ref->{$k}, $inherit->{$k});
+        }
+        elsif ($i_ref eq 'ARRAY') {
+            # Two arrays; this is how .cirrus.yml does matrix env settings
+            $ref->{$k} //= [];
+            for my $element (@{$inherit->{$k}}) {
+                my $e_ref = ref($element) || '';
+                if ($e_ref eq 'HASH') {
+                    # The only situation we handle is a hashref with one
+                    # key named 'env', whose value is a hash. If that ever
+                    # changes, deal with it then.
+                    my $e_formatted = format_env($element);
+
+                    my $found;
+                    for my $in_k (@{$ref->{$k}}) {
+                        $found ||= (format_env($in_k) eq $e_formatted);
+                    }
+                    push @{$ref->{$k}}, $element unless $found;
+                }
+                elsif ($e_ref eq 'ARRAY') {
+                    die "FIXME, deepmerge cannot handle arrays of arrays";
+                }
+                elsif (! grep { $_ eq $element } @{$ref->{$k}}) {
+                    # ref is an array, but element is a scalar
+                    push @{$ref->{$k}}, $element;
+                }
+            }
+        }
+        else {
+            # i is scalar
+            $r_ref eq '' or die;
+            $ref->{$k} = $inherit->{$k};
+        }
+   }
+}
+
+################
+#  format_env  #  Return an easily-compared string based on a hashref
+################
+sub format_env {
+    my $href = shift;
+
+    # href must be: { env => { foo => "bar", ... } }
+    ref($href) eq 'HASH'
+        or die "$ME: Internal error: format_env(): arg is not a hash";
+    exists $href->{env}
+        or die "$ME: Internal error: format_env(): arg does not have 'env' key";
+    ref($href->{env}) eq 'HASH'
+        or die "$ME: Internal error: format_env(): arg->{env} is not a hash";
+    keys(%{$href}) == 1
+        or die "$ME: Internal error: format_env(): %{arg} has too many keys";
+
+    join("--", map {
+        sprintf("%s=%s", $_, $href->{env}{$_})
+    } sort keys %{$href->{env}});
+}
+
 
 # END   omg kludge for dealing with anchors
 ###############################################################################
