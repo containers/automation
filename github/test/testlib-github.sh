@@ -24,8 +24,8 @@ test_cmd 'Default shell variables are initialized empty/false' \
 # Remaining tests all require debugging output to be enabled
 A_DEBUG=1
 
-test_cmd 'The debugging function does not throw any errors and uses special debug output' \
-    0 '::debug::' \
+test_cmd 'The debugging function does not throw any errors and redirects to notice-level output' \
+    0 '::notice' \
     dbg_ccir
 
 test_cmd "The \$MONITOR_TASK variable is defined an non-empty" \
