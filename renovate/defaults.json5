@@ -73,6 +73,25 @@ Validate this file before commiting with (from repository root):
     "rollbackPrs": false,
   },
 
+  /**************************************************
+   ***** Manager-specific configuration options *****
+   **************************************************/
+
+  "regexManagers": [
+    {
+      "fileMatch": "^.cirrus.yml$",
+      // Expected veresion format: c<automation_images IMG_SFX value>
+      // For example `c20230120t152650z-f37f36u2204`
+      "matchStrings": ["c(?<currentValue>20\\d{6}t\\d{6}z-\\w+)"],
+      "depNameTemplate": "containers/automation_images",
+      "datasourceTemplate": "github-tags",
+      // Only treat the date/time component as the "version", saving the
+      // distro/version component for use by a package-rule (below).
+      // N/B: Must match exactly to 'versioning' in the 'regex' package rule.
+      "versioningTemplate": "regex:^(?<major>20\\d{6})t(?<minor>\\d{6})z-(?<compatibility>\\w+)$"
+    },
+  ],
+
   // N/B: LAST MATCHING RULE WINS, match statems are ANDed together.
   // https://docs.renovatebot.com/configuration-options/#packagerules
   "packageRules": [
@@ -104,6 +123,20 @@ Validate this file before commiting with (from repository root):
       "matchManagers": ["github-actions"],
       "matchDepTypes": ["action"],
       "commitMessagePrefix": "[skip-ci]"
-    }
+    },
+
+    // Group together all CI VM image updates into a single PR.  This is needed
+    // to handle the case where an IMG_SFX is mentioned in a comment.  For
+    // example, flagging an important TODO or FIXME item.  Or, where CI VM
+    // images are split across multiple IMG_SFX values that all need to be updated.
+    {
+      "matchManagers": ["regex"],
+      "matchFiles": [".cirrus.yml"],  // full-path exact-match
+      "groupName": "CI VM Image",
+      // Block renovate from opening image update PRs with *compatibility*
+      // changes (i.e. distro's and/or versions)
+      // N/B: Must match exactly to 'versioningTemplate' in the regex manager.
+      "versioning": "regex:^(?<major>20\\d{6})t(?<minor>\\d{6})z-(?<compatibility>\\w+)$",
+    },
   ],
 }
