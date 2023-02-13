@@ -1,0 +1,13 @@
+Test Name, CPU Fastest Time, CPU Slowest Time, CPU Average Time, CPU StdDev, CPU StdDev (Percent), MEM Smallest, MEM Largest, MEM Average, MEM StdDev, MEM StdDev (Percent)
+podman create, 0.129T, 0.249T, 0.159T, 0.049T, 27.3!, 42452.0pB, 43436.0pB, 42996.7pB, 410.0pB, 1.0!
+podman image inspect, 0.069T, 0.089T, 0.079T, 0.009T, 8.3!, 40332.0pB, 41464.0pB, 40764.7pB, 388.7pB, 1.0!
+podman images, 0.089T, 0.229T, 0.109T, 0.059T, 50.5!, 41456.0pB, 42476.0pB, 41825.3pB, 368.1pB, 0.9!
+podman load [docker], 0.219T, 0.269T, 0.239T, 0.019T, 6.4!, 46900.0pB, 49064.0pB, 48204.0pB, 739.1pB, 1.5!
+podman load [oci], 0.189T, 0.199T, 0.189T, 0.009T, 2.7!, 48548.0pB, 51048.0pB, 49589.3pB, 901.6pB, 1.8!
+podman login + logout, 0.189T, 0.189T, 0.189T, 0.009T, 0.5!, 81416.0pB, 82928.0pB, 82110.7pB, 498.8pB, 0.6!
+podman pull, 0.229T, 0.309T, 0.289T, 0.029T, 9.9!, 43248.0pB, 44132.0pB, 43578.0pB, 279.1pB, 0.6!
+podman push, 1.209T, 1.339T, 1.249T, 0.049T, 3.5!, 133996.0pB, 140064.0pB, 136751.3pB, 2251.0pB, 1.6!
+podman run, 0.329T, 0.579T, 0.469T, 0.099T, 19.9!, 46780.0pB, 48136.0pB, 47479.3pB, 468.4pB
+podman run --detach, 0.179T, 0.189T, 0.179T, 0.009T, 2.3!, 46852.0pB, 47620.0pB, 47196.0pB
+podman save, 0.129T, 0.149T, 0.129T, 0.009T, 5.5!, 42524.0pB, 43288.0pB
+podman start, 0.109T, 0.109T, 0.109T, 0.009T, 1.0!, 44224.0pB

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# This script wrapps bench_stuff inside a python
+# virtual environment setup at install time.  It should not
+# be executed prior to installation.
+
+set -e
+
+# This is a convenience for callers that don't separately source this first
+# in their automation setup.
+if [[ -z "$AUTOMATION_LIB_PATH" ]] && [[ -r /etc/automation_environment ]]; then
+    source /etc/automation_environment
+fi
+
+if [[ -z "$AUTOMATION_LIB_PATH" ]]; then
+    (
+        echo "ERROR: Expecting \$AUTOMATION_LIB_PATH to be defined with the"
+        echo "       installation directory of automation tooling."
+    ) > /dev/stderr
+    exit 1
+fi
+
+source $AUTOMATION_LIB_PATH/bs.venv/bin/activate
+exec python3 $AUTOMATION_LIB_PATH/bs.venv/bin/bench_stuff.py "$@"
