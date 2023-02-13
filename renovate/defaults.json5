@@ -71,6 +71,19 @@ Validate this file before commiting with (from repository root):
     // In case a version in use is retracted, allow going backwards.
     // N/B: This is NOT compatible with pseudo versions, see below.
     "rollbackPrs": false,
+
+    // N/B: LAST MATCHING RULE WINS
+    // https://docs.renovatebot.com/configuration-options/#packagerules
+    "packageRules": [
+      // Package version retraction (https://go.dev/ref/mod#go-mod-file-retract)
+      // is broken in Renovate.  And no repo should use these retracted versions.
+      // ref: https://github.com/renovatebot/renovate/issues/13012
+      {
+        "matchPackageNames": ["github.com/containers/common"],
+        // Both v1.0.0 and v1.0.1 should be ignored.
+        "allowedVersions": "!/v((1.0.0)|(1.0.1))$/"
+      },
+    ],
   },
 
   /**************************************************
