@@ -75,6 +75,12 @@ Validate this file before commiting with (from repository root):
     // N/B: LAST MATCHING RULE WINS
     // https://docs.renovatebot.com/configuration-options/#packagerules
     "packageRules": [
+      // Golang pseudo-version packages will spam with every Commit ID change.
+      // Limit update frequency.
+      {
+        "matchUpdateTypes": ["digest"],
+        "schedule": "after 1am and before 11am on the first day of the month",
+      },
       // Package version retraction (https://go.dev/ref/mod#go-mod-file-retract)
       // is broken in Renovate.  And no repo should use these retracted versions.
       // ref: https://github.com/renovatebot/renovate/issues/13012
@@ -108,14 +114,6 @@ Validate this file before commiting with (from repository root):
   // N/B: LAST MATCHING RULE WINS, match statems are ANDed together.
   // https://docs.renovatebot.com/configuration-options/#packagerules
   "packageRules": [
-    // Golang pseudo-version packages will spam with every Commit ID change.
-    // Limit update frequency.
-    {
-      "matchLanguages": ["go"],
-      "matchUpdateTypes": ["digest"],
-      "schedule": "after 1am and before 11am on the first day of the month",
-    },
-
     // Workaround: rollbackPRs are not compatible with digest updates.
     // This is a catch-the-rest rule which must appear AFTER the go
     // "digest" rule (above).
