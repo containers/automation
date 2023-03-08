@@ -119,17 +119,15 @@ def insert_data(bench_basis, meta_data, bench_data):
     db = firestore.Client()
     batch = db.batch()  # Ensure data addition happens atomicly
     # Categorize all benchmarks based on the instance-type they ran on.
-    doc_ref = db.collection('benchmarks').document(bench_basis['type'])
+    doc_ref = db.collection('benchmarks').document(bench_basis['arch'])
     # Sub-collections must be anchored by a document, include all benchmark basis-details.
     batch.set(doc_ref, bench_basis, merge=True)  # Document likely to already exist
     v(f"Reticulating {bench_basis['type']} document for task {meta_data['task']}")
     # Data points and metadata stored in a sub-collection of basis-document
-    data_ref = doc_ref.collection('data').document(str(meta_data['task']))
-    # Having data-point and meta-data nested in a document makes indexing simpler
-    item = {
-        'meta': meta_data,
-        'point': bench_data
-    }
+    data_ref = doc_ref.collection('tasks').document(str(meta_data['task']))
+    # Having meta-data at the top-level of the document makes indexing/querying simpler
+    item = meta_data.copy()
+    item["point"] = bench_data
     batch.set(data_ref, item)
     batch.commit()
     v("Data point and environment details commited to database")
@@ -152,8 +150,10 @@ def main(env_path, csv_path):
     v(f"Basis: {pformat(bench_basis)}")
 
     meta_data = {
-        'ver': env.int('BENCH_ENV_VER'),  # identifies this metadata schema
+        'ver': 2,  # identifies this schema version, increment for major layout changes.
         'stamp': datetime.datetime.utcnow(),
+        # Firestore can delete old data automatically based on a field value.
+        'expires': datetime.datetime.utcnow() + datetime.timedelta(days=30),
         'build': env.int('CIRRUS_BUILD_ID'),
         'task': env.int('CIRRUS_TASK_ID'),  # collection-key
         # Will be pull/# for PRs; branch-name for branches
@@ -183,4 +183,4 @@ if __name__ == "__main__":
     if args[1]:
         DRYRUN = True
         v("Dry-run: Will not send data to firestore")
-    main(*args[1:])
+    main(*args[2:])

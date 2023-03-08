@@ -88,7 +88,7 @@ class TestMain(TestBase):
         test_client = self.FAKE_FIRESTORE.Client
 
         bench_call = call().collection('benchmarks')
-        type_call = call().collection().document(self.FAKE_INST)
+        type_call = call().collection().document(self.FAKE_UNAME_M)
         key_call = call().collection().document().collection().document(str(self.FAKE_TASK))
         calls = [bench_call, type_call, key_call]
         test_client.assert_has_calls(calls, any_order=True)
