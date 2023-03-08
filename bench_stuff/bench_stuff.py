@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Digest `benchmarks.env` and `benchmarks.csv`, uploads to google firebase.
+Digest `benchmarks.env` and `benchmarks.csv`, uploads to google firestore.
 
 Expects to be called with $GOOGLE_APPLICATION_CREDENTIALS env. var. value
 pointing at a JSON service account key file, with access to write firestore
@@ -182,5 +182,5 @@ if __name__ == "__main__":
         v("Verbose-mode enabled")
     if args[1]:
         DRYRUN = True
-        v("Dry-run: Will not send data to firebase")
+        v("Dry-run: Will not send data to firestore")
     main(*args[1:])
