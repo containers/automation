@@ -37,7 +37,7 @@ virtualenv --clear --download \
 )
 install -v $INST_PERM_ARG -m '0644' -D -t "$INSTALL_PREFIX/lib/bs.venv/bin" \
     ./bench_stuff.py
-install -v $INST_PERM_ARG -D -t "$INSTALL_PREFIX/bin" ./cirrus-ci_artifacts
+install -v $INST_PERM_ARG -D -t "$INSTALL_PREFIX/bin" ./bench_stuff
 
 # Needed for installer testing
 echo "Successfully installed $INSTALL_NAME"
