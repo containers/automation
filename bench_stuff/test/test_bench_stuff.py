@@ -93,12 +93,12 @@ class TestMain(TestBase):
         calls = [bench_call, type_call, key_call]
         test_client.assert_has_calls(calls, any_order=True)
 
+    @patch('bench_stuff.DRYRUN', new=True)
     def test_dry_run(self):
         tmp = PosixPath(self.TEMPDIR.name)
         copytree("./test_data/good", tmp, dirs_exist_ok=True)
-
         bench_stuff.main(tmp / "benchmarks.env", tmp / "benchmarks.csv")
-        self.FAKE_FIRESTORE.assert_not_called()
+        self.FAKE_FIRESTORE.Client.assert_not_called()
 
     def test_unknown_units(self):
         tmp = PosixPath(self.TEMPDIR.name)

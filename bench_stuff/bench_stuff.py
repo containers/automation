@@ -110,7 +110,6 @@ def handle_units(row):
         else:
             # Don't store "bad" data in database, bail out so somebody can fix this script.
             die(f"Can't parse units from '{key}' value '{value}'", code=3)
-        v(f"    Converted '{value}' -> {result[key]}")
     return result
 
 
@@ -135,7 +134,7 @@ def insert_data(bench_basis, meta_data, bench_data):
 
 def main(env_path, csv_path):
     """Load environment basis, load and convert csv data into a nosql database."""
-    v(f"Processing environment '{env_path}' and benchmarks '{csv_path}'")
+    v(f"Loading environment '{env_path}' and benchmarks '{csv_path}'")
     env.read_envfile(env_path)
 
     if env.int('BENCH_ENV_VER') != 1:
@@ -143,11 +142,12 @@ def main(env_path, csv_path):
 
     bench_basis = {
         'cpu': env.int('CPUTOTAL'),
+        # First element is value, second is unit-string. Only numeric value is needed
         'mem': int(ceil(convert_units(env.int('MEMTOTALKB'), BinaryUnits.KB, DecimalUnits.B)[0])),
         'arch': env.str('UNAME_M'),
         'type': env.str('INST_TYPE'),
     }
-    v(f"Basis: {pformat(bench_basis)}")
+    v(f"Processing Basis: {pformat(bench_basis)}")
 
     meta_data = {
         'ver': 2,  # identifies this schema version, increment for major layout changes.
@@ -163,16 +163,21 @@ def main(env_path, csv_path):
     }
     bench_data = {}
 
+    test_names = []
     with open(csv_path) as csv_file:
         reader = csv.DictReader(csv_file, dialect='unix', skipinitialspace=True)
         for row in reader:
             test_name = row.pop("Test Name")
             bench_data[test_name] = handle_units(row)
-    v(f"Data: {pformat(bench_data)}")
+            test_names.append(test_name)
+    v(f"Loaded Data for tests: {pformat(test_names)}")
 
+    msg = f"benchmark data for {bench_basis['arch'] } task {meta_data['task']}"
     if not DRYRUN:
         insert_data(bench_basis, meta_data, bench_data)
-    v(f"Added benchmark data for task {meta_data['task']}")
+        print(f"Inserted {msg}")
+    else:
+        print(f"Did NOT insert {msg}")
 
 
 if __name__ == "__main__":
