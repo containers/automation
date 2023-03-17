@@ -42,6 +42,7 @@ class TestBase(unittest.TestCase):
     FAKE_UNAME_R = "1.2.3-4.i386"
     FAKE_UNAME_M = "i386"
     FAKE_INST = "box"
+    FAKE_COMMIT = "1e06c1a47a71cc649032bf6ee71e14b990dae957"
 
     def setUp(self):
         bench_stuff.VERBOSE = False
@@ -59,7 +60,8 @@ class TestBase(unittest.TestCase):
             "DISTRO_NV": self.FAKE_DISTRO,
             "UNAME_R": self.FAKE_UNAME_R,
             "UNAME_M": self.FAKE_UNAME_M,
-            "INST_TYPE": self.FAKE_INST
+            "INST_TYPE": self.FAKE_INST,
+            "CIRRUS_CHANGE_IN_REPO": self.FAKE_COMMIT,
         }
         self.FAKE_DIE = Mock(side_effect=fakedie)
         patch('bench_stuff.firestore', new=self.FAKE_FIRESTORE).start()

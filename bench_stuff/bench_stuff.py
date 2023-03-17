@@ -121,7 +121,7 @@ def insert_data(bench_basis, meta_data, bench_data):
     doc_ref = db.collection('benchmarks').document(bench_basis['arch'])
     # Sub-collections must be anchored by a document, include all benchmark basis-details.
     batch.set(doc_ref, bench_basis, merge=True)  # Document likely to already exist
-    v(f"Reticulating {bench_basis['type']} document for task {meta_data['task']}")
+    v(f"Reticulating {bench_basis['arch']} document for task {meta_data['task']}")
     # Data points and metadata stored in a sub-collection of basis-document
     data_ref = doc_ref.collection('tasks').document(str(meta_data['task']))
     # Having meta-data at the top-level of the document makes indexing/querying simpler
@@ -150,16 +150,17 @@ def main(env_path, csv_path):
     v(f"Processing Basis: {pformat(bench_basis)}")
 
     meta_data = {
-        'ver': 2,  # identifies this schema version, increment for major layout changes.
-        'stamp': datetime.datetime.utcnow(),
+        'ver': 3,  # identifies this schema version, increment for major layout changes.
+        'occasion': datetime.datetime.utcnow(),
         # Firestore can delete old data automatically based on a field value.
-        'expires': datetime.datetime.utcnow() + datetime.timedelta(days=30),
+        'expires': datetime.datetime.utcnow() + datetime.timedelta(days=180),
         'build': env.int('CIRRUS_BUILD_ID'),
         'task': env.int('CIRRUS_TASK_ID'),  # collection-key
         # Will be pull/# for PRs; branch-name for branches
         'branch': env.str('CIRRUS_BRANCH'),
         'dist': env.str('DISTRO_NV'),
         'kern': env.str('UNAME_R'),
+        'commit': env.str('CIRRUS_CHANGE_IN_REPO')
     }
     bench_data = {}
 
