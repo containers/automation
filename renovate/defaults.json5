@@ -92,6 +92,15 @@ Validate this file before commiting with (from repository root):
     ],
   },
 
+  /*************************************************
+   ***** Rust-specific configuration options *****
+   *************************************************/
+
+  "rust": {
+    // Update both Cargo.toml and Cargo.lock when possible
+    "rangeStrategy": "bump"
+  },
+
   /**************************************************
    ***** Manager-specific configuration options *****
    **************************************************/
