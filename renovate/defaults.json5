@@ -30,9 +30,6 @@ Validate this file before commiting with (from repository root):
     // https://docs.renovatebot.com/presets-config/#configbase
     "config:base",
 
-    // https://docs.renovatebot.com/presets-default/#preservesemverranges
-    ":preserveSemverRanges",
-
     // https://docs.renovatebot.com/presets-default/#gitsignoff
     ":gitSignOff",
 
@@ -89,6 +86,11 @@ Validate this file before commiting with (from repository root):
         // Both v1.0.0 and v1.0.1 should be ignored.
         "allowedVersions": "!/v((1.0.0)|(1.0.1))$/"
       },
+      // Preserve (but continue to upgrade) any existing SemVer ranges.
+      {
+        "matchPackagePatterns": ["*"],
+        "rangeStrategy": "replace",
+      },
     ],
   },
 
@@ -98,6 +100,8 @@ Validate this file before commiting with (from repository root):
 
   "rust": {
     // Update both Cargo.toml and Cargo.lock when possible
+    // i.e. bump the range even if the new version satisfies the existing range.
+    // https://docs.renovatebot.com/configuration-options/#rangestrategy
     "rangeStrategy": "bump"
   },
 
