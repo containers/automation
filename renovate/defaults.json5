@@ -69,6 +69,9 @@ Validate this file before commiting with (from repository root):
     // N/B: This is NOT compatible with pseudo versions, see below.
     "rollbackPrs": false,
 
+    // Preserve (but continue to upgrade) any existing SemVer ranges.
+    "rangeStrategy": "replace",
+
     // N/B: LAST MATCHING RULE WINS
     // https://docs.renovatebot.com/configuration-options/#packagerules
     "packageRules": [
@@ -86,11 +89,6 @@ Validate this file before commiting with (from repository root):
         // Both v1.0.0 and v1.0.1 should be ignored.
         "allowedVersions": "!/v((1.0.0)|(1.0.1))$/"
       },
-      // Preserve (but continue to upgrade) any existing SemVer ranges.
-      {
-        "matchPackagePatterns": ["*"],
-        "rangeStrategy": "replace",
-      },
     ],
   },
 
@@ -102,7 +100,16 @@ Validate this file before commiting with (from repository root):
     // Update both Cargo.toml and Cargo.lock when possible
     // i.e. bump the range even if the new version satisfies the existing range.
     // https://docs.renovatebot.com/configuration-options/#rangestrategy
-    "rangeStrategy": "bump"
+    "rangeStrategy": "bump",
+  },
+
+  /*************************************************
+   ***** Python-specific configuration options *****
+   *************************************************/
+
+  "python": {
+    // Preserve (but continue to upgrade) any existing SemVer ranges.
+    "rangeStrategy": "replace",
   },
 
   /**************************************************
