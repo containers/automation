@@ -795,6 +795,14 @@ sub _draw_boxes {
         elsif ($only_if =~ /CIRRUS_CHANGE_TITLE.*CI:BUILD.*CIRRUS_CRON.*multiarch/) {
             $label .= "[SKIP: CI:BUILD or cron-multiarch]";
         }
+        # buildah-bud rootless is only run in nightly treadmill
+        elsif ($only_if =~ /\$CIRRUS_CRON\s+==\s+'treadmill'/) {
+            $label .= "[only on cron treadmill]";
+        }
+        # "bench stuff" job: Only run on merge and never for cirrus-cron.
+        elsif ($only_if =~ /CIRRUS_BRANCH\s+==\s+'main'\s+&&\s+\$CIRRUS_CRON\s+==\s+''/) {
+            $label .= "[only on merge]";
+        }
         else {
             $label .= "[only if: $only_if]";
         }
