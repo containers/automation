@@ -168,6 +168,8 @@ Validate this file before commiting with (from repository root):
       // changes (i.e. distro's and/or versions)
       // N/B: Must match exactly to 'versioningTemplate' in the regex manager.
       "versioning": "regex:^(?<major>20\\d{6})t(?<minor>\\d{6})z-(?<compatibility>\\w+)$",
+      // Somebody(s) need to stay on top of PRs as soon as they open.
+      "assignees": ["cevich"],
     },
   ],
 }
