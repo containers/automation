@@ -955,8 +955,10 @@ sub deepmerge {
         }
         else {
             # i is scalar
-            $r_ref eq '' or die;
-            $ref->{$k} = $inherit->{$k};
+            # 2023-04-23 do not override existing values! Anchors are used
+            # only for filling in defaults. Anything explicitly set in
+            # the YAML block is what we really want.
+            $ref->{$k} //= $inherit->{$k};
         }
    }
 }
