@@ -124,10 +124,8 @@ Validate this file before commiting with (from repository root):
       "matchStrings": ["c(?<currentValue>20\\d{6}t\\d{6}z-\\w+)"],
       "depNameTemplate": "containers/automation_images",
       "datasourceTemplate": "github-tags",
-      // Only treat the date/time component as the "version", saving the
-      // distro/version component for use by a package-rule (below).
-      // N/B: Must match exactly to 'versioning' in the 'regex' package rule.
-      "versioningTemplate": "regex:^(?<major>20\\d{6})t(?<minor>\\d{6})z-(?<compatibility>\\w+)$"
+      // N/B: Must match exactly to 'versioning' in the global 'regex' packageRules (below).
+      "versioningTemplate": "regex:^(?<minor>20\\d{6})t(?<patch>\\d{6})z-(?<major>\\w+)$",
     },
   ],
 
@@ -164,10 +162,8 @@ Validate this file before commiting with (from repository root):
       "matchManagers": ["regex"],
       "matchFiles": [".cirrus.yml"],  // full-path exact-match
       "groupName": "CI VM Image",
-      // Block renovate from opening image update PRs with *compatibility*
-      // changes (i.e. distro's and/or versions)
-      // N/B: Must match exactly to 'versioningTemplate' in the regex manager.
-      "versioning": "regex:^(?<major>20\\d{6})t(?<minor>\\d{6})z-(?<compatibility>\\w+)$",
+      // N/B: Must match exactly to 'versioningTemplate' in the regexManagers (above).
+      "versioning": "regex:^(?<minor>20\\d{6})t(?<patch>\\d{6})z-(?<major>\\w+)$",
       // Somebody(s) need to stay on top of PRs as soon as they open.
       "assignees": ["cevich"],
     },
