@@ -79,7 +79,7 @@ Validate this file before commiting with (from repository root):
       // Limit update frequency.
       {
         "matchUpdateTypes": ["digest"],
-        "schedule": "after 1am and before 11am on the first day of the month",
+        "schedule": ["after 1am and before 11am on the first day of the month"],
       },
       // Package version retraction (https://go.dev/ref/mod#go-mod-file-retract)
       // is broken in Renovate.  And no repo should use these retracted versions.
@@ -166,6 +166,8 @@ Validate this file before commiting with (from repository root):
       "versioning": "regex:^(?<minor>20\\d{6})t(?<patch>\\d{6})z-(?<major>\\w+)$",
       // Somebody(s) need to stay on top of PRs as soon as they open.
       "assignees": ["cevich"],
+      // Don't wait, roll out CI VM Updates immediately
+      "schedule": ["at any time"],
     },
   ],
 }
