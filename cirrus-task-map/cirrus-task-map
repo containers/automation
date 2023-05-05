@@ -795,6 +795,14 @@ sub _draw_boxes {
         elsif ($only_if =~ /CIRRUS_CHANGE_TITLE.*CI:BUILD.*CIRRUS_CRON.*multiarch/) {
             $label .= "[SKIP: CI:BUILD or cron-multiarch]";
         }
+        # buildah-bud rootless is only run in nightly treadmill
+        elsif ($only_if =~ /\$CIRRUS_CRON\s+==\s+'treadmill'/) {
+            $label .= "[only on cron treadmill]";
+        }
+        # "bench stuff" job: Only run on merge and never for cirrus-cron.
+        elsif ($only_if =~ /CIRRUS_BRANCH\s+==\s+'main'\s+&&\s+\$CIRRUS_CRON\s+==\s+''/) {
+            $label .= "[only on merge]";
+        }
         else {
             $label .= "[only if: $only_if]";
         }
@@ -955,8 +963,10 @@ sub deepmerge {
         }
         else {
             # i is scalar
-            $r_ref eq '' or die;
-            $ref->{$k} = $inherit->{$k};
+            # 2023-04-23 do not override existing values! Anchors are used
+            # only for filling in defaults. Anything explicitly set in
+            # the YAML block is what we really want.
+            $ref->{$k} //= $inherit->{$k};
         }
    }
 }
