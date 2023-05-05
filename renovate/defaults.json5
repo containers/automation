@@ -162,8 +162,8 @@ Validate this file before commiting with (from repository root):
       "matchManagers": ["regex"],
       "matchFiles": [".cirrus.yml"],  // full-path exact-match
       "groupName": "CI VM Image",
-      // Somebody(s) need to stay on top of PRs as soon as they open.
-      "assignees": ["cevich"],
+      // Somebody(s) need to check image update PRs as soon as they open.
+      "reviewers": ["cevich"],
       // Don't wait, roll out CI VM Updates immediately
       "schedule": ["at any time"],
     },
