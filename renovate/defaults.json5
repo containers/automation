@@ -50,6 +50,23 @@ Validate this file before commiting with (from repository root):
   // such that security-alert PRs may be opened immediately.
   "vulnerabilityAlerts": {
     "labels": ["dependencies", "security"],
+
+    // Force-enable renovate management of deps. which are otherwise
+    // disabled.  Note: Does not apply to any "ignorePaths" list, nor
+    // any deps. disabled via `packageRules` in this block
+    // (last-match wins rule).
+    "enabled": true,
+
+    // Indirect dependencies are disabled by default for the `gomod` manager.
+    // However, for vulnerability updates we may want them even if they break
+    // during renovate's automatic top-level `go mod tidy`.
+    "packageRules": [
+      {
+        "matchManagers": ["gomod"],
+        "matchDepTypes": ["indirect"],
+        "enabled": true,
+      }
+    ]
   },
 
   // On a busy repo, automatic-rebasing will swamp the CI system.
