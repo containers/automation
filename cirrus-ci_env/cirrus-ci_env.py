@@ -120,7 +120,7 @@ class CirrusCfg:
                     if k == 'matrix':
                         err(f"Unsupported '{k}' key encountered in"
                             f" 'env' attribute of '{CirrusCfg._working}' task")
-                    raise(xcpt)
+                    raise xcpt
         return out
 
     def render_tasks(self, tasks: Mapping[str, Any]) -> Mapping[str, Any]:
