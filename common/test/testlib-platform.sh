@@ -23,5 +23,20 @@ for var in OS_RELEASE_VER OS_REL_VER; do
         test "$NODOT" == "${!var}"
 done
 
+for OS_RELEASE_ID in 'debian' 'ubuntu'; do
+  (
+    export _TEST_UID=$RANDOM  # Normally $UID is read-only
+    source "$TEST_DIR/$SUBJ_FILENAME" || exit 2
+
+    test_cmd "The '\$SUDO' env. var. is non-empty when \$_TEST_UID is non-zero" \
+        0 "" \
+        test -n "$SUDO"
+
+    test_cmd "The '\$SUDO' env. var. contains 'noninteractive' when '\$_TEST_UID' is non-zero" \
+        0 "noninteractive" \
+        echo "$SUDO"
+  )
+done
+
 # Must be last call
 exit_with_status
