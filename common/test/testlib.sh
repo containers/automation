@@ -88,7 +88,7 @@ test_cmd() {
         echo "# $@" > /dev/stderr
     fi
 
-    # Using egrep vs file safer than shell builtin test
+    # Using grep vs file safer than shell builtin test
     local a_out_f=$(mktemp -p '' "tmp_${FUNCNAME[0]}_XXXXXXXX")
     local a_exit=0
 
@@ -108,7 +108,7 @@ test_cmd() {
         if ((TEST_DEBUG)); then
             echo "Received $(wc -l $a_out_f | awk '{print $1}') output lines of $(wc -c $a_out_f | awk '{print $1}') bytes total"
         fi
-        if egrep -q "$e_out_re" "${a_out_f}.oneline"; then
+        if grep -Eq "$e_out_re" "${a_out_f}.oneline"; then
             _test_report "Command $1 exited as expected with expected output" "0" "$a_out_f"
         else
             _test_report "Expecting regex '$e_out_re' match to (whitespace-squashed) output" "1" "$a_out_f"
