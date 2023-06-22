@@ -16,8 +16,3 @@ A_DEBUG=${A_DEBUG:-0}
 DEBUG_MSG_PREFIX="${DEBUG_MSG_PREFIX:-DEBUG:}"
 WARNING_MSG_PREFIX="${WARNING_MSG_PREFIX:-WARNING:}"
 ERROR_MSG_PREFIX="${ERROR_MSG_PREFIX:-ERROR:}"
-
-# When non-empty, should contain a regular expression that matches
-# any known or potential env. vars containing secrests or other
-# sensitive values.  For example `(.+PASSWORD.*)|(.+SECRET.*)|(.+TOKEN.*)`
-SECRET_ENV_RE=''
