@@ -145,14 +145,15 @@ Validate this file before commiting with (from repository root):
       "autoReplaceStringTemplate": "c{{{newVersion}}}",
     },
     {
-      "fileMatch": ["^Makefile$"],
+      "fileMatch": "^Makefile$",
       // make ignores whitespace around the value, make renovate do the same.
-      "matchStrings": ["^GOLANGCI_LINT_VERSION\\s+:=\\s+(?<currentValue>.+)\\s*$"],
+      "matchStrings": ["GOLANGCI_LINT_VERSION\\s+:=\\s+(?<currentValue>.+)\\s*"],
       "depNameTemplate": "golangci/golangci-lint",
       "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver-coerced",
       // Podman's installer script will puke if there's a 'v' prefix, as represented
       // in upstream golangci/golangci-lint releases.
-      "extractVersionTemplate": "^v(?<version>.+)$",
+      "extractVersionTemplate": "v(?<version>.+)",
     }
   ],
 
