@@ -164,17 +164,6 @@ Validate this file before commiting with (from repository root):
       "allowedVersions": "!/v((1.0.0)|(1.0.1))$/"
     },
 
-    // Workaround: rollbackPRs are not compatible with digest updates.
-    // This is a catch-the-rest rule which must appear AFTER the go
-    // "digest" rule (above).
-    // Ref: https://github.com/renovatebot/renovate/discussions/18250
-    {
-      "matchCategories": ["golang"],
-      // Open rollback PR if updated dep. is removed (i.e. tag pulled
-      // due to major bug or security issue).
-      "rollbackPrs": true,
-    },
-
     // Github-action updates cannot consistently be tested in a PR.
     // This is caused by an unfixable architecture-flaw: Execution
     // context always depends on trigger, and we (obvious) can't know
