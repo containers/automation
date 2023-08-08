@@ -29,13 +29,15 @@ if [[ "$1" == "build" ]]; then
 elif [[ "$1" == "manifest" ]]; then
     # validate json while outputing it
     jq . $DATF
-elif [[ "$1" =~ info ]]; then
+elif [[ "$1" == "info" ]]; then
     case "$@" in
         *arch*) echo "amd64" ;;
         *cpus*) echo "2" ;;
         *) exit 1 ;;
     esac
+elif [[ "$1" == "images" ]]; then
+    echo '[{"names":["localhost/foo/bar:latest"]}]'
 else
-    echo "ERROR: Unexpected call to fake_buildah.sh"
+    echo "ERROR: Unexpected arg '$1' to fake_buildah.sh" > /dev/stderr
     exit 9
 fi
