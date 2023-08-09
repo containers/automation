@@ -117,6 +117,16 @@ Validate this file before commiting with (from repository root):
       "rangeStrategy": "bump"
     },
 
+    {
+      "matchCategories": ["rust"],
+      "matchPackageNames": ["serde", "clap"],
+      // Update both Cargo.toml and Cargo.lock when possible
+      "rangeStrategy": "bump",
+      // These packages roll updates far too often, slow them down.
+      // Ref: https://github.com/containers/netavark/issues/772
+      "schedule": ["after 1am and before 11am on the first day of the month"],
+    },
+
     /*************************************************
     ***** Python-specific configuration options *****
     *************************************************/
