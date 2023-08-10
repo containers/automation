@@ -327,17 +327,26 @@ parallel_build() {
 }
 
 confirm_arches() {
+    local inspjson
     local filter=".manifests[].platform.architecture"
     local arch
     local maniarches
 
     dbg "in confirm_arches()"
     req_env_vars FQIN ARCHES RUNTIME
-    maniarches=$($RUNTIME manifest inspect "containers-storage:$FQIN:latest" | \
-                 jq -r "$filter" | \
-                 grep -v 'null' | \
-                 tr -s '[:space:]' ' ' | \
-                 sed -z '$ s/[\n ]$//')
+    if ! inspjson=$($RUNTIME manifest inspect "containers-storage:$FQIN:latest"); then
+        die "Error reading manifest list metadata for 'containers-storage:$FQIN:latest'"
+    fi
+
+    # Convert into space-delimited string for grep error message (below)
+    # TODO: Use an array instead, could be simpler? Would need testing.
+    if ! maniarches=$(jq -r "$filter" <<<"$inspjson" | \
+                      grep -v 'null' | \
+                      tr -s '[:space:]' ' ' | \
+                      sed -z '$ s/[\n ]$//'); then
+        die "Error processing manifest list metadata:
+$inspjson"
+    fi
     dbg "Found manifest arches: $maniarches"
 
     for arch in $ARCHES; do
@@ -357,7 +366,7 @@ registry_login() {
             $RUNTIME login --username "$NAMESPACE_USERNAME" --password-stdin \
             "$REGSERVER/$NAMESPACE"
         LOGGEDIN=1
-    else
+    elif ((PUSH)); then
         dbg "    Already logged in"
     fi
 
@@ -377,44 +386,60 @@ run_prepmod_cmd() {
 
 # Outputs sorted list of FQIN w/ tags to stdout, silent otherwise
 get_manifest_tags() {
-    local _json
+    local result_json
+    local fqin_names
     dbg "in get_manifest_fqins()"
 
     # At the time of this comment, there is no reliable way to
     # lookup all tags based solely on inspecting a manifest.
     # However, since we know $FQIN (remember, value has no tag) we can
-    # use it to search all related names container storage. Unfortunately
+    # use it to search all related names in container storage. Unfortunately
     # because images can have multiple tags, the `reference` filter
-    # can return names we don't care about.  Work around this by
-    # sending the final result back through a grep of $FQIN
-    _json=$($RUNTIME images --json --filter=reference=$FQIN)
-    dbg "Image listing json: $_json"
-    if [[ -n "$_json" ]] && jq --exit-status '.[].names' <<<"$_json" &>/dev/null
-    then
-        jq --raw-output '.[].names[]'<<<"$_json" | grep "$FQIN" | sort
+    # can return names we don't care about.  Work around this with a
+    # grep of $FQIN in the results.
+    if ! result_json=$($RUNTIME images --json --filter=reference=$FQIN); then
+        die "Error listing manifest-list images that reference '$FQIN'"
+    fi
+
+    dbg "Image listing json: $result_json"
+    if [[ -n "$result_json" ]]; then
+        # Rely on the caller to handle an empty list, ignore items missing a name key.
+        if ! fqin_names=$(jq -r '.[]? | .names[]?'<<<"$result_json"); then
+            die "Error obtaining image names from '$FQIN' manifest-list search result:
+$result_json"
+        fi
+        grep "$FQIN"<<<"$fqin_names" | sort
     fi
 }
 
 push_images() {
-    local _fqins
-    local _fqin
+    local fqin_list
+    local fqin
     dbg "in push_images()"
 
     # It's possible that --modcmd=* removed all images, make sure
     # this is known to the caller.
-    _fqins=$(get_manifest_tags)
-    if [[ -z "$_fqins" ]]; then
+    if ! fqin_list=$(get_manifest_tags); then
+        die "Error retrieving set of manifest-list tags to push for '$FQIN'"
+    fi
+    if [[ -z "$fqin_list" ]]; then
         die "No FQIN(s) to be pushed."
     fi
 
-    dbg "Will try to push FQINs: $_fqins"
+    if ((PUSH)); then
+        dbg "Will try to push FQINs: '$fqin_list'"
 
-    registry_login
-    for _fqin in $_fqins; do
-        # Note: --all means push manifest AND images it references
-        msg "Pushing $_fqin"
-        $RUNTIME manifest push --all $_fqin docker://$_fqin
-    done
+        registry_login
+        for fqin in $fqin_list; do
+            # Note: --all means push manifest AND images it references
+            msg "Pushing $fqin"
+            $RUNTIME manifest push --all $fqin docker://$fqin
+        done
+    else
+        # Even if --nopush was specified, be helpful to humans with a lookup of all the
+        # relevant tags for $FQIN that would have been pushed and display them.
+        warn "Option --nopush specified, not pushing: '$fqin_list'"
+    fi
 }
 
 ##### MAIN() #####
@@ -433,9 +458,16 @@ if [[ -n "$PREPCMD" ]]; then
 fi
 
 parallel_build "$FQIN:latest"
+
+# If a parallel build or the manifest-list assembly fails, buildah
+# may still exit successfully.  Catch this condition by verifying
+# all expected arches are present in the manifest list.
 confirm_arches
+
 if [[ -n "$MODCMD" ]]; then
     registry_login
     run_prepmod_cmd mod "$MODCMD"
 fi
-if ((PUSH)); then push_images; fi
+
+# Handles --nopush internally
+push_images
