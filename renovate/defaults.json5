@@ -198,5 +198,11 @@ Validate this file before commiting with (from repository root):
       // Don't wait, roll out CI VM Updates immediately
       "schedule": ["at any time"],
     },
+
+    // Add CI:DOCS prefix to skip unnecessary tests for golangci updates in podman CI.
+    {
+      "matchPackageNames": ["golangci/golangci-lint"],
+      "commitMessagePrefix": "[CI:DOCS]",
+    },
   ],
 }
