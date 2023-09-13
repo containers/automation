@@ -230,7 +230,7 @@ jobs:
             # Provide an archive of files for debugging/analysis.
             - if: always() && steps.retro.outputs.do_intg == 'true'
               name: Archive event, build, and debugging output
-              uses: actions/upload-artifact@v3.1.2
+              uses: actions/upload-artifact@v3.1.3
               with:
                   name: pr_${{ steps.retro.outputs.prn }}_debug.zip
                   path: ./test_artifacts
