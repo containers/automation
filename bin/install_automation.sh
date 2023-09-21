@@ -125,8 +125,8 @@ install_automation() {
 
     dbg "Configuring environment file $INSTALLATION_SOURCE/environment"
     cat <<EOF>"$INSTALLATION_SOURCE/environment"
-# Added on $(date --iso-8601=minutes) by $actual_inst_path/bin/$SCRIPT_FILENAME"
-# Any manual modifications will be lost upon upgrade or reinstall.
+# Added on $(date --utc --iso-8601=minutes) by $actual_inst_path/bin/$SCRIPT_FILENAME"
+# for version '$AUTOMATION_VERSION'.  Any manual modifications will be lost upon upgrade or reinstall.
 export AUTOMATION_LIB_PATH="$actual_inst_path/lib"
 export PATH="$PATH:$actual_inst_path/bin"
 EOF
