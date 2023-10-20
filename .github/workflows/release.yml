@@ -30,7 +30,7 @@ jobs:
     unit-tests:  # N/B: Duplicates `ubuntu_unit_tests.yml` - templating not supported
         runs-on: ubuntu-22.04
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   # Testing installer requires a full repo. history
                   fetch-depth: 0
@@ -77,7 +77,7 @@ jobs:
                 tag_name: ${{ steps.get_tag.outputs.TAG_NAME }}
                 release_name: ${{ steps.get_tag.outputs.TAG_NAME }}
 
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
                   path: ./
@@ -102,7 +102,7 @@ jobs:
             REPO_USER: libpod
             REPO_NAME: cirrus-ci_retrospective
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   fetch-depth: 0
                   path: ./

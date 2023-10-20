@@ -44,7 +44,7 @@ jobs:
                 GITHUB_TOKEN: ${{ github.token }}
 
             - name: Clone latest main branch repository code
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   fetch-depth: 1
                   path: ./main
@@ -84,7 +84,7 @@ jobs:
             # block allow direct checkout of PR code.
             - if: steps.retro.outputs.do_intg == 'true'
               name: Clone all repository code
-              uses: actions/checkout@v3
+              uses: actions/checkout@v4
               with:
                   # Get ALL available history to avoid problems during any run of
                   # 'git describe' from any script in the repo.
