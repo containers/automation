@@ -8,7 +8,7 @@ set -eo pipefail
 # from `LaunchInstances.sh` soas to "hide" the nearly 2-hours of cumulative
 # startup and termination wait time.  This script depends on:
 #
-# * The $PWSTATE file created/updated by `LaunchInstances.sh`.
+# * The $DHSTATE file created/updated by `LaunchInstances.sh`.
 # * All requirements listed in the top `LaunchInstances.sh` comment.
 # * The local ssh-agent is able to supply the appropriate private key.
 # * The $POOLTOKEN env. var. is defined
@@ -27,26 +27,26 @@ fi
 [[ -n "$POOLTOKEN" ]] || \
     die "Expecting \$POOLTOKEN to be defined/non-empty $(ctx 0)."
 
-[[ -r "$PWSTATE" ]] || \
-    die "Can't read from state file: $PWSTATE"
+[[ -r "$DHSTATE" ]] || \
+    die "Can't read from state file: $DHSTATE"
 
 declare -a _pwstate
-readarray -t _pwstate <<<$(grep -E -v '^($|#+| +)' "$PWSTATE")
+readarray -t _pwstate <<<$(grep -E -v '^($|#+| +)' "$DHSTATE")
 n_inst=0
-n_inst_total="${#_pwstate[@]}"
-if [[ $n_inst_total -eq 0 ]]; then
-    msg "No operable hosts found in $PWSTATE:
-$(<$PWSTATE)"
+n_inst_total="${#_dhstate[@]}"
+if [[ $n_inst_total -eq 0 ]] || [[ -z "${_dhstate[0]}" ]]; then
+    msg "No operable hosts found in $DHSTATE:
+$(<$DHSTATE)"
     # Assume this script is running in a loop, and unf. there are
     # simply no dedicated-hosts in 'available' state.
     exit 0
 fi
 
-# N/B: Assumes $PWSTATE represents reality
-msg "Operating on $n_inst_total instances from $(head -1 $PWSTATE)"
+# N/B: Assumes $DHSTATE represents reality
+msg "Operating on $n_inst_total instances from $(head -1 $DHSTATE)"
 # Indent for messages inside loop
-for _pwentry in "${_pwstate[@]}"; do
-    read -r name instance_id launch_time<<<"$_pwentry"
+for _dhentry in "${_dhstate[@]}"; do
+    read -r name instance_id launch_time<<<"$_dhentry"
     _I="    "
     msg " "
     n_inst=$(($n_inst+1))

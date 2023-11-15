@@ -10,12 +10,13 @@ LIB_DIRPATH=$(dirname "${BASH_SOURCE[0]}")
 TEMPDIR=$(mktemp -d -p '' "${SCRIPT_FILENAME}_XXXXX.tmp")
 trap "rm -rf '$TEMPDIR'" EXIT
 
-# Path to file recording one line per instance, with it's name, instance id, start
+# Path to file recording the most recent state of each dedicated host.
+# Format is simply one line per dedicated host, with it's name, instance id, start
 # date/time separated by a space.  Exceptional conditions are recorded as comments
 # with the name and details.  File is refreshed/overwritten each time script runs
 # without any fatal/uncaught command-errors.  Intended for reference by humans
 # and/or other tooling.
-PWSTATE="${PWSTATE:-$LIB_DIRPATH/pw_status.txt}"
+DHSTATE="${PWSTATE:-$LIB_DIRPATH/dh_status.txt}"
 
 # Name of launch template. Current/default version will be used.
 # https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#LaunchTemplates:

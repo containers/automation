@@ -70,7 +70,8 @@ fi
 # Array item format: "<Name> <ID>"
 dh_fmt='.[] | .Name +" "+ .HostID'
 # Avoid always processing hosts in the same alpha-sorted order, as that would
-# mean hosts at the end of the list consistently get the least management.
+# mean hosts at the end of the list consistently wait the longest for new
+# instances to be created (see creation-stagger code below).
 if ! readarray NAME2HOSTID <<<$(json_query "$dh_fmt" "$dh_searchout" | sort --random-sort); then
     die "Extracting dedicated host 'Name' and 'HostID' fields $(ctx 0):
 $(<$dh_searchout)"
@@ -90,14 +91,14 @@ fi
 # Therefore, instance creations must be staggered by according to this
 # window.
 CREATE_STAGGER_HOURS=3
-latest_launched="1970-01-01T00:00+00:00"  # in case $PWSTATE is missing
+latest_launched="1970-01-01T00:00+00:00"  # in case $DHSTATE is missing
 dcmpfmt="+%Y%m%d%H%M"  # date comparison format compatible with numeric 'test'
-if [[ -r "$PWSTATE" ]]; then
-    # N/B: Asumes data in $PWSTATE represents reality.  It may not,
+if [[ -r "$DHSTATE" ]]; then
+    # N/B: Asumes data in $DHSTATE represents reality.  It may not,
     # for example if instances have been manually created or terminated.
     # Querying the actual state would make this script much more complex.
     declare -a _pwstate
-    readarray -t _pwstate <<<$(grep -E -v '^($|#+| +)' "$PWSTATE")
+    readarray -t _pwstate <<<$(grep -E -v '^($|#+| +)' "$DHSTATE")
     for _pwentry in "${_pwstate[@]}"; do
         read -r name instance_id launch_time<<<"$_pwentry"
         launched_hour=$(date -u -d "$launch_time" "$dcmpfmt")
@@ -108,10 +109,10 @@ if [[ -r "$PWSTATE" ]]; then
         fi
     done
 fi
-dbg "latest_launched=$latest_launched (according to \$PWSTATE)"
+dbg "latest_launched=$latest_launched (according to \$DHSTATE)"
 
 msg "Operating on $n_dh_total dedicated hosts at $(date -u -Iminutes):"
-echo -e "# $(basename ${BASH_SOURCE[0]}) run $(date -u -Iseconds)\n#" > "$TEMPDIR/$(basename $PWSTATE)"
+echo -e "# $(basename ${BASH_SOURCE[0]}) run $(date -u -Iseconds)\n#" > "$TEMPDIR/$(basename $DHSTATE)"
 for name_hostid in "${NAME2HOSTID[@]}"; do
     n_dh=$(($n_dh+1))
     _I="    "
@@ -122,7 +123,7 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
 
     hostoutput="$TEMPDIR/${name}_host.output" # JSON or error message from aws describe-hosts
     instoutput="$TEMPDIR/${name}_inst.output" # JSON or error message from aws describe-instance or run-instance
-    inststate="$TEMPDIR/${name}_inst.state"  # Line to append to $PWSTATE
+    inststate="$TEMPDIR/${name}_inst.state"  # Line to append to $DHSTATE
 
     if ! $AWS ec2 describe-hosts --filter "Name=tag:Name,Values=$name" &> "$hostoutput"; then
         host_failure "Failed to look up dedicated host."
@@ -166,7 +167,7 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
     # for Mac instances, but this is not reflected anywhere in the JSON.  Trying to start a new
     # Mac instance on an already occupied host is bound to fail.  Inconveniently this error
     # will look an aweful lot like many other types of errors, confusing any human examining
-    # $PWSTATE.  Detect dedicated-hosts with existing instances.
+    # $DHSTATE.  Detect dedicated-hosts with existing instances.
     InstanceId=$(set +e; jq -r '.Hosts?[0]?.Instances?[0].InstanceId?' "$hostoutput")
     dbg "InstanceId='$InstanceId'"
 
@@ -248,25 +249,16 @@ done
 _I=""
 msg " "
 msg "Processing all dedicated host and instance states."
-new_error=0
 for name_hostid in "${NAME2HOSTID[@]}"; do
     read -r name hostid<<<"$name_hostid"
     inststate="$TEMPDIR/${name}_inst.state"
-    [[ -r "$inststate" ]] || die "Expecting to find instance-state file $inststate for host '$name' $(ctx 0)."
-    if grep -E -q '^# .+ .+ ERROR: ' $inststate; then
-        new_error=1
-    fi
-    cat "$inststate" >> "$TEMPDIR/$(basename $PWSTATE)"
+    [[ -r "$inststate" ]] || \
+        die "Expecting to find instance-state file $inststate for host '$name' $(ctx 0)."
+    cat "$inststate" >> "$TEMPDIR/$(basename $DHSTATE)"
 done
 
 dbg "Creating/updating state file"
-if [[ -r "$PWSTATE" ]]; then
-    cp "$PWSTATE" "${PWSTATE}~"
+if [[ -r "$DHSTATE" ]]; then
+    cp "$DHSTATE" "${DHSTATE}~"
 fi
-mv "$TEMPDIR/$(basename $PWSTATE)" "$PWSTATE"
-
-dbg "Handling any errors"
-if ((new_error)); then
-    die "Processing one or more hosts or instances $(ctx 0):
-$(<$PWSTATE)"
-fi
+mv "$TEMPDIR/$(basename $DHSTATE)" "$DHSTATE"
