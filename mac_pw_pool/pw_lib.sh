@@ -17,6 +17,15 @@ trap "rm -rf '$TEMPDIR'" EXIT
 # without any fatal/uncaught command-errors.  Intended for reference by humans
 # and/or other tooling.
 DHSTATE="${PWSTATE:-$LIB_DIRPATH/dh_status.txt}"
+# Similar to $DHSTATE but records the status of each instance.  Format is
+# instance name, setup status, listener status, and apparent # tasks executed
+# or the word 'error' indicating a fault accessing the remote worker logfile.
+# Optionally, there may be a final comment field, beginning with a # and text
+# suggesting where there may be a fault.
+# Possible status field values are as follows:
+#   setup - started, complete, error
+#   listener - alive, dead, error
+PWSTATE="${PWSTATE:-$LIB_DIRPATH/pw_status.txt}"
 
 # Name of launch template. Current/default version will be used.
 # https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#LaunchTemplates:
