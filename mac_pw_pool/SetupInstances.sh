@@ -53,8 +53,8 @@ fi
 [[ -r "$DHSTATE" ]] || \
     die "Can't read from state file: $DHSTATE"
 
-declare -a _pwstate
-readarray -t _pwstate <<<$(grep -E -v '^($|#+| +)' "$DHSTATE" | sort)
+declare -a _dhstate
+readarray -t _dhstate <<<$(grep -E -v '^($|#+| +)' "$DHSTATE" | sort)
 n_inst=0
 n_inst_total="${#_dhstate[@]}"
 if [[ $n_inst_total -eq 0 ]] || [[ -z "${_dhstate[0]}" ]]; then
@@ -221,8 +221,8 @@ done
 _I=""
 msg " "
 msg "Processing all persistent worker states."
-for _pwentry in "${_pwstate[@]}"; do
-    read -r name otherstuff<<<"$_pwentry"
+for _dhentry in "${_dhstate[@]}"; do
+    read -r name otherstuff<<<"$_dhentry"
     _f1=$name
     _f2=$(<$TEMPDIR/${name}.setup)
     _f3=$(<$TEMPDIR/${name}.listener)

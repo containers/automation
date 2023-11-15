@@ -249,6 +249,8 @@ done
 _I=""
 msg " "
 msg "Processing all dedicated host and instance states."
+# Consuming state file in alpha-order is easier on human eyes
+readarray NAME2HOSTID <<<$(json_query "$dh_fmt" "$dh_searchout" | sort)
 for name_hostid in "${NAME2HOSTID[@]}"; do
     read -r name hostid<<<"$name_hostid"
     inststate="$TEMPDIR/${name}_inst.state"
