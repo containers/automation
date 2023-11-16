@@ -64,11 +64,11 @@ ctx() {
 }
 
 msg() { echo "${_I}${1:-No text message provided}"; }
-warn() { echo "${1:-No warning message provided}" | awk -e '{print "'"${_I}"'WARNING: "$0}' > /dev/stderr; }
-die() { echo "${1:-No error message provided}" | awk -e '{print "'"${_I}"'ERROR: "$0}' > /dev/stderr; exit 1; }
+warn() { echo "${1:-No warning message provided}" | awk -e '{print "'"${_I}"'WARNING: "$0}' >> /dev/stderr; }
+die() { echo "${1:-No error message provided}" | awk -e '{print "'"${_I}"'ERROR: "$0}' >> /dev/stderr; exit 1; }
 dbg() {
   if ((X_DEBUG)); then
-      msg "${1:-No debug message provided} $(ctx 1)" | awk -e '{print "'"${_I}"'DEBUG: "$0}' > /dev/stderr
+      msg "${1:-No debug message provided} $(ctx 1)" | awk -e '{print "'"${_I}"'DEBUG: "$0}' >> /dev/stderr
   fi
 }
 
