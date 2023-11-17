@@ -203,7 +203,7 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
       dbg "             now_hour=$now_hour"
       if [[ $now_hour -lt $launch_threshold_hour ]]; then
           msg "Cannot launch new instance until $launch_threshold"
-          echo "# $name HOST BUSY: Inst. creation delayed until $launch_threshold" > "$inststate"
+          echo "# $name HOST THROTTLE: Inst. creation delayed until $launch_threshold" > "$inststate"
           continue
       else
           launch_new=1
