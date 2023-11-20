@@ -3,6 +3,8 @@
 # Launch Cirrus-CI PW Pool listener & manager process.
 # Intended to be called once from setup.sh on M1 Macs.
 # Expects configuration filepath to be passed as the first argument.
+# Expects the number of hours until shutdown (and self-termination)
+# as the second argument.
 
 set -eo pipefail
 
@@ -17,6 +19,9 @@ msg "Listener started at $(date -u -Iseconds)"
 [[ -r "$1" ]] || \
     die "Can't read configuration file '$1'"
 
+[[ -n "$2" ]] || \
+    die "Expecting shutdown delay hours as second argument"
+
 # For whatever reason, when this script is run through ssh, the default
 # environment isn't loaded automatically.
 . /etc/profile
@@ -27,24 +32,14 @@ PWUSER=$PWINST-worker
     die "Unexpectedly empty instance name, is metadata tag access enabled?"
 
 PWCFG="$1"
-
-# CI effectively allows unmitigated access to run or host any
-# process or content on this instance as $PWUSER.  Limit the
-# potential blast-radius of any nefarious use by restricting
-# the lifetime of the instance.  If this ends up disturbing
-# a running task, Cirrus will automatically retry on another
-# available pool instance. Shutdown instance after this many
-# hours servicing the pool.  Note: It's randomized slightly
-# to prevent instances going down at similar times.
-_rndadj=$((RANDOM%8-4))  # +/- 4 hours
-PWLIFE=$((24+$_rndadj))
+PWLIFE="$2"
 
 # Configuring a launchd agent to run the worker process is a major
 # PITA and seems to require rebooting the instance.  Work around
 # this with a really hacky loop masquerading as a system service.
 # Run it in the background to allow this setup script to exit.
 # N/B: CI tasks have access to kill the pool listener process!
-expires=$(($(date -u "+%Y%m%d%H") + $PWLIFE))
+expires=$(date -u "+%Y%m%d%H" -d "+$PWLIFE hours")
 while [[ -r $PWCFG ]]; do
     # Don't start new pool listener if it or a CI agent process exist
     if ! pgrep -u $PWUSER -f -q "cirrus worker run" && ! pgrep -u $PWUSER -q "cirrus-ci-agent"; then

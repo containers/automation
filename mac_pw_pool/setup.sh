@@ -6,6 +6,9 @@
 # The instance must have both "metadata" and "Allow tags in
 # metadata" options enabled.  The instance must set the
 # "terminate" option for "shutdown behavior".
+#
+# Script accepts a single argument: The number of hours to
+# delay self-termination (including 0).
 
 set -eo pipefail
 
@@ -88,7 +91,8 @@ fi
 #
 # * Increase value to improve instance CI-utilization.
 # * Reduce value to lower instability & security risk.
-PWLIFE=22
+# * Additional hours argument is optional.
+PWLIFE=$((22+${1:-0}))
 
 if ! id "$PWUSER" &> /dev/null; then
     sudo sysadminctl -addUser $PWUSER
@@ -119,8 +123,8 @@ sudo chown ${USER}:staff $PWLOG
 sudo chmod g+rw $PWLOG
 
 if ! pgrep -q -f service_pool.sh; then
-    msg "Starting listener supervisor process"
-    /var/tmp/service_pool.sh "$PWCFG" &
+    msg "Starting listener supervisor process w/ ${PWLIFE}hour lifetime"
+    /var/tmp/service_pool.sh "$PWCFG" "$PWLIFE" &
     disown %-1
 else
     msg "Warning: Listener supervisor already running"

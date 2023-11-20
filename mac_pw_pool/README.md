@@ -56,6 +56,15 @@ From a PR perspective, there is zero control over which instance you
 get.  It could easily be one somebody's previous task barfed all over
 and ruined.
 
+## Initialization
+
+When no dedicated hosts have instances running, complete creation and
+setup will take many hours.  This may be bypassed by *manually* running
+`LaunchInstances.sh --force`.  The operator should then wait 20minutes
+before *manually* running `SetupInstances.sh --force`.  This delay
+is necessary to account for the time a Mac instance takes to boot and
+become ssh-able.
+
 ## Security
 
 To thwart attempts to hijack or use instances for nefarious purposes,
