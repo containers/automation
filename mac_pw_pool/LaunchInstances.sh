@@ -112,9 +112,12 @@ if ! $AWS ec2 describe-instances --filters "${pw_filts[@]}" --query "$pw_query" 
 $(<$inst_lt_f)"
 else
     declare -a launchtimes
-    if ! readarray -t launchtimes<<<$(json_query '.[]?' "$inst_lt_f"); then
+    if ! readarray -t launchtimes<<<$(json_query '.[]?' "$inst_lt_f") ||
+       [[ "${#launchtimes[@]}" -eq 0 ]] ||
+       [[ "${launchtimes[0]}" == "" ]]; then
         warn "Found no running instances, this should not happen."
     else
+        dbg "launchtimes=[${launchtimes[*]}]"
         for launch_time in "${launchtimes[@]}"; do
             # Assume launch_time is never malformed
             launched_hour=$(date -u -d "$launch_time" "$dcmpfmt")
