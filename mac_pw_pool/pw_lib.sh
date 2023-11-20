@@ -10,11 +10,21 @@ LIB_DIRPATH=$(dirname "${BASH_SOURCE[0]}")
 TEMPDIR=$(mktemp -d -p '' "${SCRIPT_FILENAME}_XXXXX.tmp")
 trap "rm -rf '$TEMPDIR'" EXIT
 
-# Path to file recording one line per instance, with it's name, instance id, start
+# Path to file recording the most recent state of each dedicated host.
+# Format is simply one line per dedicated host, with it's name, instance id, start
 # date/time separated by a space.  Exceptional conditions are recorded as comments
 # with the name and details.  File is refreshed/overwritten each time script runs
 # without any fatal/uncaught command-errors.  Intended for reference by humans
 # and/or other tooling.
+DHSTATE="${PWSTATE:-$LIB_DIRPATH/dh_status.txt}"
+# Similar to $DHSTATE but records the status of each instance.  Format is
+# instance name, setup status, listener status, and apparent # tasks executed
+# or the word 'error' indicating a fault accessing the remote worker logfile.
+# Optionally, there may be a final comment field, beginning with a # and text
+# suggesting where there may be a fault.
+# Possible status field values are as follows:
+#   setup - started, complete, error
+#   listener - alive, dead, error
 PWSTATE="${PWSTATE:-$LIB_DIRPATH/pw_status.txt}"
 
 # Name of launch template. Current/default version will be used.
@@ -54,11 +64,11 @@ ctx() {
 }
 
 msg() { echo "${_I}${1:-No text message provided}"; }
-warn() { echo "${1:-No warning message provided}" | awk -e '{print "'"${_I}"'WARNING: "$0}' > /dev/stderr; }
-die() { echo "${1:-No error message provided}" | awk -e '{print "'"${_I}"'ERROR: "$0}' > /dev/stderr; exit 1; }
+warn() { echo "${1:-No warning message provided}" | awk -e '{print "'"${_I}"'WARNING: "$0}' >> /dev/stderr; }
+die() { echo "${1:-No error message provided}" | awk -e '{print "'"${_I}"'ERROR: "$0}' >> /dev/stderr; exit 1; }
 dbg() {
   if ((X_DEBUG)); then
-      msg "${1:-No debug message provided} $(ctx 1)" | awk -e '{print "'"${_I}"'DEBUG: "$0}' > /dev/stderr
+      msg "${1:-No debug message provided} $(ctx 1)" | awk -e '{print "'"${_I}"'DEBUG: "$0}' >> /dev/stderr
   fi
 }
 

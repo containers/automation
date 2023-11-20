@@ -59,7 +59,7 @@ inst_failure() {
 }
 
 # Find dedicated hosts to operate on.
-dh_flt="Name=tag-key,Values=PWPoolReady"
+dh_flt="Name=tag:Name,Values=MacM1-*"
 dh_qry='Hosts[].{HostID:HostId, Name:[Tags[?Key==`Name`].Value][] | [0]}'
 dh_searchout="$TEMPDIR/hosts.output"  # JSON or error message
 if ! $AWS ec2 describe-hosts --filter "$dh_flt" --query "$dh_qry" &> "$dh_searchout"; then
@@ -70,8 +70,9 @@ fi
 # Array item format: "<Name> <ID>"
 dh_fmt='.[] | .Name +" "+ .HostID'
 # Avoid always processing hosts in the same alpha-sorted order, as that would
-# mean hosts at the end of the list consistently get the least management.
-if ! readarray NAME2HOSTID <<<$(json_query "$dh_fmt" "$dh_searchout" | sort --random-sort); then
+# mean hosts at the end of the list consistently wait the longest for new
+# instances to be created (see creation-stagger code below).
+if ! readarray -t NAME2HOSTID <<<$(json_query "$dh_fmt" "$dh_searchout" | sort --random-sort); then
     die "Extracting dedicated host 'Name' and 'HostID' fields $(ctx 0):
 $(<$dh_searchout)"
 fi
@@ -90,28 +91,53 @@ fi
 # Therefore, instance creations must be staggered by according to this
 # window.
 CREATE_STAGGER_HOURS=3
-latest_launched="1970-01-01T00:00+00:00"  # in case $PWSTATE is missing
+latest_launched="1970-01-01T00:00+00:00"  # in case $DHSTATE is missing
 dcmpfmt="+%Y%m%d%H%M"  # date comparison format compatible with numeric 'test'
-if [[ -r "$PWSTATE" ]]; then
-    # N/B: Asumes data in $PWSTATE represents reality.  It may not,
-    # for example if instances have been manually created or terminated.
-    # Querying the actual state would make this script much more complex.
-    declare -a _pwstate
-    readarray -t _pwstate <<<$(grep -E -v '^($|#+| +)' "$PWSTATE")
-    for _pwentry in "${_pwstate[@]}"; do
-        read -r name instance_id launch_time<<<"$_pwentry"
-        launched_hour=$(date -u -d "$launch_time" "$dcmpfmt")
-        latest_launched_hour=$(date -u -d "$latest_launched" "$dcmpfmt")
-        dbg "instance $name launched on $launched_hour, latest launched hour: $latest_launched_hour"
-        if [[ $launched_hour -gt $latest_launched_hour ]]; then
-            latest_launched="$launch_time"
-        fi
-    done
+# To find the latest instance launch time, script can't rely on reading
+# $DHSTATE or $PWSTATE because they may not exist or be out of date.
+# Search for all running instances by name and running state, returning
+# their launch timestamps.
+declare -a pw_filt
+pw_filts=(
+  'Name=tag:Name,Values=MacM1-*'
+  'Name=tag:PWPoolReady,Values=true'
+  'Name=instance-state-name,Values=running'
+)
+pw_query='Reservations[].Instances[].LaunchTime'
+inst_lt_f=$TEMPDIR/inst_launch_times
+dbg "Obtaining launch times for all running MacM1-* instances"
+dbg "$AWS ec2 describe-instances --filters '${pw_filts[*]}' --query '$pw_query' &> '$inst_lt_f'"
+if ! $AWS ec2 describe-instances --filters "${pw_filts[@]}" --query "$pw_query" &> "$inst_lt_f"; then
+    die "Can not query instances:
+$(<$inst_lt_f)"
+else
+    declare -a launchtimes
+    if ! readarray -t launchtimes<<<$(json_query '.[]?' "$inst_lt_f") ||
+       [[ "${#launchtimes[@]}" -eq 0 ]] ||
+       [[ "${launchtimes[0]}" == "" ]]; then
+        warn "Found no running instances, this should not happen."
+    else
+        dbg "launchtimes=[${launchtimes[*]}]"
+        for launch_time in "${launchtimes[@]}"; do
+            # Assume launch_time is never malformed
+            launched_hour=$(date -u -d "$launch_time" "$dcmpfmt")
+            latest_launched_hour=$(date -u -d "$latest_launched" "$dcmpfmt")
+            dbg "instance launched on $launched_hour; latest launch hour: $latest_launched_hour"
+            if [[ $launched_hour -gt $latest_launched_hour ]]; then
+                dbg "Updating latest launched timestamp"
+                latest_launched="$launch_time"
+            fi
+        done
+    fi
 fi
-dbg "latest_launched=$latest_launched (according to \$PWSTATE)"
 
-msg "Operating on $n_dh_total dedicated hosts at $(date -u -Iminutes):"
-echo -e "# $(basename ${BASH_SOURCE[0]}) run $(date -u -Iseconds)\n#" > "$TEMPDIR/$(basename $PWSTATE)"
+# Increase readability for humans by always ensuring the two important
+# date stamps line up regardless of the length of $n_dh_total.
+_n_dh_sp=$(printf ' %.0s' seq 1 ${#n_dh_total})
+msg "Operating on $n_dh_total dedicated hosts at $(date -u -Iseconds)"
+msg "       ${_n_dh_sp}Last instance launch on $latest_launched"
+echo -e "# $(basename ${BASH_SOURCE[0]}) run $(date -u -Iseconds)\n#" > "$TEMPDIR/$(basename $DHSTATE)"
+
 for name_hostid in "${NAME2HOSTID[@]}"; do
     n_dh=$(($n_dh+1))
     _I="    "
@@ -122,9 +148,9 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
 
     hostoutput="$TEMPDIR/${name}_host.output" # JSON or error message from aws describe-hosts
     instoutput="$TEMPDIR/${name}_inst.output" # JSON or error message from aws describe-instance or run-instance
-    inststate="$TEMPDIR/${name}_inst.state"  # Line to append to $PWSTATE
+    inststate="$TEMPDIR/${name}_inst.state"  # Line to append to $DHSTATE
 
-    if ! $AWS ec2 describe-hosts --filter "Name=tag:Name,Values=$name" &> "$hostoutput"; then
+    if ! $AWS ec2 describe-hosts --host-ids $hostid &> "$hostoutput"; then
         host_failure "Failed to look up dedicated host."
         continue
     # Allow hosts to be taken out of service easily/manually by editing its tags.
@@ -166,21 +192,21 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
     # for Mac instances, but this is not reflected anywhere in the JSON.  Trying to start a new
     # Mac instance on an already occupied host is bound to fail.  Inconveniently this error
     # will look an aweful lot like many other types of errors, confusing any human examining
-    # $PWSTATE.  Detect dedicated-hosts with existing instances.
+    # $DHSTATE.  Detect dedicated-hosts with existing instances.
     InstanceId=$(set +e; jq -r '.Hosts?[0]?.Instances?[0].InstanceId?' "$hostoutput")
     dbg "InstanceId='$InstanceId'"
 
     # Stagger creation of instances by $CREATE_STAGGER_HOURS
     launch_new=0
     if [[ "$InstanceId" == "null" ]] || [[ "$InstanceId" == "" ]]; then
-      launch_threshold=$(date -u -Iminutes -d "$latest_launched + $CREATE_STAGGER_HOURS hours")
+      launch_threshold=$(date -u -Iseconds -d "$latest_launched + $CREATE_STAGGER_HOURS hours")
       launch_threshold_hour=$(date -u -d "$launch_threshold" "$dcmpfmt")
       now_hour=$(date -u "$dcmpfmt")
       dbg "launch_threshold_hour=$launch_threshold_hour"
       dbg "             now_hour=$now_hour"
       if [[ $now_hour -lt $launch_threshold_hour ]]; then
           msg "Cannot launch new instance until $launch_threshold"
-          echo "# $name HOST BUSY: Inst. creation delayed until $launch_threshold" > "$inststate"
+          echo "# $name HOST THROTTLE: Inst. creation delayed until $launch_threshold" > "$inststate"
           continue
       else
           launch_new=1
@@ -197,7 +223,7 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
             continue
         else
             # Block further launches (assumes script is running in a 10m while loop).
-            latest_launched=$(date -u -Iminutes)
+            latest_launched=$(date -u -Iseconds)
             msg "Successfully created new instance; Waiting for 'running' state (~1m typical)..."
             # N/B: New Mac instances take ~5-10m to actually become ssh-able
             if ! InstanceId=$(json_query '.Instances?[0]?.InstanceId' "$instoutput"); then
@@ -248,25 +274,18 @@ done
 _I=""
 msg " "
 msg "Processing all dedicated host and instance states."
-new_error=0
+# Consuming state file in alpha-order is easier on human eyes
+readarray -t NAME2HOSTID <<<$(json_query "$dh_fmt" "$dh_searchout" | sort)
 for name_hostid in "${NAME2HOSTID[@]}"; do
     read -r name hostid<<<"$name_hostid"
     inststate="$TEMPDIR/${name}_inst.state"
-    [[ -r "$inststate" ]] || die "Expecting to find instance-state file $inststate for host '$name' $(ctx 0)."
-    if grep -E -q '^# .+ .+ ERROR: ' $inststate; then
-        new_error=1
-    fi
-    cat "$inststate" >> "$TEMPDIR/$(basename $PWSTATE)"
+    [[ -r "$inststate" ]] || \
+        die "Expecting to find instance-state file $inststate for host '$name' $(ctx 0)."
+    cat "$inststate" >> "$TEMPDIR/$(basename $DHSTATE)"
 done
 
 dbg "Creating/updating state file"
-if [[ -r "$PWSTATE" ]]; then
-    cp "$PWSTATE" "${PWSTATE}~"
+if [[ -r "$DHSTATE" ]]; then
+    cp "$DHSTATE" "${DHSTATE}~"
 fi
-mv "$TEMPDIR/$(basename $PWSTATE)" "$PWSTATE"
-
-dbg "Handling any errors"
-if ((new_error)); then
-    die "Processing one or more hosts or instances $(ctx 0):
-$(<$PWSTATE)"
-fi
+mv "$TEMPDIR/$(basename $DHSTATE)" "$DHSTATE"
