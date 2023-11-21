@@ -46,10 +46,11 @@ Validate this file before commiting with (from repository root):
   // Make renovate PRs stand out from the crowd
   "labels": ["dependencies"],
 
-  // Default setting is an "empty" schedule.  Explicitly set this
-  // such that security-alert PRs may be opened immediately.
   "vulnerabilityAlerts": {
     "labels": ["dependencies", "security"],
+
+    // Open security related PRs ASAP
+    "schedule": ["at any time"],
 
     // Force-enable renovate management of deps. which are otherwise
     // disabled.  Note: Does not apply to any "ignorePaths" list, nor
@@ -142,6 +143,12 @@ Validate this file before commiting with (from repository root):
     {
       "matchCategories": ["golang"],
 
+      // Default to a cadence of daily updates for golang. Otherwise
+      // due to `go tidy` related "churn" with merges to main +
+      // rebase activity, Renovate can spam force-pushes to it's PRs
+      // faster than any human could possibly review them.
+      "schedule": ["after 1am and before 11am"],
+
       // disabled by default, safe to enable since "tidy" enforced by CI.
       "postUpdateOptions": ["gomodTidy"],
 
@@ -151,9 +158,6 @@ Validate this file before commiting with (from repository root):
 
       // Preserve (but continue to upgrade) any existing SemVer ranges.
       "rangeStrategy": "replace",
-
-      // N/B: LAST MATCHING RULE WINS
-      // https://docs.renovatebot.com/configuration-options/#packagerules
     },
 
     // Golang pseudo-version packages will spam with every Commit ID change.
@@ -195,8 +199,6 @@ Validate this file before commiting with (from repository root):
       "groupName": "CI VM Image",
       // Somebody(s) need to check image update PRs as soon as they open.
       "reviewers": ["cevich"],
-      // Don't wait, roll out CI VM Updates immediately
-      "schedule": ["at any time"],
     },
 
     // Add CI:DOCS prefix to skip unnecessary tests for golangci updates in podman CI.
