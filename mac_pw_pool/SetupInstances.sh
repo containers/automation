@@ -68,9 +68,20 @@ fi
 # N/B: Assumes $DHSTATE represents reality
 msg "Operating on $n_inst_total instances from $(head -1 $DHSTATE)"
 echo -e "# $(basename ${BASH_SOURCE[0]}) run $(date -u -Iseconds)\n#" > "$TEMPDIR/$(basename $PWSTATE)"
-# Indent for messages inside loop
+
+# Assuming the `--force` option was used to initialize a new pool of
+# workers, then instances need to be configured with a self-termination
+# shutdown delay.  This ensures future replacement instances creation
+# is staggered, soas to maximize overall worker utilization.
+term_addtl=0
+# shellcheck disable=SC2199
+if [[ "$@" =~ --force ]]; then
+    warn "Forcing instance creation: Ignoring staggered creation limits."
+    term_addtl=1  # Multiples of 2-hours to add to self-termination delay
+fi
+
 for _dhentry in "${_dhstate[@]}"; do
-    read -r name instance_id launch_time<<<"$_dhentry"
+    read -r name instance_id launch_time junk<<<"$_dhentry"
     _I="    "
     msg " "
     n_inst=$(($n_inst+1))
@@ -158,13 +169,18 @@ for _dhentry in "${_dhstate[@]}"; do
                 continue
             fi
 
+            dbg "Additional term-delay hours: $term_addtl"
+
             # Run setup script in background b/c it takes ~5-10m to complete.
             $SSH ec2-user@$pub_dns \
                 env POOLTOKEN=$POOLTOKEN \
-                bash -c '/var/tmp/setup.sh &> setup.log & disown %-1'
+                bash -c "/var/tmp/setup.sh $(($term_addtl * 2)) &> setup.log & disown %-1"
 
-            msg "Setup script started"
+            msg "Setup script started w/ $(($term_addtl * 2))hour(s) additional shutdown delay"
             set_pw_status setup started
+
+            # When starting multiple instance, force self-termination staggering.
+            term_addtl=$(($term_addtl+1))
 
             # Let it run in the background
             continue

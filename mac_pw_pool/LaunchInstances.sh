@@ -119,6 +119,10 @@ else
     else
         dbg "launchtimes=[${launchtimes[*]}]"
         for launch_time in "${launchtimes[@]}"; do
+            if [[ "$launch_time" == "" ]] || [[ "$launch_time" == "null" ]]; then
+                warn "Ignoring empty/null instance launch time."
+                continue
+            fi
             # Assume launch_time is never malformed
             launched_hour=$(date -u -d "$launch_time" "$dcmpfmt")
             latest_launched_hour=$(date -u -d "$latest_launched" "$dcmpfmt")
@@ -138,12 +142,22 @@ msg "Operating on $n_dh_total dedicated hosts at $(date -u -Iseconds)"
 msg "       ${_n_dh_sp}Last instance launch on $latest_launched"
 echo -e "# $(basename ${BASH_SOURCE[0]}) run $(date -u -Iseconds)\n#" > "$TEMPDIR/$(basename $DHSTATE)"
 
+# When initializing a new pool of workers, it would take many hours
+# to wait for the staggered creation mechanism on each host.  This
+# would negativly impact worker utilization.  Provide a workaround.
+force=0
+# shellcheck disable=SC2199
+if [[ "$@" =~ --force ]]; then
+    warn "Forcing instance creation: Ignoring staggered creation limits."
+    force=1
+fi
+
 for name_hostid in "${NAME2HOSTID[@]}"; do
     n_dh=$(($n_dh+1))
     _I="    "
     msg " "  # make output easier to read
 
-    read -r name hostid<<<"$name_hostid"
+    read -r name hostid junk<<<"$name_hostid"
     msg "Working on Dedicated Host #$n_dh/$n_dh_total '$name' for HostID '$hostid'."
 
     hostoutput="$TEMPDIR/${name}_host.output" # JSON or error message from aws describe-hosts
@@ -204,7 +218,7 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
       now_hour=$(date -u "$dcmpfmt")
       dbg "launch_threshold_hour=$launch_threshold_hour"
       dbg "             now_hour=$now_hour"
-      if [[ $now_hour -lt $launch_threshold_hour ]]; then
+      if [[ "$force" -eq 0 ]] && [[ $now_hour -lt $launch_threshold_hour ]]; then
           msg "Cannot launch new instance until $launch_threshold"
           echo "# $name HOST THROTTLE: Inst. creation delayed until $launch_threshold" > "$inststate"
           continue
