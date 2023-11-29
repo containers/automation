@@ -39,15 +39,12 @@ The goal is to maintain sufficient alive/running/working instances
 to service most Cirrus-CI tasks pointing at the pool.  This is
 best achieved with slower maintenance of hosts compared to setup
 of ready instances.  This is because hosts can be inaccessible for
-1-1/2 hours, but instances come up in ~10-20m, ready for setup.
+1-1/2 hours, but instances come up in ~10-20m, ready to run tasks.
 
-Both hosts and instances may be taken out of all management loops
-by setting or removing its `PWPoolReady=true` tag.  Otherwise,
-with a fully populated set of dedicated hosts and running instances,
-state should be maintained using two loops:
-
-1. `while ./LaunchInstances.sh; do echo "Sleeping..."; sleep 10m; done`
-2. `while ./SetupInstances.sh; do echo "Sleeping..."; sleep 2m; done`
+Either hosts and/or instances may be removed from management by
+setting "false" or removing their `PWPoolReady=true` tag.  Otherwise,
+the pool should be maintained by installing the crontab lines
+indicated in the `Cron.sh` script.
 
 Cirrus-CI will assign tasks (specially) targeted at the pool, to an
 instance with a running listener.  If there are none, the task will
