@@ -212,8 +212,8 @@ for _dhentry in "${_dhstate[@]}"; do
 $(<$logoutput)"
     fi
 
-    # First line of log should always match this
-    if ! head -1 "$logoutput" | grep -q 'worker successfully registered'; then
+    # First lines of log should always match this
+    if ! head -10 "$logoutput" | grep -q 'worker successfully registered'; then
         warn "Expecting successful registration log entry:
 $(head -1 "$logoutput")"
         continue
@@ -225,6 +225,15 @@ $(head -1 "$logoutput")"
     # Most of the time these are harmless, "can't connect" flakes.
     if grep -Eq 'level=error.+msg.+failed' "$logoutput"; then
         warn "Failure messages present in worker log"
+    fi
+
+    if ! autoexp=$(grep -Eh -m1 '.+: Automatic instance recycle after .+' "$logoutput"); then
+        # Unusual but non-consequential, warn and move on.
+        warn "No auto-expire notice found in log."
+    elif [[ -n "$autoexp" ]]; then
+        # msg() prefixes everything with '#####' automatically.
+        nopfx=$(cut -d ' ' -f 3- <<<"$autoexp")
+        msg "$nopfx"
     fi
 
     # The CI user has write-access to this log file on the instance,
