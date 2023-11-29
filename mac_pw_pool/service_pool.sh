@@ -40,6 +40,8 @@ PWLIFE="$2"
 # Run it in the background to allow this setup script to exit.
 # N/B: CI tasks have access to kill the pool listener process!
 expires=$(date -u "+%Y%m%d%H" -d "+$PWLIFE hours")
+# N/B: The text below is greped for by SetupInstances.sh
+msg "$(date -u -Iseconds): Automatic instance recycle after $(date -u -Iseconds -d "+$PWLIFE hours")"
 while [[ -r $PWCFG ]]; do
     # Don't start new pool listener if it or a CI agent process exist
     if ! pgrep -u $PWUSER -f -q "cirrus worker run" && ! pgrep -u $PWUSER -q "cirrus-ci-agent"; then
@@ -57,6 +59,8 @@ while [[ -r $PWCFG ]]; do
 
     if [[ $(date -u "+%Y%m%d%H") -ge $expires ]]; then
         msg "$(date -u -Iseconds) Instance expired."
+        # Block pickup of new jobs
+        pkill -u $PWUSER -f "cirrus worker run"
         # Try not to clobber a running Task, unless it's fake.
         if pgrep -u $PWUSER -q "cirrus-ci-agent"; then
             msg "$(date -u -Iseconds) Shutdown paused 2h for apparent in-flight CI task."

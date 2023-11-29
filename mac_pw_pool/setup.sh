@@ -124,7 +124,7 @@ sudo chmod g+rw $PWLOG
 
 if ! pgrep -q -f service_pool.sh; then
     msg "Starting listener supervisor process w/ ${PWLIFE}hour lifetime"
-    /var/tmp/service_pool.sh "$PWCFG" "$PWLIFE" &
+    /var/tmp/service_pool.sh "$PWCFG" "$PWLIFE" >> "${PWLOG}" &
     disown %-1
 else
     msg "Warning: Listener supervisor already running"
