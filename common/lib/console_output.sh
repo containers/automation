@@ -116,7 +116,7 @@ show_env_vars() {
         warn "The \$SECRET_ENV_RE var. unset/empty: Not filtering sensitive names!"
     fi
 
-    for env_var_name in $(awk 'BEGIN{for(v in ENVIRON) print v}' | grep -Eiv "$filter_rx" | sort -u); do
+    for env_var_name in $(awk 'BEGIN{for(v in ENVIRON) print v}' | grep -Eiv "$filter_rx" | sort); do
 
         line="${env_var_name}=${!env_var_name}"
         msg "    $line"
