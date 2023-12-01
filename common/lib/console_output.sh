@@ -3,6 +3,7 @@
 # A Library of contextual console output-related operations.
 # Intended for use by other scripts, not to be executed directly.
 
+# shellcheck source=common/lib/defaults.sh
 source $(dirname $(realpath "${BASH_SOURCE[0]}"))/defaults.sh
 
 # helper, not intended for use outside this file
@@ -10,10 +11,11 @@ _rel_path() {
     if [[ -z "$1" ]]; then
         echo "<stdin>"
     else
-        local abs_path=$(realpath "$1")
-        local rel_path=$(realpath --relative-to=. $abs_path)
-        local abs_path_len=${#abs_path}
-        local rel_path_len=${#rel_path}
+        local abs_path rel_path abs_path_len rel_path_len
+        abs_path=$(realpath "$1")
+        rel_path=$(realpath --relative-to=. $abs_path)
+        abs_path_len=${#abs_path}
+        rel_path_len=${#rel_path}
         if ((abs_path_len <= rel_path_len)); then
             echo "$abs_path"
         else
@@ -24,9 +26,10 @@ _rel_path() {
 
 # helper, not intended for use outside this file
 _ctx() {
+    local shortest_source_path grandparent_func
     # Caller's caller details
-    local shortest_source_path=$(_rel_path "${BASH_SOURCE[3]}")
-    local grandparent_func="${FUNCNAME[2]}"
+    shortest_source_path=$(_rel_path "${BASH_SOURCE[3]}")
+    grandparent_func="${FUNCNAME[2]}"
     [[ -n "$grandparent_func" ]] || \
         grandparent_func="main"
     echo "$shortest_source_path:${BASH_LINENO[2]} in ${FUNCNAME[3]}()"
@@ -34,9 +37,10 @@ _ctx() {
 
 # helper, not intended for use outside this file.
 _fmt_ctx() {
-    local stars="************************************************"
-    local prefix="${1:-no prefix given}"
-    local message="${2:-no message given}"
+    local stars prefix message
+    stars="************************************************"
+    prefix="${1:-no prefix given}"
+    message="${2:-no message given}"
     echo "$stars"
     echo "$prefix  ($(_ctx))"
     echo "$stars"
@@ -57,8 +61,9 @@ die() {
 }
 
 dbg() {
+    local shortest_source_path
     if ((A_DEBUG)); then
-        local shortest_source_path=$(_rel_path "${BASH_SOURCE[1]}")
+        shortest_source_path=$(_rel_path "${BASH_SOURCE[1]}")
         (
         echo
         echo "$DEBUG_MSG_PREFIX ${1:-No debugging message given} ($shortest_source_path:${BASH_LINENO[0]} in ${FUNCNAME[1]}())"
@@ -73,8 +78,10 @@ msg() {
 # Mimic set +x for a single command, along with calling location and line.
 showrun() {
     local -a context
+    # Tried using readarray, it broke tests for some reason, too lazy to investigate.
+    # shellcheck disable=SC2207
     context=($(caller 0))
-    echo "+ $@  # ${context[2]}:${context[0]} in ${context[1]}()" > /dev/stderr
+    echo "+ $*  # ${context[2]}:${context[0]} in ${context[1]}()" > /dev/stderr
     "$@"
 }
 
@@ -109,7 +116,7 @@ show_env_vars() {
         warn "The \$SECRET_ENV_RE var. unset/empty: Not filtering sensitive names!"
     fi
 
-    for env_var_name in $(awk 'BEGIN{for(v in ENVIRON) print v}' | grep -Eiv "$filter_rx" | sort -u); do
+    for env_var_name in $(awk 'BEGIN{for(v in ENVIRON) print v}' | grep -Eiv "$filter_rx" | sort); do
 
         line="${env_var_name}=${!env_var_name}"
         msg "    $line"

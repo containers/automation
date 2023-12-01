@@ -60,14 +60,14 @@ while [[ -r $PWCFG ]]; do
     if [[ $(date -u "+%Y%m%d%H") -ge $expires ]]; then
         msg "$(date -u -Iseconds) Instance expired."
         # Block pickup of new jobs
-        pkill -u $PWUSER -f "cirrus worker run"
+        sudo pkill -u $PWUSER -f "cirrus worker run"
         # Try not to clobber a running Task, unless it's fake.
         if pgrep -u $PWUSER -q "cirrus-ci-agent"; then
             msg "$(date -u -Iseconds) Shutdown paused 2h for apparent in-flight CI task."
             # Cirrus-CI has hard-coded 2-hour max task lifetime
             sleep $(60 * 60 * 2)
             msg "$(date -u -Iseconds) Killing hung or nefarious CI agent older than 2h."
-            pkill -u $PWUSER "cirrus-ci-agent"
+            sudo pkill -u $PWUSER "cirrus-ci-agent"
         fi
         msg "$(date -u -Iseconds) Executing shutdown."
         sudo shutdown -h +1m "Automatic instance recycle after >$PWLIFE hours."
