@@ -11,7 +11,9 @@ set -eo pipefail
 # shellcheck source-path=SCRIPTDIR
 source $(dirname ${BASH_SOURCE[0]})/pw_lib.sh
 
-SSH="ssh $SSH_ARGS"  # N/B: library default nulls stdin
+# Enable access to VNC if it's running
+# ref: https://repost.aws/knowledge-center/ec2-mac-instance-gui-access
+SSH="ssh $SSH_ARGS -L 5900:localhost:5900"  # N/B: library default nulls stdin
 
 [[ -n "$1" ]] || \
     die "Must provide EC2 instance ID as first argument"
@@ -24,4 +26,5 @@ if [[ -z "$pub_dns" ]] || [[ "$pub_dns" == "null" ]]; then
     die "Instance '$1' does not exist, or have a public DNS address allocated (yet)."
 fi
 
+echo "+ $SSH ec2-user@$pub_dns \"$*\"" >> /dev/stderr
 $SSH ec2-user@$pub_dns "$@"
