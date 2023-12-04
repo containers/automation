@@ -21,15 +21,32 @@ DH_REQ_VAL="prod"
 # without any fatal/uncaught command-errors.  Intended for reference by humans
 # and/or other tooling.
 DHSTATE="${PWSTATE:-$LIB_DIRPATH/dh_status.txt}"
+
 # Similar to $DHSTATE but records the status of each instance.  Format is
-# instance name, setup status, listener status, and apparent # tasks executed
+# instance name, setup status, listener status, # started tasks, # finished tasks,
 # or the word 'error' indicating a fault accessing the remote worker logfile.
 # Optionally, there may be a final comment field, beginning with a # and text
 # suggesting where there may be a fault.
 # Possible status field values are as follows:
-#   setup - started, complete, error
-#   listener - alive, dead, error
+#   setup - started, complete, disabled, error
+#   listener - alive, dead, disabled, error
 PWSTATE="${PWSTATE:-$LIB_DIRPATH/pw_status.txt}"
+
+# At maximum possible creation-speed, there's aprox. 2-hours of time between
+# an instance going down, until another can be up and running again.  Since
+# instances are all on shutdown/terminated on pre-set timers, it would hurt
+# pool availability if multiple instances all went down at the same time.
+# Therefore, host and instance creations will be staggered by according
+# to this interval.
+CREATE_STAGGER_HOURS=2
+
+# Instance shutdown controls (assumes terminate-on-shutdown behavior)
+PW_MAX_HOURS=24  # Since successful configuration
+PW_MAX_TASKS=30  # Logged by listener (N/B: Can be manipulated by tasks!)
+
+# How long to wait for setup.sh to finish running (drop a .setup.done file)
+# before forcibly terminating.
+SETUP_MAX_SECONDS=1200  # Typical time ~600seconds
 
 # Name of launch template. Current/default version will be used.
 # https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#LaunchTemplates:
@@ -38,6 +55,7 @@ TEMPLATE_NAME="${TEMPLATE_NAME:-CirrusMacM1PWinstance}"
 # Path to scripts to copy/execute on Darwin instances
 SETUP_SCRIPT="$LIB_DIRPATH/setup.sh"
 SPOOL_SCRIPT="$LIB_DIRPATH/service_pool.sh"
+SHDWN_SCRIPT="$LIB_DIRPATH/shutdown.sh"
 CIENV_SCRIPT="$LIB_DIRPATH/ci_env.sh"
 
 # Set to 1 to enable debugging

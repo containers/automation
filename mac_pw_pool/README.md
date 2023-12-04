@@ -57,10 +57,16 @@ and ruined.
 
 When no dedicated hosts have instances running, complete creation and
 setup will take many hours.  This may be bypassed by *manually* running
-`LaunchInstances.sh --force`.  The operator should then wait 20minutes
-before *manually* running `SetupInstances.sh --force`.  This delay
-is necessary to account for the time a Mac instance takes to boot and
-become ssh-able.
+`LaunchInstances.sh --force`.  This should be done prior to installing
+the `Cron.sh` cron-job.
+
+In order to prevent all the instances from being recycled at the same
+(future) time, the shutdown time installed by `SetupInstances.sh` also
+needs to be adjusted.  The operator should first wait about 20 minutes
+for all new instances to fully boot.  Followed by a call to
+`SetupInstances.sh --force`.
+
+Now the `Cron.sh` cron-job may be installed, enabled and started.
 
 ## Security
 
