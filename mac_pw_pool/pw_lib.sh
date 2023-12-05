@@ -10,6 +10,10 @@ LIB_DIRPATH=$(dirname "${BASH_SOURCE[0]}")
 TEMPDIR=$(mktemp -d -p '' "${SCRIPT_FILENAME}_XXXXX.tmp")
 trap "rm -rf '$TEMPDIR'" EXIT
 
+# Only manage dedicated hosts with the following tag & value
+DH_REQ_TAG="purpose"
+DH_REQ_VAL="prod"
+
 # Path to file recording the most recent state of each dedicated host.
 # Format is simply one line per dedicated host, with it's name, instance id, start
 # date/time separated by a space.  Exceptional conditions are recorded as comments

@@ -59,10 +59,11 @@ inst_failure() {
 }
 
 # Find dedicated hosts to operate on.
-dh_flt="Name=tag:Name,Values=MacM1-*"
+dh_name_flt="Name=tag:Name,Values=MacM1-*"
+dh_tag_flt="Name=tag:$DH_REQ_TAG,Values=$DH_REQ_VAL"
 dh_qry='Hosts[].{HostID:HostId, Name:[Tags[?Key==`Name`].Value][] | [0]}'
 dh_searchout="$TEMPDIR/hosts.output"  # JSON or error message
-if ! $AWS ec2 describe-hosts --filter "$dh_flt" --query "$dh_qry" &> "$dh_searchout"; then
+if ! $AWS ec2 describe-hosts --filter "$dh_name_flt" "$dh_tag_flt" --query "$dh_qry" &> "$dh_searchout"; then
     die "Searching for dedicated hosts $(ctx 0):
 $(<$dh_searchout)"
 fi
