@@ -53,7 +53,7 @@ while [[ -r $PWCFG ]]; do
         sudo chmod 0644 $PWCFG
         msg "$(date -u -Iseconds) Starting PW pool listener as $PWUSER"
         sudo su -l $PWUSER -c "/opt/homebrew/bin/cirrus worker run --file $PWCFG &"
-        sleep 30s  # eek!
+        sleep 10  # eek!
         sudo chmod 0600 $PWCFG
     fi
 
@@ -71,7 +71,7 @@ while [[ -r $PWCFG ]]; do
         fi
         msg "$(date -u -Iseconds) Executing shutdown."
         sudo shutdown -h +1m "Automatic instance recycle after >$PWLIFE hours."
-        sleep 120
+        sleep 10
     fi
 
     # Avoid re-launch busy-wait
