@@ -184,7 +184,10 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
         continue
     fi
 
-    if [[ "$hoststate" == "pending" ]] || [[ "$hoststate" == "under-assessment" ]]; then
+    if [[ "$hoststate" == "pending" ]] || \
+       [[ "$hoststate" == "under-assessment" ]] || \
+       [[ "$hoststate" == "released" ]]
+    then
         # When an instance is terminated, its dedicated host goes into an unusable state
         # for about 1-1/2 hours.  There's absolutely nothing that can be done to avoid
         # this or work around it.  Ignore hosts in this state, assuming a later run of the
@@ -192,6 +195,9 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
         #
         # I have no idea what 'under-assessment'  means, and it doesn't last as long as 'pending',
         # but functionally it behaves the same.
+        #
+        # Hosts in 'released' state are about to go away, hopefully due to operator action.
+        # Don't treat this as an error.
         msg "Dedicated host is untouchable due to '$hoststate' state."
         # Reference the actual output text, in case of false-match or unexpected contents.
         echo "# $name HOST BUSY: $hoststate" > "$inststate"
