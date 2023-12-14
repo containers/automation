@@ -6,7 +6,7 @@
 # Expects the number of hours until shutdown (and self-termination)
 # as the second argument.
 
-set -eo pipefail
+set -o pipefail
 
 msg() { echo "##### ${1:-No message message provided}"; }
 die() { echo "ERROR: ${1:-No error message provided}"; exit 1; }
@@ -65,13 +65,12 @@ while [[ -r $PWCFG ]]; do
         if pgrep -u $PWUSER -q "cirrus-ci-agent"; then
             msg "$(date -u -Iseconds) Shutdown paused 2h for apparent in-flight CI task."
             # Cirrus-CI has hard-coded 2-hour max task lifetime
-            sleep $(60 * 60 * 2)
+            sleep $((60 * 60 * 2))
             msg "$(date -u -Iseconds) Killing hung or nefarious CI agent older than 2h."
             sudo pkill -u $PWUSER "cirrus-ci-agent"
         fi
         msg "$(date -u -Iseconds) Executing shutdown."
-        sudo shutdown -h +1m "Automatic instance recycle after >$PWLIFE hours."
-        sleep 10
+        sudo shutdown -h now "Automatic instance recycle after >$PWLIFE hours." < /dev/null
     fi
 
     # Avoid re-launch busy-wait
