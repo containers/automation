@@ -6,6 +6,9 @@
 # The instance must have both "metadata" and "Allow tags in
 # metadata" options enabled.  The instance must set the
 # "terminate" option for "shutdown behavior".
+#
+# This script should be called with a single argument string,
+# of the label YAML to configure.  For example "purpose: prod"
 
 set -eo pipefail
 
@@ -35,6 +38,14 @@ die_if_empty() {
 
 [[ -n "$POOLTOKEN" ]] || \
     die "Must be called with non-empty \$POOLTOKEN set."
+
+[[ "$#" -ge 1 ]] || \
+    die "Must be called with a 'label: value' string argument"
+
+echo "$1" | grep -i -q -E '^[a-z0-9]+:[ ]?[a-z0-9]+' || \
+    die "First argument must be a string in the format 'name: value'. Not: '$1'"
+
+msg "Configuring pool worker for '$1' tasks."
 
 [[ ! -r "$COMPLETION_FILE" ]] || \
     die "Appears setup script already ran at '$(cat $COMPLETION_FILE)'"
@@ -95,13 +106,13 @@ if ! id "$PWUSER" &> /dev/null; then
 fi
 
 # FIXME: Semi-secret POOLTOKEN value should not be in this file.
-# TODO: It would be nice to label these based on instance's $DH_REQ_TAG: $DH_REQ_VAL
-#       as that would allow targeting PRs against (for example) a temp. testing pool.
 # ref: https://github.com/cirruslabs/cirrus-cli/discussions/662
 cat << EOF | sudo tee $PWCFG > /dev/null
 ---
 name: "$PWNAME"
 token: "$POOLTOKEN"
+labels:
+  $1
 log:
   file: "${PWLOG}"
 security:

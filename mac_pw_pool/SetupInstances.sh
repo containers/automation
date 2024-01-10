@@ -309,7 +309,7 @@ for _dhentry in "${_dhstate[@]}"; do
             # N/B: This drops .setup.started and eventually (hopefully) .setup.done
             if ! $SSH ec2-user@$pub_dns \
                     env POOLTOKEN=$POOLTOKEN \
-                    bash -c "'/var/tmp/setup.sh' </dev/null >>setup.log 2>&1 &"; then
+                    bash -c "'/var/tmp/setup.sh $DH_REQ_TAG:\ $DH_REQ_VAL' </dev/null >>setup.log 2>&1 &"; then
                 # This is critical, no easy way to determine what broke.
                 force_term "Failed to start background setup script"
                 continue
