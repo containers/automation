@@ -5,8 +5,8 @@ set -eo pipefail
 # Script intended to be executed by humans (and eventually automation) to
 # ensure instances are launched from the current template version, on all
 # available Cirrus-CI Persistent Worker M1 Mac dedicated hosts.  These
-# dedicated host (slots) are selected at runtime based their possessing any
-# value for the tag `PWPoolReady`.  The script assumes:
+# dedicated host (slots) are selected at runtime based their possessing a
+# 'true' value for their `PWPoolReady` tag.  The script assumes:
 #
 # * The `aws` CLI tool is installed on $PATH.
 # * Appropriate `~/.aws/credentials` credentials are setup.
@@ -80,18 +80,11 @@ fi
 
 n_dh=0
 n_dh_total=${#NAME2HOSTID[@]}
-if ! ((n_dh_total)); then
+if [[ -z "${NAME2HOSTID[*]}" ]] || ! ((n_dh_total)); then
     msg "No dedicated hosts found"
     exit 0
 fi
 
-# At maximum possible creation-speed, there's aprox. 3-hours of time between
-# an instance going down, until another can be up and running again.  Since
-# instances are all on shutdown + self-termination timers, it would hurt
-# pool availability if multiple instances all went down at the same time.
-# Therefore, instance creations must be staggered by according to this
-# window.
-CREATE_STAGGER_HOURS=3
 latest_launched="1970-01-01T00:00+00:00"  # in case $DHSTATE is missing
 dcmpfmt="+%Y%m%d%H%M"  # date comparison format compatible with numeric 'test'
 # To find the latest instance launch time, script can't rely on reading
@@ -102,6 +95,7 @@ declare -a pw_filt
 pw_filts=(
   'Name=tag:Name,Values=MacM1-*'
   'Name=tag:PWPoolReady,Values=true'
+  "Name=tag:$DH_REQ_TAG,Values=$DH_REQ_VAL"
   'Name=instance-state-name,Values=running'
 )
 pw_query='Reservations[].Instances[].LaunchTime'
@@ -235,10 +229,11 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
     fi
 
     if ((launch_new)); then
-        msg "Creating new instance on host."
+        msg "Creating new $name instance on $name host."
         if ! $AWS ec2 run-instances \
                   --launch-template LaunchTemplateName=CirrusMacM1PWinstance \
-                  --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$name}]" \
+                  --tag-specifications \
+                  "ResourceType=instance,Tags=[{Key=Name,Value=$name},{Key=$DH_REQ_TAG,Value=$DH_REQ_VAL},{Key=PWPoolReady,Value=true},{Key=automation,Value=true}]" \
                   --placement "HostId=$hostid" &> "$instoutput"; then
             inst_failure "Failed to create new instance on available host."
             continue
@@ -284,6 +279,9 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
     if ! InstanceId=$(json_query '.InstanceId' $instoutput); then
         inst_failure "Empty/null/failed JSON query of InstanceId"
         continue
+    elif ! InstName=$(json_query '.Tags | map(select(.Key == "Name")) | .[].Value' $instoutput) || \
+              [[ "$InstName" != "$name" ]]; then
+        inst_failure "Inst. name '$InstName' != DH name '$name'"
     elif ! LaunchTime=$(json_query '.LaunchTime' $instoutput); then
         inst_failure "Empty/null/failed JSON query of LaunchTime"
         continue

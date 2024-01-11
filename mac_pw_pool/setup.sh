@@ -7,29 +7,63 @@
 # metadata" options enabled.  The instance must set the
 # "terminate" option for "shutdown behavior".
 #
-# Script accepts a single argument: The number of hours to
-# delay self-termination (including 0).
+# This script should be called with a single argument string,
+# of the label YAML to configure.  For example "purpose: prod"
 
 set -eo pipefail
 
 GVPROXY_RELEASE_URL="https://github.com/containers/gvisor-tap-vsock/releases/latest/download/gvproxy-darwin"
-
-COMPLETION_FILE="$HOME/.setup.done"
 STARTED_FILE="$HOME/.setup.started"
+COMPLETION_FILE="$HOME/.setup.done"
 
-date -u -Iseconds >> "$STARTED_FILE"
+# Ref: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html
+PWNAME=$(curl -sSLf http://instance-data/latest/meta-data/tags/instance/Name)
+PWREADYURL="http://instance-data/latest/meta-data/tags/instance/PWPoolReady"
+PWREADY=$(curl -sSLf $PWREADYURL)
+
+PWUSER=$PWNAME-worker
+rm -f /private/tmp/*_cfg_*
+PWCFG=$(mktemp /private/tmp/${PWNAME}_cfg_XXXXXXXX)
+PWLOG="/private/tmp/${PWUSER}.log"
 
 msg() { echo "##### ${1:-No message message provided}"; }
 die() { echo "ERROR: ${1:-No error message provided}"; exit 1; }
 
+die_if_empty() {
+    local tagname
+    tagname="$1"
+    [[ -n "$tagname" ]] || \
+        die "Unexpectedly empty instance '$tagname' tag, is metadata tag access enabled?"
+}
+
 [[ -n "$POOLTOKEN" ]] || \
     die "Must be called with non-empty \$POOLTOKEN set."
 
+[[ "$#" -ge 1 ]] || \
+    die "Must be called with a 'label: value' string argument"
+
+echo "$1" | grep -i -q -E '^[a-z0-9]+:[ ]?[a-z0-9]+' || \
+    die "First argument must be a string in the format 'name: value'. Not: '$1'"
+
+msg "Configuring pool worker for '$1' tasks."
+
 [[ ! -r "$COMPLETION_FILE" ]] || \
-    die "Appears setup script already ran at '$(cat $COMPLETION_FILE)'.  This script should not be called twice by automation."
+    die "Appears setup script already ran at '$(cat $COMPLETION_FILE)'"
 
 [[ "$USER" == "ec2-user" ]] || \
     die "Expecting to execute as 'ec2-user'."
+
+die_if_empty PWNAME
+die_if_empty PWREADY
+
+[[ "$PWREADY" == "true" ]] || \
+    die "Found PWPoolReady tag not set 'true', aborting setup."
+
+# All operations assume this CWD
+cd $HOME
+
+# Checked by instance launch script to monitor setup status & progress
+msg $(date -u -Iseconds | tee "$STARTED_FILE")
 
 msg "Configuring paths"
 grep -q homebrew /etc/paths || \
@@ -39,8 +73,6 @@ grep -q homebrew /etc/paths || \
 # For whatever reason, when this script is run through ssh, the default
 # environment isn't loaded automatically.
 . /etc/profile
-
-msg "\$PATH=$PATH"
 
 msg "Installing podman-machine, testing, and CI deps. (~2m install time)"
 if [[ ! -x /usr/local/bin/gvproxy ]]; then
@@ -55,59 +87,32 @@ if [[ ! -x /usr/local/bin/gvproxy ]]; then
     rm gvproxy-darwin
 fi
 
-msg "Adding/Configuring PW User"
-# Ref: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-retrieval.html
-PWINST=$(curl -sSLf http://instance-data/latest/meta-data/tags/instance/Name)
-PWUSER=$PWINST-worker
-[[ -n "$PWINST" ]] || \
-    die "Unexpectedly empty instance name, is metadata tag access enabled?"
-
-PWCFG=$(mktemp /private/tmp/${PWINST}_cfg_XXXXXXXX)
-PWLOG="/private/tmp/${PWUSER}.log"
-
+msg "Setting up hostname"
 # Make host easier to identify from CI logs (default is some
-# random internal EC2 dns name).  Doesn't need to survive a
-# reboot.
-if [[ "$(uname -n)" != "$PWINST" ]]; then
-    sudo hostname $PWINST
-    sudo scutil --set HostName $PWINST
-    sudo scutil --set ComputerName $PWINST
+# random internal EC2 dns name).
+if [[ "$(uname -n)" != "$PWNAME" ]]; then
+    sudo hostname $PWNAME
+    sudo scutil --set HostName $PWNAME
+    sudo scutil --set ComputerName $PWNAME
 fi
 
-# CI effectively allows unmitigated access to run, kill,
-# or host any process or content on this instance as $PWUSER.
-# Limit the potential blast-radius of any nefarious use by
-# restricting the lifetime of the instance.  If this ends up
-# disturbing a running task, Cirrus will automatically retry
-# on another available pool instance. If none are available,
-# the task will queue indefinitely.
-#
-# Note: It takes about 3-hours total until a new instance can
-# be up/running in this one's place.
-#
-# Shutdown (and self-terminate instance after the number of hours
-# set below.  This value may be extended by 2 more hours
-# (see `service_pool.sh`).
-#
-# * Increase value to improve instance CI-utilization.
-# * Reduce value to lower instability & security risk.
-# * Additional hours argument is optional.
-PWLIFE=$((22+${1:-0}))
-
+msg "Adding/Configuring PW User"
 if ! id "$PWUSER" &> /dev/null; then
     sudo sysadminctl -addUser $PWUSER
-
     # User can't remove own pre-existing homedir crap during cleanup
     sudo rm -rf /Users/$PWUSER/*
     sudo rm -rf /Users/$PWUSER/.??*
+    sudo pkill -u $PWUSER || true
 fi
 
 # FIXME: Semi-secret POOLTOKEN value should not be in this file.
 # ref: https://github.com/cirruslabs/cirrus-cli/discussions/662
 cat << EOF | sudo tee $PWCFG > /dev/null
 ---
-name: "$PWINST"
+name: "$PWNAME"
 token: "$POOLTOKEN"
+labels:
+  $1
 log:
   file: "${PWLOG}"
 security:
@@ -116,19 +121,23 @@ security:
 EOF
 sudo chown ${USER}:staff $PWCFG
 
-# Log file is examined by the worker process launch script.
-# Ensure it exists and $PWUSER has access to it.
-touch $PWLOG
+# Monitored by instance launch script
+echo "# Log created $(date -u -Iseconds) - do not manually remove or modify!" > $PWLOG
 sudo chown ${USER}:staff $PWLOG
 sudo chmod g+rw $PWLOG
 
 if ! pgrep -q -f service_pool.sh; then
-    msg "Starting listener supervisor process w/ ${PWLIFE}hour lifetime"
-    /var/tmp/service_pool.sh "$PWCFG" "$PWLIFE" >> "${PWLOG}" &
+    # Allow service_pool.sh access to these values
+    export PWCFG
+    export PWUSER
+    export PWREADYURL
+    export PWREADY
+    msg "Spawning listener supervisor process."
+    /var/tmp/service_pool.sh </dev/null >>setup.log 2>&1 &
     disown %-1
 else
     msg "Warning: Listener supervisor already running"
 fi
 
-# Allow other tooling to detect this script has run successfully to completion
+# Monitored by instance launch script
 date -u -Iseconds >> "$COMPLETION_FILE"

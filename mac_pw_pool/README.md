@@ -57,10 +57,31 @@ and ruined.
 
 When no dedicated hosts have instances running, complete creation and
 setup will take many hours.  This may be bypassed by *manually* running
-`LaunchInstances.sh --force`.  The operator should then wait 20minutes
-before *manually* running `SetupInstances.sh --force`.  This delay
-is necessary to account for the time a Mac instance takes to boot and
-become ssh-able.
+`LaunchInstances.sh --force`.  This should be done prior to installing
+the `Cron.sh` cron-job.
+
+In order to prevent all the instances from being recycled at the same
+(future) time, the shutdown time installed by `SetupInstances.sh` also
+needs to be adjusted.  The operator should first wait about 20 minutes
+for all new instances to fully boot.  Followed by a call to
+`SetupInstances.sh --force`.
+
+Now the `Cron.sh` cron-job may be installed, enabled and started.
+
+## Manual Testing
+
+Verifying changes to these scripts / cron-job must be done manually.
+To support this, every dedicated host has a `purpose` tag set, which
+must correspond to the value indicated in `pw_lib.sh`.  To test script
+changes, first create one or more dedicated hosts with a unique `purpose`
+tag (like "cevich-testing").  Then temporarily update `pw_lib.sh` to use
+that value.
+
+***Importantly***, if running test tasks against the test workers,
+ensure you also customize the `purpose` label in the `cirrus.yml` task(s).
+Without this, production tasks will get scheduled on your testing instances.
+Just be sure to revert all the `purpose` values back to `prod`
+(and destroy related dedicated hosts) before any PRs get merged.
 
 ## Security
 

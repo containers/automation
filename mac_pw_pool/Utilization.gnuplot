@@ -9,17 +9,17 @@ set title "Persistent Workers & Utilization"
 
 set xdata time
 set timefmt "%Y-%m-%dT%H:%M:%S+00:00"
-set xtics rotate timedate
+set xtics nomirror rotate timedate
 set xlabel "time/date"
-set xrange [(system("date -u -Iseconds -d '6 hours ago'")):(system("date -u -Iseconds"))]
+set xrange [(system("date -u -Iseconds -d '26 hours ago'")):(system("date -u -Iseconds"))]
 
 set ylabel "Workers Online"
-set ytics border numeric
-set yrange [0:10]
+set ytics border nomirror numeric
+set yrange [0:(system("grep 'MacM1' dh_status.txt | wc -l") * 1.5)]
 
 set y2label "Worker Utilization"
-set y2tics border numeric
-set y2range [0:50]
+set y2tics border nomirror numeric
+set y2range [0:100]
 
 set datafile separator comma
 set grid
@@ -27,11 +27,14 @@ set grid
 plot 'utilization.csv' using 1:2 title "# Workers" with points pt 7, \
      '' using 1:($3/$2) axis x1y2 title "Tasks/Worker" with lines lw 2
 
+plot 'utilization.csv' using 1:2                  axis x1y1 title "Workers"     with dots lw 5, \
+                    '' using 1:((($3-$4)/$2)*100) axis x1y2 title "Utilization" with lines lw 2
+
 while GPVAL_SYSTEM_ERRNO==0 {
-    system "sleep 30s"
-    set xrange [(system("date -u -Iseconds -d '6 hours ago'")):(system("date -u -Iseconds"))]
-    set yrange [0:10]
-    set y2range [0:50]
+    system "sleep 5s"
+    # These change over time, make sure they're updated before 'replot'
+    set xrange [(system("date -u -Iseconds -d '26 hours ago'")):(system("date -u -Iseconds"))]
+    set yrange [0:(system("grep 'MacM1' dh_status.txt | wc -l") * 1.5)]
     replot
     refresh
 }
