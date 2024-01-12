@@ -99,9 +99,46 @@ fi
 msg "Adding/Configuring PW User"
 if ! id "$PWUSER" &> /dev/null; then
     sudo sysadminctl -addUser $PWUSER
+fi
+
+msg "Setting up local storage volume for PW User"
+if ! mount | grep -q "$PWUSER"; then
     # User can't remove own pre-existing homedir crap during cleanup
     sudo rm -rf /Users/$PWUSER/*
     sudo rm -rf /Users/$PWUSER/.??*
+
+    # This is really clunky, but seems the best that Apple Inc. can support.
+    # Show what is being worked with to assist debugging
+    diskutil list virtual
+    local_storage_volume=$(diskutil list virtual | \
+                           grep -m 1 -B 5 "InternalDisk" | \
+                           grep -m 1 -E '^/dev/disk[0-9].+synthesized' | \
+                           awk '{print $1}')
+    (
+        set -x
+
+        # Fail hard if $local_storage_volume is invalid, otherwise show details to assist debugging
+        diskutil info "$local_storage_volume"
+
+        # CI $TEMPDIR - critical for podman-machine storage performance
+        ci_tempdir="/private/tmp/ci"
+        mkdir -p "$ci_tempdir"
+        sudo diskutil apfs addVolume "$local_storage_volume" APFS "ci_tempdir" -mountpoint "$ci_tempdir"
+        sudo chown $PWUSER:staff "$ci_tempdir"
+        sudo chmod 1770 "$ci_tempdir"
+
+        # CI-user's $HOME - not critical but might as well make it fast while we're
+        # adding filesystems anyway.
+        ci_homedir="/Users/$PWUSER"
+        sudo diskutil apfs addVolume "$local_storage_volume" APFS "ci_homedir" -mountpoint "$ci_homedir"
+        sudo chown $PWUSER:staff "$ci_homedir"
+        sudo chmod 0750 "$ci_homedir"
+
+        df -h
+    )
+
+    # User likely has pre-existing system processes trying to use
+    # the (now) over-mounted home directory.
     sudo pkill -u $PWUSER || true
 fi
 
