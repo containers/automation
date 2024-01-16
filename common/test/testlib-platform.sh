@@ -5,7 +5,7 @@
 
 # shellcheck source-path=./
 source $(dirname ${BASH_SOURCE[0]})/testlib.sh || exit 1
-# Must be staticly defined, 'source-path' directive can't work here.
+# Must be statically defined, 'source-path' directive can't work here.
 # shellcheck source=../lib/platform.sh disable=SC2154
 source "$TEST_DIR/$SUBJ_FILENAME" || exit 2
 
@@ -31,7 +31,7 @@ done
 for OS_RELEASE_ID in 'debian' 'ubuntu'; do
   (
     export _TEST_UID=$RANDOM  # Normally $UID is read-only
-    # Must be staticly defined, 'source-path' directive can't work here.
+    # Must be statically defined, 'source-path' directive can't work here.
     # shellcheck source=../lib/platform.sh disable=SC2154
     source "$TEST_DIR/$SUBJ_FILENAME" || exit 2
 
@@ -77,6 +77,29 @@ test_cmd "The passthrough_envars() func. w/ overriden \$SECRET_ENV_RE hides test
 test_cmd "The passthrough_envars() func. w/ overriden \$SECRET_ENV_RE returns CI variable." \
     0 "[1-9]+[0-9]*" \
     expr match "${printed_envs[*]}" '.*CI.*'
+
+test_cmd "timebomb() function requires at least one argument" \
+    1 "must be UTC-based and of the form YYYYMMDD" \
+    timebomb
+
+TZ=UTC12 \
+test_cmd "timebomb() function ignores TZ envar and forces UTC" \
+    0 "" \
+    timebomb $(date -d "+11 hours" +%Y%m%d)  # Careful, $TZ does apply to inline call!
+
+TZ=UTC12 \
+test_cmd "timebomb() function ignores TZ and compares < UTC-forced current date" \
+    1 "TIME BOMB EXPIRED" \
+    timebomb $(date +%Y%m%d)
+
+test_cmd "timebomb() alerts user when no description given" \
+  1 "No reason given" \
+  timebomb 00010101
+
+EXPECTED_REASON="test${RANDOM}test"
+test_cmd "timebomb() gives reason when one was provided" \
+  1 "$EXPECTED_REASON" \
+  timebomb 00010101 "$EXPECTED_REASON"
 
 # Must be last call
 exit_with_status
