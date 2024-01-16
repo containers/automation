@@ -14,6 +14,8 @@
 # shellcheck source=./pw_lib.sh
 source $(dirname "${BASH_SOURCE[0]}")/pw_lib.sh
 
+cd $SCRIPT_DIRPATH || die "Cannot enter '$SCRIPT_DIRPATH'"
+
 # SSH agent required to provide key for accessing workers
 # Started with `ssh-agent -s > /run/user/$UID/ssh-agent.env`
 # followed by adding/unlocking the necessary keys.
