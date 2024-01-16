@@ -54,7 +54,7 @@ cirrus-ci/build-push_test_task:
         # update custom-image last-used timestamps.
         image_project: centos-cloud
         image_family: centos-stream-8
-    timeout_in: 20
+    timeout_in: 30
     env:
         CIMG: quay.io/buildah/stable:v1.23.0
         TEST_FQIN: quay.io/buildah/do_not_use

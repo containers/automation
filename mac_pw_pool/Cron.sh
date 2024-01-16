@@ -53,3 +53,14 @@ lines_per_hour=$((60/$interval_minutes))
 max_uzn_lines=$(($history_hours * $lines_per_hour))
 tail -n $max_uzn_lines "$uzn_file" > "${uzn_file}.tmp"
 mv "${uzn_file}.tmp" "$uzn_file"
+
+# If possible, generate the webpage utilization graph
+gnuplot -c Utilization.gnuplot || true
+
+# Try to run webserver if possible.
+if ! podman container exists util_nginx; then
+  podman run -it -d --rm --name util_nginx \
+    -p 8080:80 --security-opt label=disable \
+    -v $SCRIPT_DIRPATH/html:/usr/share/nginx/html:ro \
+    nginx || true
+fi
