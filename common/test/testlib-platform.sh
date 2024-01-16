@@ -3,9 +3,14 @@
 # Unit-tests for library script in the current directory
 # Also verifies test script is derived from library filename
 
+# shellcheck source-path=./
 source $(dirname ${BASH_SOURCE[0]})/testlib.sh || exit 1
+# Must be staticly defined, 'source-path' directive can't work here.
+# shellcheck source=../lib/platform.sh disable=SC2154
 source "$TEST_DIR/$SUBJ_FILENAME" || exit 2
 
+# For whatever reason, SCRIPT_PATH cannot be resolved.
+# shellcheck disable=SC2154
 test_cmd "Library $SUBJ_FILENAME is not executable" \
     0 "" \
     test ! -x "$SCRIPT_PATH/$SUBJ_FILENAME"
@@ -26,8 +31,12 @@ done
 for OS_RELEASE_ID in 'debian' 'ubuntu'; do
   (
     export _TEST_UID=$RANDOM  # Normally $UID is read-only
+    # Must be staticly defined, 'source-path' directive can't work here.
+    # shellcheck source=../lib/platform.sh disable=SC2154
     source "$TEST_DIR/$SUBJ_FILENAME" || exit 2
 
+    # The point of this test is to confirm it's defined
+    # shellcheck disable=SC2154
     test_cmd "The '\$SUDO' env. var. is non-empty when \$_TEST_UID is non-zero" \
         0 "" \
         test -n "$SUDO"
@@ -56,12 +65,10 @@ test_cmd "The passthrough_envars() func. has output by default." \
 
 # Test from a mostly empty environment to limit possibility of expr mismatch flakes
 declare -a printed_envs
-printed_envs=(\
-  $(env --ignore-environment PATH="$PATH" FOOBARBAZ="testing" \
-         SECRET_ENV_RE="(^PATH$)|(^BASH_FUNC)|(^_.*)|(FOOBARBAZ)|(SECRET_ENV_RE)" \
-         CI="true" AUTOMATION_LIB_PATH="$AUTOMATION_LIB_PATH" \
-         bash -c "source $TEST_DIR/$SUBJ_FILENAME && passthrough_envars")
-)
+readarray -t printed_envs <<<$(env --ignore-environment PATH="$PATH" FOOBARBAZ="testing" \
+                               SECRET_ENV_RE="(^PATH$)|(^BASH_FUNC)|(^_.*)|(FOOBARBAZ)|(SECRET_ENV_RE)" \
+                               CI="true" AUTOMATION_LIB_PATH="/path/to/some/place" \
+                               bash -c "source $TEST_DIR/$SUBJ_FILENAME && passthrough_envars")
 
 test_cmd "The passthrough_envars() func. w/ overriden \$SECRET_ENV_RE hides test variable." \
     1 "0" \

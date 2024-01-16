@@ -8,6 +8,8 @@ OS_REL_VER="${OS_REL_VER:-$OS_RELEASE_ID-$OS_RELEASE_VER}"
 
 # Ensure no user-input prompts in an automation context
 export DEBIAN_FRONTEND="${DEBIAN_FRONTEND:-noninteractive}"
+# _TEST_UID only needed for unit-testing
+# shellcheck disable=SC2154
 if ((UID)) || ((_TEST_UID)); then
     SUDO="${SUDO:-sudo}"
     if [[ "$OS_RELEASE_ID" =~ (ubuntu)|(debian) ]]; then
@@ -49,7 +51,7 @@ passthrough_envars() {
     done
 
     echo "Warning: Will pass env. vars. matching the following regex:
-$passthrough_env_re" > /dev/stderr
+$passthrough_env_re" >> /dev/stderr
 
     compgen -A variable | grep -Ev "$SECRET_ENV_RE" | grep -E  "$passthrough_env_re"
 }
