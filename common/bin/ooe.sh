@@ -10,7 +10,7 @@ set -eo pipefail
 SCRIPT_BASEDIR="$(basename $0)"
 
 badusage() {
-    echo "Incorrect usage: $SCRIPT_BASEDIR) <command> [options]" > /dev/stderr
+    echo "Incorrect usage: $SCRIPT_BASEDIR) <command> [options]" >> /dev/stderr
     echo "ERROR: $1"
     exit 121
 }

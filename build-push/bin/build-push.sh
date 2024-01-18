@@ -22,7 +22,7 @@ if [[ ! -r "$AUTOMATION_LIB_PATH/common_lib.sh" ]]; then
         echo "ERROR: Expecting \$AUTOMATION_LIB_PATH to contain the installation"
         echo "       directory path for the common automation tooling."
         echo "       Please refer to the README.md for installation instructions."
-    ) > /dev/stderr
+    ) >> /dev/stderr
     exit 2  # Verified by tests
 fi
 
@@ -295,7 +295,7 @@ stage_notice() {
         echo "############################################################"
         echo "$msg"
         echo "############################################################"
-    ) > /dev/stderr
+    ) >> /dev/stderr
 }
 
 BUILTIID=""    # populated with the image-id on successful build
@@ -446,7 +446,7 @@ push_images() {
 
 # Handle requested help first before anything else
 if grep -q -- '--help' <<<"$@"; then
-    echo "$E_USAGE" > /dev/stdout  # allow grep'ing
+    echo "$E_USAGE" >> /dev/stdout  # allow grep'ing
     exit 0
 fi
 

@@ -16,7 +16,7 @@ if [[ -z "$AUTOMATION_LIB_PATH" ]]; then
     (
         echo "ERROR: Expecting \$AUTOMATION_LIB_PATH to be defined with the"
         echo "       installation directory of automation tooling."
-    ) > /dev/stderr
+    ) >> /dev/stderr
     exit 1
 fi
 

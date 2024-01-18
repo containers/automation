@@ -28,7 +28,7 @@ automation_version() {
     if [[ -n "$_avcache" ]]; then
         echo "$_avcache"
     else
-        echo "Error determining version number" > /dev/stderr
+        echo "Error determining version number" >> /dev/stderr
         exit 1
     fi
 }

@@ -45,7 +45,7 @@ passthrough_envars() {
 
     for envar in SECRET_ENV_RE PASSTHROUGH_ENV_EXACT PASSTHROUGH_ENV_ATSTART PASSTHROUGH_ENV_ANYWHERE passthrough_env_re; do
       if [[ -z "${!envar}" ]]; then
-        echo "Error: Required env. var. \$$envar is unset or empty in call to passthrough_envars()" > /dev/stderr
+        echo "Error: Required env. var. \$$envar is unset or empty in call to passthrough_envars()" >> /dev/stderr
         exit 1
       fi
     done

@@ -23,7 +23,7 @@ test_cmd "Confirm skopeo is available" \
     0 "skopeo version .+" \
     skopeo --version
 
-PREPCMD='echo "SpecialErrorMessage:$REGSERVER" > /dev/stderr && exit 42'
+PREPCMD='echo "SpecialErrorMessage:$REGSERVER" >> /dev/stderr && exit 42'
 test_cmd "Confirm error output and exit(42) from --prepcmd" \
     42 "SpecialErrorMessage:localhost" \
     bash -c "$SUBJ_FILEPATH --nopush localhost/foo/bar $TEST_CONTEXT --prepcmd='$PREPCMD' 2>&1"
