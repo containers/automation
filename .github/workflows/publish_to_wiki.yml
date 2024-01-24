@@ -46,7 +46,7 @@ jobs:
           for i in *.template.md; do
             f="${i%.template.md}.md"
             make "${f}"
-            git add $f
+            git add "$f"
           done
           git add *.png
           git commit -m "Update Wiki content"
