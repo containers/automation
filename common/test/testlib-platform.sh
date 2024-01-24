@@ -85,12 +85,12 @@ test_cmd "timebomb() function requires at least one argument" \
 TZ=UTC12 \
 test_cmd "timebomb() function ignores TZ envar and forces UTC" \
     0 "" \
-    timebomb $(date -d "+11 hours" +%Y%m%d)  # Careful, $TZ does apply to inline call!
+    timebomb $(TZ=UTC date -d "+11 hours" +%Y%m%d)
 
 TZ=UTC12 \
 test_cmd "timebomb() function ignores TZ and compares < UTC-forced current date" \
     1 "TIME BOMB EXPIRED" \
-    timebomb $(date +%Y%m%d)
+    timebomb $(TZ=UTC date +%Y%m%d)
 
 test_cmd "timebomb() alerts user when no description given" \
   1 "No reason given" \
