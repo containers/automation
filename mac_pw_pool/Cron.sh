@@ -1,12 +1,24 @@
 #!/bin/bash
 
-# Intended to be run from a crontab entry like:
+# Intended to be run from $HOME/deve/automation/mac_pw_pool/
+# using a crontab like:
+
+# # Every date/timestamp in PW Pool management is UTC-relative
+# # make cron do the same for consistency.
+# CRON_TZ=UTC
 #
-# PW Pool management
-# POOLTOKEN=<token value>
-# CRONLOG=/path/to/write/Cron.log
-# */5  *    * * * /path/to/run/Cron.sh &>> $CRONLOG
-# 59   0    * * * tail -n 10000 $CRONLOG > ${CRONLOG}.tmp && mv ${CRONLOG}.tmp $CRONLOG
+# PATH=/home/shared/.local/bin:/home/shared/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+#
+# # Ensure the latest code is being used (including maintenance script)
+# 59   4            * * * cd $HOME/devel/automation && git remote update && git reset --hard origin/main
+#
+# # Keep log from filling up disk & make sure webserver is running
+# 59   5            * * * $HOME/devel/automation/mac_pw_pool/nightly_maintenance.sh
+#
+# # PW Pool management (usage drop-off from 03:00-15:00 UTC)
+# POOLTOKEN=<from https://cirrus-ci.com/pool/1cf8c7f7d7db0b56aecd89759721d2e710778c523a8c91c7c3aaee5b15b48d05>
+# CRONLOG=/home/shared/devel/automation/mac_pw_pool/Cron.log
+# */5  0-3,15-23    * * * /home/shared/devel/automation/mac_pw_pool/Cron.sh &>> $CRONLOG
 
 # shellcheck disable=SC2154
 [ "${FLOCKER}" != "$0" ] && exec env FLOCKER="$0" flock -w 300 "$0" "$0" "$@" || :
@@ -58,11 +70,3 @@ mv "${uzn_file}.tmp" "$uzn_file"
 
 # If possible, generate the webpage utilization graph
 gnuplot -c Utilization.gnuplot || true
-
-# Try to run webserver if possible.
-if ! podman container exists util_nginx; then
-  podman run -it -d --rm --name util_nginx \
-    -p 8080:80 --security-opt label=disable \
-    -v $SCRIPT_DIRPATH/html:/usr/share/nginx/html:ro \
-    nginx || true
-fi
