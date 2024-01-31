@@ -9,19 +9,17 @@
 #
 # PATH=/home/shared/.local/bin:/home/shared/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
 #
-# # Ensure the latest code is being used (including maintenance script)
-# 59   4            * * * cd $HOME/devel/automation && git remote update && git reset --hard origin/main
-#
 # # Keep log from filling up disk & make sure webserver is running
-# 59   5            * * * $HOME/devel/automation/mac_pw_pool/nightly_maintenance.sh
+# # (5am UTC is during CI-activity lul)
+# 59   4    * * * $HOME/devel/automation/mac_pw_pool/nightly_maintenance.sh &>> $CRONLOG
 #
 # # PW Pool management (usage drop-off from 03:00-15:00 UTC)
 # POOLTOKEN=<from https://cirrus-ci.com/pool/1cf8c7f7d7db0b56aecd89759721d2e710778c523a8c91c7c3aaee5b15b48d05>
 # CRONLOG=/home/shared/devel/automation/mac_pw_pool/Cron.log
-# */5  0-3,15-23    * * * /home/shared/devel/automation/mac_pw_pool/Cron.sh &>> $CRONLOG
+# */5  *    * * * /home/shared/devel/automation/mac_pw_pool/Cron.sh &>> $CRONLOG
 
 # shellcheck disable=SC2154
-[ "${FLOCKER}" != "$0" ] && exec env FLOCKER="$0" flock -w 300 "$0" "$0" "$@" || :
+[ "${FLOCKER}" != "$0" ] && exec env FLOCKER="$0" flock -e -w 300 "$0" "$0" "$@" || :
 
 # shellcheck source=./pw_lib.sh
 source $(dirname "${BASH_SOURCE[0]}")/pw_lib.sh
