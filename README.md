@@ -80,7 +80,7 @@ if [[ -n "$AUTOMATION_LIB_PATH" ]]; then
 else
     (
     echo "WARNING: It doesn't appear containers/automation common was installed."
-    ) > /dev/stderr
+    ) >> /dev/stderr
 fi
 
 ...do stuff...

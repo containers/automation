@@ -48,13 +48,13 @@ _fmt_ctx() {
 
 # Print a highly-visible message to stderr.  Usage: warn <msg>
 warn() {
-    _fmt_ctx "$WARNING_MSG_PREFIX ${1:-no warning message given}" > /dev/stderr
+    _fmt_ctx "$WARNING_MSG_PREFIX ${1:-no warning message given}" >> /dev/stderr
 }
 
 # Same as warn() but exit non-zero or with given exit code
 # usage: die <msg> [exit-code]
 die() {
-    _fmt_ctx "$ERROR_MSG_PREFIX ${1:-no error message given}" > /dev/stderr
+    _fmt_ctx "$ERROR_MSG_PREFIX ${1:-no error message given}" >> /dev/stderr
     local exit_code=${2:-1}
     ((exit_code==0)) || \
         exit $exit_code
@@ -67,12 +67,12 @@ dbg() {
         (
         echo
         echo "$DEBUG_MSG_PREFIX ${1:-No debugging message given} ($shortest_source_path:${BASH_LINENO[0]} in ${FUNCNAME[1]}())"
-        ) > /dev/stderr
+        ) >> /dev/stderr
     fi
 }
 
 msg() {
-    echo "${1:-No message specified}" &> /dev/stderr
+    echo "${1:-No message specified}" &>> /dev/stderr
 }
 
 # Mimic set +x for a single command, along with calling location and line.
@@ -81,7 +81,7 @@ showrun() {
     # Tried using readarray, it broke tests for some reason, too lazy to investigate.
     # shellcheck disable=SC2207
     context=($(caller 0))
-    echo "+ $*  # ${context[2]}:${context[0]} in ${context[1]}()" > /dev/stderr
+    echo "+ $*  # ${context[2]}:${context[0]} in ${context[1]}()" >> /dev/stderr
     "$@"
 }
 

@@ -38,6 +38,6 @@ elif [[ "$1" == "info" ]]; then
 elif [[ "$1" == "images" ]]; then
     echo '[{"names":["localhost/foo/bar:latest"]}]'
 else
-    echo "ERROR: Unexpected arg '$1' to fake_buildah.sh" > /dev/stderr
+    echo "ERROR: Unexpected arg '$1' to fake_buildah.sh" >> /dev/stderr
     exit 9
 fi

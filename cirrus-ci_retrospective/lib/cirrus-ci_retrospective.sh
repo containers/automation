@@ -64,7 +64,7 @@ curl_post() {
         die "Expecting non-empty data argument"
 
     [[ -n "$token" ]] || \
-        dbg "### Warning: \$GITHUB_TOKEN is empty, performing unauthenticated query" > /dev/stderr
+        dbg "### Warning: \$GITHUB_TOKEN is empty, performing unauthenticated query" >> /dev/stderr
     # Don't expose secrets on any command-line
     local headers_tmpf
     local headers_tmpf=$(tmpfile headers)
@@ -81,7 +81,7 @@ EOF
     local curl_cmd="$CURL --silent --request POST --url $url --header @$headers_tmpf --data @$data_tmpf"
     dbg "### Executing '$curl_cmd'"
     local ret="0"
-    $curl_cmd > /dev/stdout || ret=$?
+    $curl_cmd >> /dev/stdout || ret=$?
 
     # Don't leave secrets lying around in files
     rm -f "$headers_tmpf" "$data_tmpf" &> /dev/null

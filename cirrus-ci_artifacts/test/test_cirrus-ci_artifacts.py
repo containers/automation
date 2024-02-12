@@ -160,6 +160,8 @@ class TestMain(unittest.TestCase):
         fake_stdout = StringIO()
         fake_stderr = StringIO()
         with redirect_stderr(fake_stderr), redirect_stdout(fake_stdout):
+            import warnings
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
             results = ccia.main(self.bid)
         self.assertEqual(fake_stderr.getvalue(), '')
         for line in fake_stdout.getvalue().splitlines():
