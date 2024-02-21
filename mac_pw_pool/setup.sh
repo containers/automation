@@ -137,6 +137,11 @@ if ! mount | grep -q "$PWUSER"; then
         df -h
     )
 
+    # Disk indexing is useless on a CI system, and creates un-deletable
+    # files whereever $TEMPDIR happens to be pointing.  Ignore any
+    # individual volume failures that have an unknown state.
+    sudo mdutil -a -i off || true
+
     # User likely has pre-existing system processes trying to use
     # the (now) over-mounted home directory.
     sudo pkill -u $PWUSER || true
