@@ -1,8 +1,10 @@
 # Cirrus-CI persistent worker maintenance
 
-These docs and scripts were implemented in a hurry.  They both likely
-contain cringe-worthy content and incomplete information.
-This might be improved in the future.  Sorry.
+These scripts are intended to be used from a repository clone,
+by cron, on an always-on cloud machine.  They make a lot of
+other assumptions, some of which may not be well documented.
+Please see the comments at the top of each scripts for more
+detailed/specific information.
 
 ## Prerequisites
 
@@ -12,21 +14,24 @@ This might be improved in the future.  Sorry.
 * A copy of the ssh-key referenced by `CirrusMacM1PWinstance` launch template
   under "Assumptions" below.
 * The ssh-key has been added to a running ssh-agent.
+* The running ssh-agent sh-compatible env. vars. are stored in
+  `/run/user/$UID/ssh-agent.env`
 * The env. var. `POOLTOKEN` is set to the Cirrus-CI persistent worker pool
   token value.
 
 ## Assumptions
 
-* You've read all scripts in this directory and meet any requirements
-  stated within.
+* You've read all scripts in this directory, generally follow
+  their purpose, and meet any requirements stated within the
+  header comment.
 * You have permissions to access all referenced AWS resources.
 * There are one or more dedicated hosts allocated and have set:
-  * A name tag like `MacM1-<some number>`
+  * A name tag like `MacM1-<some number>` (NO SPACES!)
   * The `mac2` instance family
   * The `mac2.metal` instance type
   * Disabled "Instance auto-placement", "Host recovery", and "Host maintenance"
   * Quantity: 1
-  * Tags: `automation=false` and `PWPoolReady=true`
+  * Tags: `automation=false`, `purpose=prod`, and `PWPoolReady=true`
 * The EC2 `CirrusMacM1PWinstance` instance-template exists and sets:
   * Shutdown-behavior: terminate
   * Same "key pair" referenced under `Prerequisites`
@@ -55,10 +60,14 @@ and ruined.
 
 ## Initialization
 
-When no dedicated hosts have instances running, complete creation and
-setup will take many hours.  This may be bypassed by *manually* running
-`LaunchInstances.sh --force`.  This should be done prior to installing
-the `Cron.sh` cron-job.
+It is assumed that neither the `Cron.sh` nor any related maintenance
+scripts are installed (in crontab) or currently running.
+
+Once several dedicated hosts have been manually created, they
+should initially have no instances on them.  If left alone, the
+maintenance scripts will eventually bring them all up, however
+complete creation and setup will take many hours.  This may be
+bypassed by *manually* running `LaunchInstances.sh --force`.
 
 In order to prevent all the instances from being recycled at the same
 (future) time, the shutdown time installed by `SetupInstances.sh` also
