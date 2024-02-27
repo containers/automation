@@ -424,18 +424,44 @@ sub _size {
 }
 
 ##############
-#  _by_size  #  sort helper, for putting big nodes at bottom
+#  _by_type  #  sort helper, for clustering int/sys/machine tests
 ##############
-sub _by_size {
-    _size($a) <=> _size($b) ||
-        $a->{name} cmp $b->{name};
+sub _by_type {
+    my $ax = $a->{name};
+    my $bx = $b->{name};
+
+    # The big test types, in the order we want to show them
+    my @types = qw(integration system bud machine);
+    my %type_order = map { $types[$_] => $_ } (0..$#types);
+    my $type_re = join('|', @types);
+
+    if ($ax =~ /($type_re)/) {
+        my $a_type = $1;
+        if ($bx =~ /($type_re)/) {
+            my $b_type = $1;
+
+            return $type_order{$a_type} <=> $type_order{$b_type}
+                || $ax cmp $bx;
+        }
+        else {
+            # e.g., $b is "win installer", $a is in @types, $b < $a
+            return 1;
+        }
+    }
+    elsif ($bx =~ /($type_re)/) {
+        # e.g., $a is "win installer", $b is in @types, $a < $b
+        return -1;
+    }
+
+    # Neither a nor b is in @types
+    $ax cmp $bx;
 }
 
 sub depended_on_by {
     my $self = shift;
 
     if (my $d = $self->{_depended_on_by}) {
-        my @d = sort _by_size map { $self->{_tasklist}->find($_) } @$d;
+        my @d = sort _by_type map { $self->{_tasklist}->find($_) } @$d;
         return @d;
     }
     return;
