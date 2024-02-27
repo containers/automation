@@ -9,7 +9,7 @@ WEB_IMG="docker.io/library/nginx:latest"
 CRONLOG="Cron.log"
 CRONSCRIPT="Cron.sh"
 KEEP_LINES=10000
-MAX_REPO_AGE_DAYS=21
+REFRESH_REPO_EVERY=7 # days
 
 # Do not use, these are needed to control script execution.
 _CNTNAME=pw_pool_web
@@ -25,7 +25,7 @@ relaunch_web_container() {
   # Assume code has changed, restart container w/ latest image
   (
     set -x
-    podman run --replace --name "$_CNTNAME" -it --rm --pull=newer -p 8080:80 \
+    podman run --replace --name "$_CNTNAME" -d --rm --pull=newer -p 8080:80 \
       -v $HOME/devel/automation/mac_pw_pool/html:/usr/share/nginx/html:ro,Z \
       $WEB_IMG
   )
@@ -37,20 +37,13 @@ relaunch_web_container() {
 echo "$SCRIPTNAME running at $(date -u -Iseconds)"
 
 if ! ((_RESTARTED_SCRIPT)); then
-  # Make sure the recent code is being used.
-  last_commit_date=$(git log -1 --format="%cI" --no-show-signature  HEAD)
-  last_s=$(date -d "$last_commit_date" +%s)
-  now_s=$(date -u +%s)
-  diff_s=$((now_s-last_s))
-
-  if [[ "$diff_s" -gt $(($MAX_REPO_AGE_DAYS*24*60*60)) ]]; then
+  today=$(date -u +%d)
+  if ((today%REFRESH_REPO_EVERY)); then
     git remote update && git reset --hard origin/main
     # maintain the same flock
-    echo "$SCRIPTNAME updatedd code older than $MAX_REPO_AGE_DAYS days, restarting script..."
+    echo "$SCRIPTNAME updatedd code after $REFRESH_REPO_EVERY days, restarting script..."
     env _RESTARTED_SCRIPT=1 _FLOCKER=$_FLOCKER "$0" "$@"
     exit $?  # all done
-  else
-    echo "$SCRIPTNAME code appears recent ($last_commit_date), yay!"
   fi
 fi
 
