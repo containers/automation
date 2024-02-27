@@ -803,6 +803,15 @@ sub _draw_boxes {
         elsif ($only_if =~ /CIRRUS_BRANCH\s+==\s+'main'\s+&&\s+\$CIRRUS_CRON\s+==\s+''/) {
             $label .= "[only on merge]";
         }
+        elsif ($only_if =~ /CIRRUS_BRANCH\s+!=~\s+'v.*-rhel'\s+&&\s+\$CIRRUS_BASE_BRANCH\s+!=~\s+'v.*-rhel'/) {
+            $label .= "[only if no RHEL release]";
+        }
+        elsif ($only_if =~ /CIRRUS_CHANGE_TITLE.*CI:BUILD.*CIRRUS_CHANGE_TITLE.*CI:MACHINE/s) {
+            $label .= "[SKIP: CI:BUILD or CI:MACHINE]";
+        }
+        elsif ($only_if =~ /CIRRUS_CHANGE_TITLE\s+!=.*CI:MACHINE.*CIRRUS_BRANCH.*main.*CIRRUS_BASE_BRANCH.*main.*\)/s) {
+            $label .= "[only if: main]";
+        }
         else {
             $label .= "[only if: $only_if]";
         }
