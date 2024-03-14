@@ -4,21 +4,20 @@ Validate this file before commiting with (from repository root):
 
     podman run -it \
         -v ./renovate/defaults.json5:/usr/src/app/renovate.json5:z \
-        docker.io/renovate/renovate:latest \
+        ghcr.io/renovatebot/renovate:latest \
         renovate-config-validator
 
+and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
 */
 
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-
   "description": "This is a basic preset intended\
   for reuse to reduce the amount of boiler-plate\
   configuration that otherwise would need to be\
   duplicated. It should be referenced from other\
   repositories renovate config under the 'extends'\
-  section as:\
-  github>containers/automation//renovate/defaults.json5\
+  section as:  github>containers/automation//renovate/defaults.json5\
   (optionally with a '#X.Y.Z' version-tag suffix).",
 
   /*************************************************
@@ -34,7 +33,7 @@ Validate this file before commiting with (from repository root):
     ":gitSignOff",
 
     // Always rebase dep. update PRs from `main` when PR is stale
-    ":rebaseStalePrs",
+    ":rebaseStalePrs"
   ],
 
   // The default setting is ambiguous, explicitly base schedules on UTC
@@ -49,6 +48,7 @@ Validate this file before commiting with (from repository root):
   // Default setting is an "empty" schedule.  Explicitly set this
   // such that security-alert PRs may be opened immediately.
   "vulnerabilityAlerts": {
+    // Distinguish PRs from regular dependency updates
     "labels": ["dependencies", "security"],
 
     // Force-enable renovate management of deps. which are otherwise
@@ -64,7 +64,7 @@ Validate this file before commiting with (from repository root):
       {
         "matchManagers": ["gomod"],
         "matchDepTypes": ["indirect"],
-        "enabled": true,
+        "enabled": true
       }
     ]
   },
@@ -78,8 +78,12 @@ Validate this file before commiting with (from repository root):
    ***** Manager-specific configuration options *****
    **************************************************/
 
-  "regexManagers": [
+  "customManagers": [
+    // Track the latest CI VM images by tag on the containers/automation_images
+    // repo.  Propose updates when newer tag available compared to what is
+    // referenced in a repo's .cirrus.yml file.
     {
+      "customType": "regex",
       "fileMatch": "^.cirrus.yml$",
       // Expected veresion format: c<automation_images IMG_SFX value>
       // For example `c20230120t152650z-f37f36u2204`
@@ -87,28 +91,33 @@ Validate this file before commiting with (from repository root):
       "depNameTemplate": "containers/automation_images",
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "loose",
-      "autoReplaceStringTemplate": "c{{{newVersion}}}",
+      "autoReplaceStringTemplate": "c{{{newVersion}}}"
     },
+
+    // For skopeo and podman, manage the golangci-lint version as
+    // referenced in their Makefile.
     {
+      "customType": "regex",
       "fileMatch": "^Makefile$",
       // make ignores whitespace around the value, make renovate do the same.
-      "matchStrings": ["GOLANGCI_LINT_VERSION\\s+:=\\s+(?<currentValue>.+)\\s*"],
+      "matchStrings": [
+        "GOLANGCI_LINT_VERSION\\s+:=\\s+(?<currentValue>.+)\\s*"
+      ],
       "depNameTemplate": "golangci/golangci-lint",
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver-coerced",
       // Podman's installer script will puke if there's a 'v' prefix, as represented
       // in upstream golangci/golangci-lint releases.
-      "extractVersionTemplate": "v(?<version>.+)",
+      "extractVersionTemplate": "v(?<version>.+)"
     }
   ],
 
   // N/B: LAST MATCHING RULE WINS, match statems are ANDed together.
   // https://docs.renovatebot.com/configuration-options/#packagerules
   "packageRules": [
-
     /*************************************************
-    ***** Rust-specific configuration options *****
-    *************************************************/
+    ****** Rust-specific configuration options *******
+    **************************************************/
     {
       "matchCategories": ["rust"],
       // Update both Cargo.toml and Cargo.lock when possible
@@ -124,12 +133,12 @@ Validate this file before commiting with (from repository root):
       "rangeStrategy": "bump",
       // These packages roll updates far too often, slow them down.
       // Ref: https://github.com/containers/netavark/issues/772
-      "schedule": ["after 1am and before 11am on the first day of the month"],
+      "schedule": ["after 1am and before 11am on the first day of the month"]
     },
 
     /*************************************************
-    ***** Python-specific configuration options *****
-    *************************************************/
+    ****** Python-specific configuration options *****
+    **************************************************/
     {
       "matchCategories": ["python"],
       // Preserve (but continue to upgrade) any existing SemVer ranges.
@@ -137,23 +146,17 @@ Validate this file before commiting with (from repository root):
     },
 
     /*************************************************
-    ***** Golang-specific configuration options *****
-    *************************************************/
+    ****** Golang-specific configuration options *****
+    **************************************************/
     {
       "matchCategories": ["golang"],
-
       // disabled by default, safe to enable since "tidy" enforced by CI.
       "postUpdateOptions": ["gomodTidy"],
-
       // In case a version in use is retracted, allow going backwards.
       // N/B: This is NOT compatible with pseudo versions, see below.
       "rollbackPrs": false,
-
       // Preserve (but continue to upgrade) any existing SemVer ranges.
-      "rangeStrategy": "replace",
-
-      // N/B: LAST MATCHING RULE WINS
-      // https://docs.renovatebot.com/configuration-options/#packagerules
+      "rangeStrategy": "replace"
     },
 
     // Golang pseudo-version packages will spam with every Commit ID change.
@@ -161,7 +164,7 @@ Validate this file before commiting with (from repository root):
     {
       "matchCategories": ["golang"],
       "matchUpdateTypes": ["digest"],
-      "schedule": ["after 1am and before 11am on the first day of the month"],
+      "schedule": ["after 1am and before 11am on the first day of the month"]
     },
 
     // Package version retraction (https://go.dev/ref/mod#go-mod-file-retract)
@@ -173,6 +176,16 @@ Validate this file before commiting with (from repository root):
       // Both v1.0.0 and v1.0.1 should be ignored.
       "allowedVersions": "!/v((1.0.0)|(1.0.1))$/"
     },
+
+    // Add CI:DOCS prefix to skip unnecessary tests for golangci updates in podman CI.
+    {
+      "matchPackageNames": ["golangci/golangci-lint"],
+      "commitMessagePrefix": "[CI:DOCS]"
+    },
+
+    /*************************************************
+    ************ CI configuration options ************
+    **************************************************/
 
     // Github-action updates cannot consistently be tested in a PR.
     // This is caused by an unfixable architecture-flaw: Execution
@@ -190,19 +203,13 @@ Validate this file before commiting with (from repository root):
     // example, flagging an important TODO or FIXME item.  Or, where CI VM
     // images are split across multiple IMG_SFX values that all need to be updated.
     {
-      "matchManagers": ["regex"],
-      "matchFileNames": [".cirrus.yml"],  // full-path exact-match
+      "matchManagers": ["custom.regex"],
+      "matchFileNames": [".cirrus.yml"],
       "groupName": "CI VM Image",
       // Somebody(s) need to check image update PRs as soon as they open.
       "reviewers": ["cevich"],
       // Don't wait, roll out CI VM Updates immediately
-      "schedule": ["at any time"],
+      "schedule": ["at any time"]
     },
-
-    // Add CI:DOCS prefix to skip unnecessary tests for golangci updates in podman CI.
-    {
-      "matchPackageNames": ["golangci/golangci-lint"],
-      "commitMessagePrefix": "[CI:DOCS]",
-    },
-  ],
+  ]
 }
