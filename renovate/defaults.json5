@@ -112,6 +112,25 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
     }
   ],
 
+  /*************************************************
+  ***** Language-specific configuration options ****
+  **************************************************/
+
+  // *****  ATTENTION  WARNING  CAUTION  DANGER  ***** //
+  // Go versions 1.21 and later will AUTO-UPDATE based on _module_
+  // _requirements_.  ref: https://go.dev/doc/toolchain  Because
+  // many different projects covered by this config, build under
+  // different distros and distro-versions, golang version consistency
+  // is desireable across build outputs.  In golang 1.21 and later,
+  // it's possible to pin the version in each project using the
+  // toolchain go.mod directive.  Prior to 1.21, for now, we do not
+  // want Renovate to propose updates which also trigger golang
+  // auto-updates. The only way to fully disable these auto-updates
+  // in renovate is through a forced static-version constraint. This
+  // is undesireable from a maintenance perspective, and hopefully
+  // temporarry. Ref: Upstream discussion https://github.com/golang/go/issues/65847
+  "constraints": {"go": "1.20"},
+
   // N/B: LAST MATCHING RULE WINS, match statems are ANDed together.
   // https://docs.renovatebot.com/configuration-options/#packagerules
   "packageRules": [
