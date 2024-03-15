@@ -27,7 +27,7 @@ cirrus-ci/unit-test_task:
 cirrus-ci/renovate_validation_task:
     only_if: *not_docs
     container:
-        image: docker.io/renovate/renovate:latest
+        image: ghcr.io/renovatebot/renovate:latest
     env:
         RCV: /usr/local/bin/renovate-config-validator
     preset_validate_script:
