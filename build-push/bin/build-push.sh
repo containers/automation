@@ -405,13 +405,15 @@ get_manifest_tags() {
     fi
 
     dbg "Image listing json: $result_json"
-    if [[ -n "$result_json" ]]; then
+    if [[ -n "$result_json" ]]; then  # N/B: value could be '[]'
         # Rely on the caller to handle an empty list, ignore items missing a name key.
         if ! fqin_names=$(jq -r '.[]? | .names[]?'<<<"$result_json"); then
             die "Error obtaining image names from '$FQIN' manifest-list search result:
 $result_json"
         fi
-        grep "$FQIN"<<<"$fqin_names" | sort
+        # Don't emit an empty newline when the list is empty
+        [[ -z "$fqin_names" ]] || \
+            sort <<< "$fqin_names"
     fi
 }
 
@@ -423,10 +425,10 @@ push_images() {
     # It's possible that --modcmd=* removed all images, make sure
     # this is known to the caller.
     if ! fqin_list=$(get_manifest_tags); then
-        die "Error retrieving set of manifest-list tags to push for '$FQIN'"
+        die "Retrieving set of manifest-list tags to push for '$FQIN'"
     fi
     if [[ -z "$fqin_list" ]]; then
-        die "No FQIN(s) to be pushed."
+        warn "No FQIN(s) to be pushed."
     fi
 
     if ((PUSH)); then
