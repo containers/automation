@@ -4,7 +4,7 @@
 # Any/all other usage is virtually guaranteed to fail and/or cause
 # harm to the system.
 
-for varname in RUNTIME TEST_FQIN BUILDAH_USERNAME BUILDAH_PASSWORD; do
+for varname in RUNTIME SUBJ_FILEPATH TEST_CONTEXT TEST_SOURCE_DIRPATH TEST_FQIN BUILDAH_USERNAME BUILDAH_PASSWORD; do
     value=${!varname}
     if [[ -z "$value" ]]; then
         echo "ERROR: Required \$$varname variable is unset/empty."
@@ -13,6 +13,8 @@ for varname in RUNTIME TEST_FQIN BUILDAH_USERNAME BUILDAH_PASSWORD; do
 done
 unset value
 
+# RUNTIME is defined by caller
+# shellcheck disable=SC2154
 $RUNTIME --version
 test_cmd "Confirm $(basename $RUNTIME) is available" \
     0 "buildah version .+" \
@@ -24,6 +26,8 @@ test_cmd "Confirm skopeo is available" \
     skopeo --version
 
 PREPCMD='echo "SpecialErrorMessage:$REGSERVER" >> /dev/stderr && exit 42'
+# SUBJ_FILEPATH and TEST_CONTEXT are defined by caller
+# shellcheck disable=SC2154
 test_cmd "Confirm error output and exit(42) from --prepcmd" \
     42 "SpecialErrorMessage:localhost" \
     bash -c "$SUBJ_FILEPATH --nopush localhost/foo/bar $TEST_CONTEXT --prepcmd='$PREPCMD' 2>&1"
@@ -109,6 +113,8 @@ FAKE_VERSION=$RANDOM
 MODCMD="set -ex;
 \$RUNTIME tag \$FQIN:latest \$FQIN:$FAKE_VERSION;
 \$RUNTIME manifest rm \$FQIN:latest;"
+# TEST_FQIN and TEST_SOURCE_DIRPATH defined by caller
+# shellcheck disable=SC2154
 test_cmd "Verify e2e workflow w/ additional build-args" \
     0 "Pushing $TEST_FQIN:$FAKE_VERSION" \
     bash -c "env A_DEBUG=1 $SUBJ_FILEPATH \

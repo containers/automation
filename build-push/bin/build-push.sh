@@ -228,7 +228,8 @@ parse_args() {
                     dbg "Grabbing Context parameter: '$arg'."
                     CONTEXT=$(realpath -e -P $arg || die_help "$E_CONTEXT '$arg'")
                 else
-                    # Properly handle any embedded special characters
+                    # Hack: Allow array addition to handle any embedded special characters
+                    # shellcheck disable=SC2207
                     BUILD_ARGS+=($(printf "%q" "$arg"))
                 fi
                 ;;
@@ -290,7 +291,7 @@ stage_notice() {
     # N/B: It would be nice/helpful to resolve any env. vars. in '$@'
     #      for display.  Unfortunately this is hard to do safely
     #      with (e.g.) eval echo "$@" :(
-    msg="$@"
+    msg="$*"
     (
         echo "############################################################"
         echo "$msg"
@@ -322,7 +323,7 @@ parallel_build() {
 
     # Keep user-specified BUILD_ARGS near the beginning so errors are easy to spot
     # Provide a copy of the output in case something goes wrong in a complex build
-    stage_notice "Executing build command: '$RUNTIME build ${BUILD_ARGS[@]} ${_args[@]}'"
+    stage_notice "Executing build command: '$RUNTIME build ${BUILD_ARGS[*]} ${_args[*]}'"
     "$RUNTIME" build "${BUILD_ARGS[@]}" "${_args[@]}"
 }
 
@@ -378,6 +379,8 @@ run_prepmod_cmd() {
     local kind="$1"
     shift
     dbg "Exporting variables '$_CMD_ENV'"
+    # The indirect export is intentional here
+    # shellcheck disable=SC2163
     export $_CMD_ENV
     stage_notice "Executing $kind-command: " "$@"
     bash -c "$@"
