@@ -90,15 +90,12 @@ test_cmd "Verify tagged manifest image digest matches the same in latest" \
 MODCMD='
 set -x;
 $RUNTIME images && \
-    $RUNTIME manifest rm containers-storage:$FQIN:latest && \
-    $RUNTIME manifest rm containers-storage:$FQIN:9.8.7-testing && \
+    $RUNTIME manifest rm $FQIN:latest && \
+    $RUNTIME manifest rm $FQIN:9.8.7-testing && \
     echo "AllGone";
 '
-# TODO: Test fails due to: https://github.com/containers/buildah/issues/3490
-# for now pretend it should exit(125) which will be caught when bug is fixed
-# - causing it to exit(0) as it should
-test_cmd "Verify --modcmd can execute a long string with substitutions" \
-    125 "AllGone" \
+test_cmd "Verify --modcmd can execute command string that removes all tags" \
+    0 "AllGone.*No FQIN.+to be pushed" \
     bash -c "A_DEBUG=1 $SUBJ_FILEPATH --modcmd='$MODCMD' localhost/foo/bar --nopush $TEST_CONTEXT 2>&1"
 
 test_cmd "Verify previous --modcmd removed the 'latest' tagged image" \
