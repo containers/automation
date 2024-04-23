@@ -2,7 +2,7 @@
 # This file is intended for sourcing by the cirrus-ci_retrospective workflow
 # It should not be used under any other context.
 
-source $(dirname $BASH_SOURCE[0])/github_common.sh || exit 1
+source $(dirname ${BASH_SOURCE[0]})/github_common.sh || exit 1
 
 # Cirrus-CI Build status codes that represent completion
 COMPLETE_STATUS_RE='FAILED|COMPLETED|ABORTED|ERRORED'
@@ -63,7 +63,7 @@ load_ccir() {
         was_pr='true'
         # Don't race vs another cirrus-ci build triggered _after_ GH action workflow started
         # since both may share the same check_suite. e.g. task re-run or manual-trigger
-        if echo "$bst" | egrep -q "$COMPLETE_STATUS_RE"; then
+        if echo "$bst" | grep -E -q "$COMPLETE_STATUS_RE"; then
             if [[ -n "$tst" ]] && [[ "$tst" == "PAUSED" ]]; then
                 dbg "Detected action status $tst"
                 do_intg='true'

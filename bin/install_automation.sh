@@ -36,7 +36,7 @@ INSTALL_PREFIX="${INSTALL_PREFIX%%/}"  # Make debugging path problems easier
 # When installing as root, allow sourcing env. vars. from this file
 INSTALL_ENV_FILEPATH="${INSTALL_ENV_FILEPATH:-/etc/automation_environment}"
 # Used internally here and in unit-testing, do not change without a really, really good reason.
-_ARGS="$@"
+_ARGS="$*"
 _MAGIC_JUJU=${_MAGIC_JUJU:-XXXXX}
 _DEFAULT_MAGIC_JUJU=d41d844b68a14ee7b9e6a6bb88385b4d
 
@@ -109,7 +109,8 @@ install_automation() {
     fi
     # Allow re-installing different versions, clean out old version if found
     if [[ -d "$actual_inst_path" ]] && [[ -r "$actual_inst_path/AUTOMATION_VERSION" ]]; then
-        local installed_version=$(cat "$actual_inst_path/AUTOMATION_VERSION")
+        local installed_version
+        installed_version=$(<"$actual_inst_path/AUTOMATION_VERSION")
         msg "Warning: Removing existing installed version '$installed_version'"
         rm -rvf "$actual_inst_path"
     elif [[ -d "$actual_inst_path" ]]; then
@@ -217,7 +218,7 @@ check_args() {
         msg "       Use version '$MAGIC_LOCAL_VERSION' to install from local source."
         msg "       Use version 'latest' to install from current upstream"
         exit 2
-    elif ! echo "$AUTOMATION_VERSION" | egrep -q "$arg_rx"; then
+    elif ! echo "$AUTOMATION_VERSION" | grep -E -q "$arg_rx"; then
             msg "Error: '$AUTOMATION_VERSION' does not appear to be a valid version number"
             exit 4
     elif [[ -z "$_ARGS" ]] && [[ "$_MAGIC_JUJU" == "XXXXX" ]]; then
@@ -254,6 +255,8 @@ elif [[ "$_MAGIC_JUJU" == "$_DEFAULT_MAGIC_JUJU" ]]; then
         CHAIN_TO="$INSTALLATION_SOURCE/$arg/.install.sh"
         if [[ -r "$CHAIN_TO" ]]; then
             # Cannot assume common was installed system-wide
+            # AUTOMATION_LIB_PATH defined by anchors.sh
+            # shellcheck disable=SC2154
             env AUTOMATION_LIB_PATH=$AUTOMATION_LIB_PATH \
                 AUTOMATION_VERSION=$AUTOMATION_VERSION \
                 INSTALLATION_SOURCE=$INSTALLATION_SOURCE \

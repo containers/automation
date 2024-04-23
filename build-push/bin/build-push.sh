@@ -411,10 +411,13 @@ get_manifest_tags() {
             die "Error obtaining image names from '$FQIN' manifest-list search result:
 $result_json"
         fi
+
+        dbg "Sorting fqin_names"
         # Don't emit an empty newline when the list is empty
         [[ -z "$fqin_names" ]] || \
-            sort <<< "$fqin_names"
+            sort <<<"$fqin_names"
     fi
+    dbg "get_manifest_tags() returning successfully"
 }
 
 push_images() {
