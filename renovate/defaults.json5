@@ -193,6 +193,13 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
       "allowedVersions": "!/v((1.0.0)|(1.0.1))$/"
     },
 
+    // Skip updating the go.mod toolchain directive, humans will manage this.
+    {
+      "matchCategories": ["golang"],
+      "matchDepTypes": ["toolchain"],
+      "enabled": false
+    },
+
     // Add CI:DOCS prefix to skip unnecessary tests for golangci updates in podman CI.
     {
       "matchPackageNames": ["golangci/golangci-lint"],
