@@ -147,6 +147,16 @@ if ! mount | grep -q "$PWUSER"; then
     sudo pkill -u $PWUSER || true
 fi
 
+msg "Setting up Rosetta"
+# Rosetta 2 enables arm64 Mac to use Intel Apps.  Only install if not present.
+if ! arch -arch x86_64 /usr/bin/uname -m; then
+    sudo softwareupdate --install-rosetta --agree-to-license
+    echo -n "Confirming rosetta is functional"
+    if ! arch -arch x86_64 /usr/bin/uname -m; then
+        die "Rosetta installed but non-functional, see setup log for details."
+    fi
+fi
+
 # FIXME: Semi-secret POOLTOKEN value should not be in this file.
 # ref: https://github.com/cirruslabs/cirrus-cli/discussions/662
 cat << EOF | sudo tee $PWCFG > /dev/null
