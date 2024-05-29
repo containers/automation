@@ -157,6 +157,20 @@ if ! arch -arch x86_64 /usr/bin/uname -m; then
     fi
 fi
 
+msg "Restricting appstore/software install to admin-only"
+if [[ -x /usr/sbin/softwareupdate ]]; then
+    # Ref: https://developer.apple.com/documentation/devicemanagement/softwareupdate
+    sudo defaults write com.apple.SoftwareUpdate restrict-software-update-require-admin-to-install -bool true
+    sudo defaults write com.apple.appstore restrict-store-require-admin-to-install -bool true
+
+    # Unf. interacting with the rosetta installer seems to bypass both of the
+    # above settings, even when run as a regular non-admin user.  However, it's
+    # also desireable to limit use of the utility in a CI environment generally.
+    # Since /usr/sbin is read-only, but /usr/local is read-write and appears first
+    # in $PATH, deploy a really fragile hack as an imperfect workaround.
+    sudo ln -s /usr/bin/false /usr/local/bin/softwareupdate
+fi
+
 # FIXME: Semi-secret POOLTOKEN value should not be in this file.
 # ref: https://github.com/cirruslabs/cirrus-cli/discussions/662
 cat << EOF | sudo tee $PWCFG > /dev/null

@@ -80,17 +80,55 @@ Now the `Cron.sh` cron-job may be installed, enabled and started.
 ## Manual Testing
 
 Verifying changes to these scripts / cron-job must be done manually.
-To support this, every dedicated host has a `purpose` tag set, which
-must correspond to the value indicated in `pw_lib.sh`.  To test script
-changes, first create one or more dedicated hosts with a unique `purpose`
-tag (like "cevich-testing").  Then temporarily update `pw_lib.sh` to use
-that value.
+To support this, every dedicated host and instance has a `purpose`
+tag, which must correspond to the value indicated in `pw_lib.sh`
+and in the target repo `.cirrus.yml`.  To test script and/or
+CI changes:
 
-***Importantly***, if running test tasks against the test workers,
-ensure you also customize the `purpose` label in the `cirrus.yml` task(s).
-Without this, production tasks will get scheduled on your testing instances.
-Just be sure to revert all the `purpose` values back to `prod`
-(and destroy related dedicated hosts) before any PRs get merged.
+1. Using the AWS EC2 WebUI, allocate one or more dedicated hosts.
+   - Make sure there are no white space characters in the name.
+   - Set instance family to `mac2`
+   - Set instance type to `mac2.metal`
+   - Choose an Availability zone, `us-east-1a` preferred but it's not critical.
+   - Turn off `Instance auto-placement`, `Host recovery` and `Host maintenance`.
+   - Set the tags: `automation==false`, `PWPoolReady==true`, and
+     `purpose==<name>_testing` where `<name>` is your name.
+1. Temporarily edit `pw_lib.sh` (DO NOT PUSH THIS CHANGE) to update the
+   `DH_REQ_VAL` value to `<name>_testing`, same as you set in step 1.
+1. Obtain the current worker pool token by clicking the "show"
+   button on [the status
+   page](https://cirrus-ci.com/pool/1cf8c7f7d7db0b56aecd89759721d2e710778c523a8c91c7c3aaee5b15b48d05).
+   You must be logged in with a github account having admin access
+   to view this page.
+1. Make sure you have locally met all requirements spelled out in the
+   header-comment of `LaunchInstances.sh` and `SetupInstances.sh`.
+   Importantly, make sure the shared ssh key has been added to the
+   currently running agent.
+1. Repeatedly execute `LaunchInstances.sh`. It will update `dh_status.txt`
+   with any warnings/errors.  When all new Mac instance(s) are successfully
+   allocated, it will show lines includeing the host name,
+   an ID, and a datetime stamp.
+1. Repeatedly execute `SetupInstances.sh`. It will update `pw_status.txt`
+   with any warnings/errors.  When successful, lines will include
+   the host name, "complete", and "alive" status strings.
+1. If instance debugging is needed, the `InstanceSSH.sh` script may be
+   used.  Simply pass the name of the host you want to access.  Every
+   instance should have a `setup.log` file in the `ec2-user` homedir.  There
+   should also be `/private/tmp/<name>-worker.log` with entries from the
+   pool listener process.
+1. To test CI changes against the test instance(s), push a PR that includes
+   `.cirrus.yml` changes to the task's `persistent_worker` dictionary's
+   `purpose` attribute.  Set the value the same as the tag in step 1.
+1. When you're done with all testing, terminate the instance.  Then wait
+   a full 24-hours before "releasing" the dedicated host.  Both operations
+   can be performed using the AWS EC2 WebUI.  Please remember to do the
+   release step, as the $-clock continues to run while it's allocated.
+
+Note: Instances are set to auto-terminate on shutdown.  They should
+self shutdown after 24-hours automatically.  After termination for
+any cause, there's about a 2-hour waiting period before a new instance
+can be allocated. The `LaunchInstances.sh` script is able deal with this
+properly.
 
 ## Security
 
@@ -111,8 +149,8 @@ available worker.
 3. A setup script run on each instance starts a pool-listener
    process.
    1. If the worker process dies the instance shuts down.
-   2. After 24 +/-4 hours the instance shuts down if there are no
+   2. After 22 hours the instance shuts down if there are no
       cirrus-agent processes (presumably servicing a CI task).
-   3. After 2 more hours, the instance shuts down regardless of any
+   3. After 24 hours, the instance shuts down regardless of any
       running agents - probably hung/stuck agent process or somebody's
       started a fake agent doing "bad things".
