@@ -77,7 +77,7 @@ grep -q homebrew /etc/paths || \
 msg "Installing podman-machine, testing, and CI deps. (~2m install time)"
 if [[ ! -x /usr/local/bin/gvproxy ]]; then
     brew tap cfergeau/crc
-    brew install go go-md2man coreutils pstree vfkit cirruslabs/cli/cirrus
+    brew install go go-md2man coreutils pkg-config pstree gpgme vfkit cirruslabs/cli/cirrus
 
     # Normally gvproxy is installed along with "podman" brew.  CI Tasks
     # on this instance will be running from source builds, so gvproxy must
