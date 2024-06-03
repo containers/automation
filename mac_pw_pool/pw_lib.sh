@@ -42,7 +42,7 @@ CREATE_STAGGER_HOURS=2
 
 # Instance shutdown controls (assumes terminate-on-shutdown behavior)
 PW_MAX_HOURS=24  # Since successful configuration
-PW_MAX_TASKS=30  # Logged by listener (N/B: Can be manipulated by tasks!)
+PW_MAX_TASKS=12  # Logged by listener (N/B: Log can be manipulated by tasks!)
 
 # How long to wait for setup.sh to finish running (drop a .setup.done file)
 # before forcibly terminating.
