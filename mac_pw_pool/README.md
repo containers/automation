@@ -154,3 +154,38 @@ available worker.
    3. After 24 hours, the instance shuts down regardless of any
       running agents - probably hung/stuck agent process or somebody's
       started a fake agent doing "bad things".
+
+## Manual maintenance
+
+As Mac instances are provisioned onto dedicated hosts, they utilize an
+AWS EC2 "Launch Template" to define the system's configuration.  Importantly
+this Launch Template defines the AMI (Amazon Machine Image) booted by the
+system.  These AMIs are maintained and updated by Amazon, and so periodically
+(suggest 3-6 months) the Launch Template should be updated to utilize the
+latest AMI.
+
+While it's technically possible to automate these updates, unfortunately,
+it's not simple/easy.  Worse, since the `LaunchInstances.sh` always uses
+the "latest" template version, testing the changes isn't currently possible.
+That said, the steps for updating the AMI are fairly simple and mostly
+low-risk (i.e. rollbacks are possible):
+
+1. In the AWS EC2 console, click "Launch Templates".
+1. Select the "CirrusMacM1PWinstance" template.
+1. Scroll to "Application and OS Images".  Copy the current AMI name
+   (includes a date stamp) and ID for use in the final steps.
+1. Click "Browse more AMIs" button.
+1. On the left, select the "64-bit (Mac-Arm)" filter.
+1. Use google to look up the latest OS Release name (e.x. "Sonoma").
+1. Under the latest entry in the filtered AMI list, select the
+   "64-bit (Mac-Arm)" radio-button on the left, beneath the "Select" button.
+1. Click the "Select" button.
+1. Copy the new AMI name and ID.
+1. Near the top of the Launch Template form, under "Launch template name
+   and version description", fill in the "Template Version Description"
+   field with the old and new AMI name for future reference.  For example:
+   `Update from amzn-ec2-macos-14.1-20231110-071234-arm64 to amzn-ec2-macos-14.4.1-20240411-223504-arm64`.  This will make the version-history clear to
+   future operators as well as simplify the choice in case a roll-back is required.
+1. On the right-hand-side, click "Create template version" button.  The new
+   template will automatically be utilized the next time `LaunchInstances.sh`
+   creates a new instance (i.e. complete rollout will take at least 24-hours).
