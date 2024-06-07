@@ -53,10 +53,10 @@ cirrus-ci/build-push_test_task:
         # only stock, google-managed generic image.  This also avoids needing to
         # update custom-image last-used timestamps.
         image_project: centos-cloud
-        image_family: centos-stream-8
+        image_family: centos-stream-9
     timeout_in: 30
     env:
-        CIMG: quay.io/buildah/stable:v1.23.0
+        CIMG: quay.io/buildah/stable:latest
         TEST_FQIN: quay.io/buildah/do_not_use
         # Robot account credentials for test-push to
         # $TEST_FQIN registry by build-push/test/testbuilds.sh

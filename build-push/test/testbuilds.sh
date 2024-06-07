@@ -57,7 +57,7 @@ test_cmd "Confirm manifest-list can be removed by name" \
     $RUNTIME manifest rm containers-storage:localhost/foo/bar:latest
 
 test_cmd "Verify expected partial failure when passing bogus architectures" \
-     125 "error creating build.+architecture staple" \
+     125 "no image found in image index for architecture" \
     bash -c "A_DEBUG=1 $SUBJ_FILEPATH --arches=correct,horse,battery,staple localhost/foo/bar --nopush $TEST_CONTEXT 2>&1"
 
 MODCMD='$RUNTIME tag $FQIN:latest $FQIN:9.8.7-testing'
@@ -124,7 +124,7 @@ test_cmd "Verify e2e workflow w/ additional build-args" \
         2>&1"
 
 test_cmd "Verify latest tagged image was not pushed" \
-    1 "(Tag latest was deleted or has expired.)|(manifest unknown: manifest unknown)" \
+    1 'reading manifest latest in quay\.io/buildah/do_not_use: manifest unknown' \
     skopeo inspect docker://$TEST_FQIN:latest
 
 test_cmd "Verify architectures can be obtained from manifest list" \
@@ -135,7 +135,7 @@ test_cmd "Verify architectures can be obtained from manifest list" \
 for arch in amd64 s390x arm64 ppc64le; do
     test_cmd "Verify $arch architecture present in $TEST_FQIN:$FAKE_VERSION" \
     0 "" \
-    fgrep -qx "$arch" $TEST_TEMP/maniarches
+    grep -Fqx "$arch" $TEST_TEMP/maniarches
 done
 
 test_cmd "Verify pushed image can be removed" \
