@@ -57,16 +57,13 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
     // (last-match wins rule).
     "enabled": true,
 
-    // Indirect dependencies are disabled by default for the `gomod` manager.
-    // However, for vulnerability updates we may want them even if they break
-    // during renovate's automatic top-level `go mod tidy`.
-    "packageRules": [
-      {
-        "matchManagers": ["gomod"],
-        "matchDepTypes": ["indirect"],
-        "enabled": true
-      }
-    ]
+    // Note: As of 2024-06-25 indirect golang dependency handling is
+    // broken in Renovate, and disabled by default.  This affects
+    // vulnerabilityAlerts in that if the dep is 'indirect' no PR
+    // will ever open, it must be handled manually.  Attempting
+    // to enable indirect deps (for golang) in this section will
+    // not work, it will always be overriden by the global golang
+    // indirect dep. setting.
   },
 
   // On a busy repo, automatic-rebasing will swamp the CI system.
