@@ -782,6 +782,11 @@ sub _draw_boxes {
     if (my $only_if = $task->{yml}{only_if}) {
         $shape = 'record';
         $label .= '|' if $label;
+
+        # Collapse whitespace, and remove leading/trailing
+        $only_if =~ s/[\s\n]+/ /g;
+        $only_if =~ s/^\s+|\s+$//g;
+
         if ($only_if =~ /CI:DOCS.*CI:BUILD/) {
             $label .= "[SKIP: CI:BUILD]\\l[SKIP: CI:DOCS]\\l";
         }
@@ -839,7 +844,19 @@ sub _draw_boxes {
         elsif ($only_if =~ /CIRRUS_CHANGE_TITLE\s+!=.*CI:MACHINE.*CIRRUS_BRANCH.*main.*CIRRUS_BASE_BRANCH.*main.*\)/s) {
             $label .= "[only if: main]";
         }
+
+        # automation_images
+        elsif ($only_if eq q{$CIRRUS_CRON == '' && $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH}) {
+            $label .= "[only if DEFAULT_BRANCH and not cron]";
+        }
+        elsif ($only_if eq q{$CIRRUS_PR != '' && $CIRRUS_PR_LABELS !=~ ".*no_build-push.*"}) {
+            $label .= "[only if PR, but not no_build-push]";
+        }
+        elsif ($only_if eq q{$CIRRUS_CRON == 'lifecycle'}) {
+            $label .= "[only on cron=lifecycle]";
+        }
         else {
+            warn "$ME: unexpected only_if: $only_if\n";
             $label .= "[only if: $only_if]";
         }
     }
@@ -854,10 +871,12 @@ sub _draw_boxes {
     if (my $skip = $task->{yml}{skip}) {
         $shape = 'record';
         $label .= '|' if $label && $label !~ /SKIP/;
+
+        # Collapse whitespace, and remove leading/trailing
+        $skip =~ s/[\s\n]+/ /g;
+        $skip =~ s/^\s+|\s+$//g;
+
         my @reasons;
-        push @reasons, 'BRANCH','TAG'  if $skip =~ /CIRRUS_PR.*CIRRUS_TAG/;
-        push @reasons, 'TAG'           if $skip eq q{$CIRRUS_TAG != ''};
-        push @reasons, 'CI:DOCS'       if $skip =~ /CI:DOCS/;
 
         # 2024-06-18 Paul CI skips
         if ($skip =~ s|\$CIRRUS_PR\s+!=\s+''\s+&&\s+\$CIRRUS_CHANGE_TITLE\s+!=~\s+'\.\*CI:ALL\.\*\'\s+&&\s+!changesInclude\('.cirrus.yml', 'Makefile', 'contrib/cirrus/\*\*', 'vendor/\*\*', 'hack/\*\*', 'version/rawversion/\*'\)\s+&&\s+||) {
@@ -876,7 +895,15 @@ sub _draw_boxes {
             else {
                 warn "$ME: Cannot grok skip '$skip'\n";
             }
-        } elsif ($skip) {
+        }
+        # automation_images
+        elsif ($skip eq q{$CIRRUS_CHANGE_TITLE =~ '.*CI:DOCS.*' || $CIRRUS_CHANGE_TITLE =~ '.*CI:TOOLING.*'}) {
+            push @reasons, "CI:DOCS or CI:TOOLING";
+        }
+        elsif ($skip eq q{$CIRRUS_CHANGE_TITLE =~ '.*CI:DOCS.*'}) {
+            push @reasons, "CI:DOCS";
+        }
+        elsif ($skip) {
             warn "$ME: unexpected skip '$skip'\n";
         }
 
