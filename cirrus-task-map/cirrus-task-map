@@ -197,11 +197,12 @@ sub write_img {
 
     # Annotate: add signature line at lower left
     # FIXME: include git repo info?
-    if (grep { -x "$_/convert" } split(":", $ENV{PATH})) {
+    if (grep { -x "$_/magick" } split(":", $ENV{PATH})) {
         unlink $img_out_tmp;
         my $signature = strftime("Generated %Y-%m-%dT%H:%M:%S%z by $ME v$VERSION", localtime);
         my @cmd = (
-            "convert",
+            "magick",
+            $img_out,
             '-family'    => 'Courier',
             '-pointsize' => '12',
 #            '-style'     => 'Normal',  # Argh! This gives us Bold!?
@@ -209,7 +210,7 @@ sub write_img {
             '-fill'      => '#000',
             '-gravity'   => 'SouthWest',
             "-annotate", "+5+5", $signature,
-            "$img_out" => "$img_out_tmp"
+            $img_out_tmp
         );
         if (system(@cmd) == 0) {
             rename $img_out_tmp => $img_out;
