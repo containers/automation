@@ -123,14 +123,17 @@ if ! mount | grep -q "$PWUSER"; then
         # CI $TEMPDIR - critical for podman-machine storage performance
         ci_tempdir="/private/tmp/ci"
         mkdir -p "$ci_tempdir"
-        sudo diskutil apfs addVolume "$local_storage_volume" APFS "ci_tempdir" -mountpoint "$ci_tempdir"
+        # Something is wrong with the machine test where a write syscall just seems stuck forever
+        # We suspect it could be related to the dynamic volume resizing, as such allocate at least 20 GB.
+        # https://github.com/containers/podman/pull/23162#issuecomment-2206082041
+        sudo diskutil apfs addVolume "$local_storage_volume" APFS "ci_tempdir" -reserve 20g -mountpoint "$ci_tempdir"
         sudo chown $PWUSER:staff "$ci_tempdir"
         sudo chmod 1770 "$ci_tempdir"
 
         # CI-user's $HOME - not critical but might as well make it fast while we're
         # adding filesystems anyway.
         ci_homedir="/Users/$PWUSER"
-        sudo diskutil apfs addVolume "$local_storage_volume" APFS "ci_homedir" -mountpoint "$ci_homedir"
+        sudo diskutil apfs addVolume "$local_storage_volume" APFS "ci_homedir" -reserve 20g -mountpoint "$ci_homedir"
         sudo chown $PWUSER:staff "$ci_homedir"
         sudo chmod 0750 "$ci_homedir"
 
