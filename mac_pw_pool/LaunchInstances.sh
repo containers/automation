@@ -59,7 +59,7 @@ inst_failure() {
 }
 
 # Find dedicated hosts to operate on.
-dh_name_flt="Name=tag:Name,Values=MacM1-*"
+dh_name_flt="Name=tag:Name,Values=${DH_PFX}-*"
 dh_tag_flt="Name=tag:$DH_REQ_TAG,Values=$DH_REQ_VAL"
 dh_qry='Hosts[].{HostID:HostId, Name:[Tags[?Key==`Name`].Value][] | [0]}'
 dh_searchout="$TEMPDIR/hosts.output"  # JSON or error message
@@ -93,14 +93,14 @@ dcmpfmt="+%Y%m%d%H%M"  # date comparison format compatible with numeric 'test'
 # their launch timestamps.
 declare -a pw_filt
 pw_filts=(
-  'Name=tag:Name,Values=MacM1-*'
+  "Name=tag:Name,Values=${DH_PFX}-*"
   'Name=tag:PWPoolReady,Values=true'
   "Name=tag:$DH_REQ_TAG,Values=$DH_REQ_VAL"
   'Name=instance-state-name,Values=running'
 )
 pw_query='Reservations[].Instances[].LaunchTime'
 inst_lt_f=$TEMPDIR/inst_launch_times
-dbg "Obtaining launch times for all running MacM1-* instances"
+dbg "Obtaining launch times for all running ${DH_PFX}-* instances"
 dbg "$AWS ec2 describe-instances --filters '${pw_filts[*]}' --query '$pw_query' &> '$inst_lt_f'"
 if ! $AWS ec2 describe-instances --filters "${pw_filts[@]}" --query "$pw_query" &> "$inst_lt_f"; then
     die "Can not query instances:
@@ -231,7 +231,7 @@ for name_hostid in "${NAME2HOSTID[@]}"; do
     if ((launch_new)); then
         msg "Creating new $name instance on $name host."
         if ! $AWS ec2 run-instances \
-                  --launch-template LaunchTemplateName=CirrusMacM1PWinstance \
+                  --launch-template LaunchTemplateName=${TEMPLATE_NAME} \
                   --tag-specifications \
                   "ResourceType=instance,Tags=[{Key=Name,Value=$name},{Key=$DH_REQ_TAG,Value=$DH_REQ_VAL},{Key=PWPoolReady,Value=true},{Key=automation,Value=true}]" \
                   --placement "HostId=$hostid" &> "$instoutput"; then
