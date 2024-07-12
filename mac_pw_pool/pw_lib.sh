@@ -7,6 +7,7 @@
 SCRIPT_FILENAME=$(basename "$0")  # N/B: Caller's arg0, not this library file path.
 SCRIPT_DIRPATH=$(dirname "$0")
 LIB_DIRPATH=$(dirname "${BASH_SOURCE[0]}")
+REPO_DIRPATH=$(realpath "$LIB_DIRPATH/../")
 TEMPDIR=$(mktemp -d -p '' "${SCRIPT_FILENAME}_XXXXX.tmp")
 trap "rm -rf '$TEMPDIR'" EXIT
 
