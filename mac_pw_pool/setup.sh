@@ -9,6 +9,10 @@
 #
 # This script should be called with a single argument string,
 # of the label YAML to configure.  For example "purpose: prod"
+#
+# N/B: Under special circumstances, this script (possibly with modifications)
+# can be executed more than once.  All operations which modify state/config.
+# must be wrapped in conditional checks.
 
 set -eo pipefail
 
@@ -74,10 +78,43 @@ grep -q homebrew /etc/paths || \
 # environment isn't loaded automatically.
 . /etc/profile
 
-msg "Installing podman-machine, testing, and CI deps. (~2m install time)"
+msg "Installing podman-machine, testing, and CI deps. (~5-10m install time)"
 if [[ ! -x /usr/local/bin/gvproxy ]]; then
-    brew tap cfergeau/crc
-    brew install go go-md2man coreutils pkg-config pstree gpgme vfkit cirruslabs/cli/cirrus
+    declare -a brew_taps
+    declare -a brew_formulas
+
+    brew_taps=(
+        # Required to use upstream vfkit
+        cfergeau/crc
+
+        # Required to use upstream krunkit
+        slp/krunkit
+    )
+
+    brew_formulas=(
+        # Necessary for worker-pool participation + task execution
+        cirruslabs/cli/cirrus
+
+        # Necessary for building podman|buildah|skopeo
+        go go-md2man coreutils pkg-config pstree gpgme
+
+        # Necessary for testing podman-machine
+        vfkit
+
+        # Necessary for podman-machine libkrun CI testing
+        krunkit
+    )
+
+    # msg() includes a ##### prefix, ensure this text is simply
+    # associated with the prior msg() output.
+    echo "      Adding taps[] ${brew_taps[*]}"
+    echo "      before installing formulas[] ${brew_formulas[*]}"
+
+    for brew_tap in "${brew_taps[@]}"; do
+        brew tap $brew_tap
+    done
+
+    brew install "${brew_formulas[@]}"
 
     # Normally gvproxy is installed along with "podman" brew.  CI Tasks
     # on this instance will be running from source builds, so gvproxy must
@@ -158,7 +195,9 @@ if ! arch -arch x86_64 /usr/bin/uname -m; then
 fi
 
 msg "Restricting appstore/software install to admin-only"
-if [[ -x /usr/sbin/softwareupdate ]]; then
+# Abuse the symlink existance as a condition for running `sudo defaults write ...`
+# since checking the state of those values is complex.
+if [[ ! -L /usr/local/bin/softwareupdate ]]; then
     # Ref: https://developer.apple.com/documentation/devicemanagement/softwareupdate
     sudo defaults write com.apple.SoftwareUpdate restrict-software-update-require-admin-to-install -bool true
     sudo defaults write com.apple.appstore restrict-store-require-admin-to-install -bool true
@@ -168,7 +207,7 @@ if [[ -x /usr/sbin/softwareupdate ]]; then
     # also desireable to limit use of the utility in a CI environment generally.
     # Since /usr/sbin is read-only, but /usr/local is read-write and appears first
     # in $PATH, deploy a really fragile hack as an imperfect workaround.
-    sudo ln -s /usr/bin/false /usr/local/bin/softwareupdate
+    sudo ln -sf /usr/bin/false /usr/local/bin/softwareupdate
 fi
 
 # FIXME: Semi-secret POOLTOKEN value should not be in this file.
