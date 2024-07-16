@@ -7,8 +7,14 @@
 SCRIPT_FILENAME=$(basename "$0")  # N/B: Caller's arg0, not this library file path.
 SCRIPT_DIRPATH=$(dirname "$0")
 LIB_DIRPATH=$(dirname "${BASH_SOURCE[0]}")
+REPO_DIRPATH=$(realpath "$LIB_DIRPATH/../")
 TEMPDIR=$(mktemp -d -p '' "${SCRIPT_FILENAME}_XXXXX.tmp")
 trap "rm -rf '$TEMPDIR'" EXIT
+
+# Dedicated host name prefix; Actual name will have a "-<X>" (number) appended.
+# N/B: ${DH_PFX}-<X> _MUST_ match dedicated host names as listed in dh_status.txt
+# using the regex ^[a-zA-Z0-9]+-[0-9] (see Utilization.gnuplot)
+DH_PFX="MacM1"
 
 # Only manage dedicated hosts with the following tag & value
 DH_REQ_TAG="purpose"
@@ -50,7 +56,7 @@ SETUP_MAX_SECONDS=1200  # Typical time ~600seconds
 
 # Name of launch template. Current/default version will be used.
 # https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#LaunchTemplates:
-TEMPLATE_NAME="${TEMPLATE_NAME:-CirrusMacM1PWinstance}"
+TEMPLATE_NAME="${TEMPLATE_NAME:-Cirrus${DH_PFX}PWinstance}"
 
 # Path to scripts to copy/execute on Darwin instances
 SETUP_SCRIPT="$LIB_DIRPATH/setup.sh"

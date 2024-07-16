@@ -53,8 +53,8 @@ timestamp=$(date -u -Iseconds -d \
                 awk '{print $4}'))
 pw_state=$(grep -E -v '^($|#+| +)' "$PWSTATE")
 n_workers=$(grep 'complete alive' <<<"$pw_state" | wc -l)
-n_tasks=$(awk 'BEGIN{B=0} /MacM1-[0-9]+ complete alive/{B+=$4} END{print B}' <<<"$pw_state")
-n_taskf=$(awk 'BEGIN{E=0} /MacM1-[0-9]+ complete alive/{E+=$5} END{print E}' <<<"$pw_state")
+n_tasks=$(awk "BEGIN{B=0} /${DH_PFX}-[0-9]+ complete alive/{B+=\$4} END{print B}" <<<"$pw_state")
+n_taskf=$(awk "BEGIN{E=0} /${DH_PFX}-[0-9]+ complete alive/{E+=\$5} END{print E}" <<<"$pw_state")
 printf "%s,%i,%i,%i\n" "$timestamp" "$n_workers" "$n_tasks" "$n_taskf" | tee -a "$uzn_file"
 
 # Prevent uncontrolled growth of utilization.csv.  Assume this script

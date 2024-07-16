@@ -18,7 +18,8 @@ set xrange [(system("date -u -Iseconds -d '26 hours ago'")):(system("date -u -Is
 
 set ylabel "Workers Online"
 set ytics border nomirror numeric
-set yrange [0:(system("grep 'MacM1' dh_status.txt | wc -l") * 1.5)]
+# Not practical to lookup $DH_PFX from pw_lib.sh
+set yrange [0:(system("grep -E '^[a-zA-Z0-9]+-[0-9]' dh_status.txt | wc -l") * 1.5)]
 
 set y2label "Worker Utilization"
 set y2tics border nomirror numeric

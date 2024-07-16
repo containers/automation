@@ -85,29 +85,11 @@ tag, which must correspond to the value indicated in `pw_lib.sh`
 and in the target repo `.cirrus.yml`.  To test script and/or
 CI changes:
 
-1. Using the AWS EC2 WebUI, allocate one or more dedicated hosts.
-   - Make sure there are no white space characters in the name.
-   - Set instance family to `mac2`
-   - Set instance type to `mac2.metal`
-   - Choose an Availability zone, `us-east-1a` preferred but it's not critical.
-   - Turn off `Instance auto-placement`, `Host recovery` and `Host maintenance`.
-   - Set the tags: `automation==false`, `PWPoolReady==true`, and
-     `purpose==<name>_testing` where `<name>` is your name.
-1. Temporarily edit `pw_lib.sh` (DO NOT PUSH THIS CHANGE) to update the
-   `DH_REQ_VAL` value to `<name>_testing`, same as you set in step 1.
-1. Obtain the current worker pool token by clicking the "show"
-   button on [the status
-   page](https://cirrus-ci.com/pool/1cf8c7f7d7db0b56aecd89759721d2e710778c523a8c91c7c3aaee5b15b48d05).
-   You must be logged in with a github account having admin access
-   to view this page.
 1. Make sure you have locally met all requirements spelled out in the
-   header-comment of `LaunchInstances.sh` and `SetupInstances.sh`.
-   Importantly, make sure the shared ssh key has been added to the
-   currently running agent.
-1. Repeatedly execute `LaunchInstances.sh`. It will update `dh_status.txt`
-   with any warnings/errors.  When all new Mac instance(s) are successfully
-   allocated, it will show lines includeing the host name,
-   an ID, and a datetime stamp.
+   header-comment of `AllocateTestDH.sh`.
+1. Execute `AllocateTestDH.sh`.  It will operate out of a temporary
+   clone of the repository to prevent pushing required test-modifications
+   upstream.
 1. Repeatedly execute `SetupInstances.sh`. It will update `pw_status.txt`
    with any warnings/errors.  When successful, lines will include
    the host name, "complete", and "alive" status strings.
