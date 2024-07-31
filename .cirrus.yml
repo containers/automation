@@ -27,13 +27,11 @@ cirrus-ci/unit-test_task:
 cirrus-ci/renovate_validation_task:
     only_if: *not_docs
     container:
-        image: ghcr.io/renovatebot/renovate:latest
-    env:
-        RCV: /usr/local/bin/renovate-config-validator
+        image: "ghcr.io/renovatebot/renovate:latest"
     preset_validate_script:
-        - $RCV $CIRRUS_WORKING_DIR/renovate/defaults.json5
+        - renovate-config-validator $CIRRUS_WORKING_DIR/renovate/defaults.json5
     repo_validate_script:
-        - $RCV $CIRRUS_WORKING_DIR/.github/renovate.json5
+        - renovate-config-validator $CIRRUS_WORKING_DIR/.github/renovate.json5
 
 # This is the same setup as used for Buildah CI
 gcp_credentials: ENCRYPTED[fc95bcc9f4506a3b0d05537b53b182e104d4d3979eedbf41cf54205be6397ca0bce0831d0d47580cf578dae5776548a5]
