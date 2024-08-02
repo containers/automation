@@ -138,14 +138,15 @@ if [[ -r "$PWSTATE" ]]; then
 fi
 
 # Assuming the `--force` option was used to initialize a new pool of
-# workers, then instances need to be configured with a self-termination
-# shutdown delay.  This ensures future replacement instances creation
-# is staggered, soas to maximize overall worker utilization.
-term_addtl=0
+# workers, then instances need to be configured with a staggered
+# self-termination shutdown delay.  This prevents all the instances
+# from being terminated at the same time, potentially impacting
+# CI usage.
+runtime_hours_reduction=0
 # shellcheck disable=SC2199
 if [[ "$@" =~ --force ]]; then
-    warn "Forcing instance creation: Ignoring staggered creation limits."
-    term_addtl=1  # Multiples of $CREATE_STAGGER_HOURS to add to shutdown delay
+    warn "Forcing instance creation w/ staggered existence limits."
+    runtime_hours_reduction=$CREATE_STAGGER_HOURS
 fi
 
 for _dhentry in "${_dhstate[@]}"; do
@@ -295,8 +296,15 @@ for _dhentry in "${_dhstate[@]}"; do
                 continue  # try again next loop
             fi
 
-            shutdown_seconds=$((60*60*term_addtl*CREATE_STAGGER_HOURS + 60*60*PW_MAX_HOURS))
-            pwst_msg "Starting automatic instance recycling in $((term_addtl*CREATE_STAGGER_HOURS + PW_MAX_HOURS)) hours"
+            # Keep runtime_hours_reduction w/in sensible, positive bounds.
+            if [[ $runtime_hours_reduction -ge $((PW_MAX_HOURS - CREATE_STAGGER_HOURS)) ]]; then
+                runtime_hours_reduction=$CREATE_STAGGER_HOURS
+            fi
+
+            shutdown_seconds=$((60*60*PW_MAX_HOURS - 60*60*runtime_hours_reduction))
+            [[ $shutdown_seconds -gt $((60*60*CREATE_STAGGER_HOURS)) ]] || \
+                die "Detected unacceptably short \$shutdown_seconds ($shutdown_seconds) value."
+            pwst_msg "Starting automatic instance recycling in $((shutdown_seconds/60/60)) hours"
             # Darwin is really weird WRT active terminals and the shutdown
             # command.  Instead of installing a future shutdown, stick an
             # immediate shutdown at the end of a long sleep. This is the
@@ -322,8 +330,11 @@ for _dhentry in "${_dhstate[@]}"; do
             msg "Setup script started."
             set_pw_status setup started
 
-            # If starting multiple instance for any reason, stagger shutdowns.
-            term_addtl=$((term_addtl+1))
+            # No sense in incrementing if there was a failure running setup
+            # shellcheck disable=SC2199
+            if [[ "$@" =~ --force ]]; then
+                runtime_hours_reduction=$((runtime_hours_reduction + CREATE_STAGGER_HOURS))
+            fi
 
             # Let setup run in the background
             continue
