@@ -22,9 +22,20 @@ if [[ ! -r "$CRONLOG" ]] || [[ ! -r "$CRONSCRIPT" ]] || [[ ! -d "../.git" ]]; th
 fi
 
 relaunch_web_container() {
-  # Assume code has changed, restart container w/ latest image
+  # Assume code change or image update, restart container.
   (
+    # Prevent podman and/or sub-processes from inheriting the lock FD.
+    # This would deadlock all future runs of this script or Cron.sh
+    # Can't use `flock --close ...` here because it "hangs" in this context.
+    for fd_nr in $(/bin/ls /proc/self/fd/); do
+        [[ $fd_nr -ge 3 ]] || \
+            continue
+        # Bash doesn't allow direct substitution of the FD number
+        eval "exec $fd_nr>&-"
+    done
+
     set -x
+
     podman run --replace --name "$_CNTNAME" -d --rm --pull=newer -p 8080:80 \
       -v $HOME/devel/automation/mac_pw_pool/html:/usr/share/nginx/html:ro,Z \
       $WEB_IMG
