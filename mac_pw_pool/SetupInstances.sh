@@ -104,6 +104,10 @@ fi
 [[ -r "$DHSTATE" ]] || \
     die "Can't read from state file: $DHSTATE"
 
+if [[ -z "$SSH_AUTH_SOCK" ]] || [[ -z "$SSH_AGENT_PID" ]]; then
+    die "Cannot access an ssh-agent.  Please run 'ssh-agent -s > /run/user/$UID/ssh-agent.env' and 'ssh-add /path/to/required/key'."
+fi
+
 declare -a _dhstate
 readarray -t _dhstate <<<$(grep -E -v '^($|#+| +)' "$DHSTATE" | sort)
 n_inst=0
