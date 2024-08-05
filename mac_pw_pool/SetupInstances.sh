@@ -166,24 +166,6 @@ for _dhentry in "${_dhstate[@]}"; do
     set_pw_status listener error
     set_pw_status comment ""
 
-    # It's really important that instances have a defined and risk-relative
-    # short lifespan.  Multiple mechanisms are in place to assist, but none
-    # are perfect.  Ensure instances running for an excessive time are forcefully
-    # terminated as soon as possible from this script.
-    launch_epoch=$(date -u -d "$launch_time" +%s)
-    now_epoch=$(date -u +%s)
-    age_sec=$((now_epoch-launch_epoch))
-    hard_max_sec=$((PW_MAX_HOURS*60*60*2))  # double PW_MAX_HOURS
-    dbg "launch_epoch=$launch_epoch"
-    dbg "   now_epoch=$now_epoch"
-    dbg "     age_sec=$age_sec"
-    dbg "hard_max_sec=$hard_max_sec"
-    msg "Instance alive for $((age_sec/60/60)) hours (max $PW_MAX_HOURS)"
-    if [[ $age_sec -gt $hard_max_sec ]]; then
-        force_term "Excess instance lifetime (+$((age_sec-hard_max_sec))s)"
-        continue
-    fi
-
     if ! $AWS ec2 describe-instances --instance-ids $instance_id &> "$instoutput"; then
         pwst_warn "Could not query instance $instance_id $(ctx 0)."
         continue
@@ -216,6 +198,24 @@ for _dhentry in "${_dhstate[@]}"; do
     dbg "Looking up public DNS"
     if ! pub_dns=$(json_query '.Reservations?[0]?.Instances?[0]?.PublicDnsName?' "$instoutput"); then
         pwst_warn "Could not lookup of public DNS for instance $instance_id $(ctx 0)"
+        continue
+    fi
+
+    # It's really important that instances have a defined and risk-relative
+    # short lifespan.  Multiple mechanisms are in place to assist, but none
+    # are perfect.  Ensure instances running for an excessive time are forcefully
+    # terminated as soon as possible from this script.
+    launch_epoch=$(date -u -d "$launch_time" +%s)
+    now_epoch=$(date -u +%s)
+    age_sec=$((now_epoch-launch_epoch))
+    hard_max_sec=$((PW_MAX_HOURS*60*60*2))  # double PW_MAX_HOURS
+    dbg "launch_epoch=$launch_epoch"
+    dbg "   now_epoch=$now_epoch"
+    dbg "     age_sec=$age_sec"
+    dbg "hard_max_sec=$hard_max_sec"
+    msg "Instance alive for $((age_sec/60/60)) hours (max $PW_MAX_HOURS)"
+    if [[ $age_sec -gt $hard_max_sec ]]; then
+        force_term "Excess instance lifetime (+$((age_sec-hard_max_sec))s)"
         continue
     fi
 
