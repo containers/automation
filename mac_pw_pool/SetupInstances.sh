@@ -218,10 +218,13 @@ for _dhentry in "${_dhstate[@]}"; do
     dbg "   now_epoch=$now_epoch"
     dbg "     age_sec=$age_sec"
     dbg "hard_max_sec=$hard_max_sec"
-    msg "Instance alive for $((age_sec/60/60)) hours (max $PW_MAX_HOURS)"
+    # Soft time limit is enforced via 'sleep $PW_MAX_HOURS && shutdown' started during instance setup (below).
+    msg "Instance alive for $((age_sec/60/60)) hours (soft max: $PW_MAX_HOURS hard: $((hard_max_sec/60/60)))"
     if [[ $age_sec -gt $hard_max_sec ]]; then
-        force_term "Excess instance lifetime (+$((age_sec-hard_max_sec))s)"
+        force_term "Excess instance lifetime; $(((age_sec - hard_max_sec)/60))m past hard max limit."
         continue
+    elif [[ $age_sec -gt $((PW_MAX_HOURS*60*60)) ]]; then
+        pwst_warn "Instance alive longer than soft max.  Investigation recommended."
     fi
 
     dbg "Attempting to contact '$name' at $pub_dns"
@@ -424,8 +427,15 @@ for _dhentry in "${_dhstate[@]}"; do
     msg "Apparent tasks started/finished/running: $n_started_tasks $n_finished_tasks $((n_started_tasks-n_finished_tasks)) (max $PW_MAX_TASKS)"
 
     dbg "Checking apparent task limit"
-    if [[ "$n_finished_tasks" -gt $PW_MAX_TASKS ]]; then
+    # N/B: This is only enforced based on the _previous_ run of this script worker-count.
+    #      Doing this on the _current_ alive worker count would add a lot of complexity.
+    if [[ "$n_finished_tasks" -gt $PW_MAX_TASKS ]] && [[ $n_pw_total -gt $PW_MIN_ALIVE ]]; then
+        # N/B: Termination based on _finished_ tasks, so if a task happens to be currently running
+        #      it will very likely have _just_ started in the last few seconds.  Cirrus will retry
+        #      automatically on another worker.
         force_term "Instance exceeded $PW_MAX_TASKS apparent tasks."
+    elif [[ $n_pw_total -le $PW_MIN_ALIVE ]]; then
+        pwst_warn "Not enforcing max-tasks limit, only $n_pw_total workers online last run."
     fi
 done
 
