@@ -48,11 +48,12 @@ CREATE_STAGGER_HOURS=2
 
 # Instance shutdown controls (assumes terminate-on-shutdown behavior)
 PW_MAX_HOURS=24  # Since successful configuration
-PW_MAX_TASKS=12  # Logged by listener (N/B: Log can be manipulated by tasks!)
+PW_MAX_TASKS=24  # Logged by listener (N/B: Log can be manipulated by tasks!)
+PW_MIN_ALIVE=3  # Bypass enforcement of $PW_MAX_TASKS if <= alive/operating workers
 
 # How long to wait for setup.sh to finish running (drop a .setup.done file)
 # before forcibly terminating.
-SETUP_MAX_SECONDS=1200  # Typical time ~600seconds
+SETUP_MAX_SECONDS=2400  # Typical time ~10 minutes, use 2x safety-factor.
 
 # Name of launch template. Current/default version will be used.
 # https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#LaunchTemplates:
