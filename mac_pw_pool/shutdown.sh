@@ -18,6 +18,10 @@ if id -u "$PWUSER" &> /dev/null; then
     timeout_at=$((now+60*60*2))
     echo "Waiting up to 2 hours for any pre-existing cirrus agent (i.e. running task)"
     while pgrep -u $PWUSER -q -f "cirrus-ci-agent"; do
+        if [[ $(date -u +%s) -gt $timeout_at ]]; then
+            echo "Timeout waiting for cirrus-ci-agent to terminate"
+            break
+        fi
         echo "Found cirrus-ci-agent still running, waiting..."
         sleep 60
     done
