@@ -24,6 +24,8 @@ detailed/specific information.
 * You've read all scripts in this directory, generally follow
   their purpose, and meet any requirements stated within the
   header comment.
+* You've read the [private documentation](https://docs.google.com/document/d/1PX6UyqDDq8S72Ko9qe_K3zoV2XZNRQjGxPiWEkFmQQ4/edit)
+  and understand the safety/security section.
 * You have permissions to access all referenced AWS resources.
 * There are one or more dedicated hosts allocated and have set:
   * A name tag like `MacM1-<some number>` (NO SPACES!)
@@ -44,7 +46,7 @@ The goal is to maintain sufficient alive/running/working instances
 to service most Cirrus-CI tasks pointing at the pool.  This is
 best achieved with slower maintenance of hosts compared to setup
 of ready instances.  This is because hosts can be inaccessible for
-1-1/2 hours, but instances come up in ~10-20m, ready to run tasks.
+up to 2 hours, but instances come up in ~10-20m, ready to run tasks.
 
 Either hosts and/or instances may be removed from management by
 setting "false" or removing their `PWPoolReady=true` tag.  Otherwise,
@@ -52,11 +54,11 @@ the pool should be maintained by installing the crontab lines
 indicated in the `Cron.sh` script.
 
 Cirrus-CI will assign tasks (specially) targeted at the pool, to an
-instance with a running listener.  If there are none, the task will
-queue forever (there might be a 24-hour timeout, I can't remember).
-From a PR perspective, there is zero control over which instance you
-get.  It could easily be one somebody's previous task barfed all over
-and ruined.
+instance with a running listener (`cirrus worker run` process).  If
+there are none, the task will queue forever (there might be a 24-hour
+timeout, I can't remember). From a PR perspective, there is little
+control over which instance you get.  It could easily be one where
+a previous task barfed all over and rendered unusable.
 
 ## Initialization
 
@@ -112,89 +114,25 @@ any cause, there's about a 2-hour waiting period before a new instance
 can be allocated. The `LaunchInstances.sh` script is able deal with this
 properly.
 
-## Security
 
-To thwart attempts to hijack or use instances for nefarious purposes,
-each employs three separate self-termination mechanisms.  Two of them
-depend on the instance's shutdown behavior being set to `terminate`
-(see above).  These mechanisms also ensure the workers remain relatively
-"clean" an "fresh" from a "CI-Working" perspective.
+## Script Debugging Hints
 
-Note: Should there be an in-flight CI task on a worker at
-shutdown, Cirrus-CI will perform a single automatic re-run on an
-available worker.
-
-1. Daily, a Cirrus-cron job runs and kills any instance running longer
-   than 3 days.
-2. Each instance's startup script runs a background 2-day sleep and
-   shutdown command (via MacOS-init consuming instance user-data).
-3. A setup script run on each instance starts a pool-listener
-   process.
-   1. If the worker process dies the instance shuts down.
-   2. After 22 hours the instance shuts down if there are no
-      cirrus-agent processes (presumably servicing a CI task).
-   3. After 24 hours, the instance shuts down regardless of any
-      running agents - probably hung/stuck agent process or somebody's
-      started a fake agent doing "bad things".
-
-## Manual maintenance
-
-As Mac instances are provisioned onto dedicated hosts, they utilize an
-AWS EC2 "Launch Template" to define the system's configuration.  Importantly
-this Launch Template defines the AMI (Amazon Machine Image) booted by the
-system.  These AMIs are maintained and updated by Amazon, and so periodically
-(suggest 3-6 months) the Launch Template should be updated to utilize the
-latest AMI.
-
-While it's technically possible to automate these updates, unfortunately,
-it's not simple/easy.  Worse, since the `LaunchInstances.sh` always uses
-the "latest" template version, testing the changes isn't currently possible.
-That said, the steps for updating the AMI are fairly simple and mostly
-low-risk (i.e. rollbacks are possible):
-
-1. In the AWS EC2 console, click "Launch Templates".
-1. Select the "CirrusMacM1PWinstance" template.
-1. Scroll to "Application and OS Images".  Copy the current AMI name
-   (includes a date stamp) and ID for use in the final steps.
-1. Click "Browse more AMIs" button.
-1. On the left, select the "64-bit (Mac-Arm)" filter.
-1. Use google to look up the latest OS Release name (e.x. "Sonoma").
-1. Under the latest entry in the filtered AMI list, select the
-   "64-bit (Mac-Arm)" radio-button on the left, beneath the "Select" button.
-1. Click the "Select" button.
-1. Copy the new AMI name and ID.
-1. Near the top of the Launch Template form, under "Launch template name
-   and version description", fill in the "Template Version Description"
-   field with the old and new AMI name for future reference.  For example:
-   `Update from amzn-ec2-macos-14.1-20231110-071234-arm64 to amzn-ec2-macos-14.4.1-20240411-223504-arm64`.  This will make the version-history clear to
-   future operators as well as simplify the choice in case a roll-back is required.
-1. On the right-hand-side, click "Create template version" button.  The new
-   template will automatically be utilized the next time `LaunchInstances.sh`
-   creates a new instance (i.e. complete rollout will take at least 24-hours).
-
-## Debugging Hints
-
-* The management VM is typically running in GCE, but it has no hard ties to any specific cloud.  To access it, you'll
-  need to manually look up it's current external IP using the google cloud console (or gcloud CLI).  It will maintain
-  a stable external IP so long as it's never fully taken offline (reboots are completely okay).
-* The `pw_pool_web` container on the management VM serves up the contents of the `mac_pw_pool/html` subdirectory.  Within
-  is the `utilization.png` image generated when `Cron.sh` runs `Utilization.gnuplot`.  Point your browser at the external
-  IP of the management VM to view these details.  Hint: In Chrome hit F12, go under the "network" tab, and enable "Disable Cache".
-  This will make refreshing the page always update the utilization graph.
-* An overview of the status of each worker can be seen on the [Cirrus-CI pool status
-  page](https://cirrus-ci.com/pool/1cf8c7f7d7db0b56aecd89759721d2e710778c523a8c91c7c3aaee5b15b48d05).  This page requires
-  admin access to the github containers-org.  It includes which tasks are currently running on which workers and the
-  worker's status.  There's also a handy "pause" button that can be use to temporarily stop the worker from picking up
-  any _future_ tasks - i.e. if it's misbehaving and/or requires deeper inspection w/o testing activity.
-* On the management VM, in the `mac_pw_pool` subdirectory, all the output from `Cron.sh` is stored in `Cron.log`.  This is
-  a great resource for monitoring operations of the pool as well as looking back to understand changes.
-* On each MacOS instance, the pool listener process (running as the worker user) keeps a log under `/private/tmp`.  The
-  file includes the registered name of the worker.  For example, on MacM1-7 you would find `/private/tmp/MacM1-7-worker.log`.
-  This log shows tasks taken on, completed, and any errors reported back from Cirrus-CI internals.
-* On each MacOS instance, there is a `setup.log` file that stores the output from executing `setup.sh`.  It also contains
-  any warnings/errors from the (very important) `service_pool.sh` script - which should _always_ be running in the background.
-* Critical operations on the management VM are protected by a mandatory, exclusive file lock on `mac_pw_pool/Cron.sh`.  Should
-  there be a deadlock, management of the pool (`Cron.sh`) will stop.  However the effects of this will not be observed
-  until workers begin hitting their lifetime and/or task limits.
-* Without intervention, the `nightly_maintenance.sh` script will update the containers/automation repo clone on the
-  management VM.  This happens if the repo becomes out of sync by more than 7 days (or as defined in the script)
+* On each MacOS instance:
+  * The pool listener process (running as the worker user) keeps a log under `/private/tmp`.  The
+    file includes the registered name of the worker.  For example, on MacM1-7 you would find `/private/tmp/MacM1-7-worker.log`.
+    This log shows tasks taken on, completed, and any errors reported back from Cirrus-CI internals.
+  * In the ec2-user's home directory is a `setup.log` file.  This stores the output from executing
+    `setup.sh`.  It also contains any warnings/errors from the (very important) `service_pool.sh` script - which should
+    _always_ be running in the background.
+  * There are several drop-files in the `ec2-user` home directory which are checked by `SetupInstances.sh`
+    to record state.  If removed, along with `setup.log`, the script will re-execute (a possibly newer version of) `setup.sh`.
+* On the management host:
+  * Automated operations are setup and run by `Cron.sh`, and logged to `Cron.log`.  When running scripts manually, `Cron.sh`
+    can serve as a template for the intended order of operations.
+  * Critical operations are protected by a mandatory, exclusive file lock on `mac_pw_pool/Cron.sh`.  Should
+    there be a deadlock, management of the pool (by `Cron.sh`) will stop.  However the effects of this will not be observed
+    until workers begin hitting their lifetime and/or task limits.
+  * Without intervention, the `nightly_maintenance.sh` script will update the containers/automation repo clone on the
+    management VM.  This happens if the repo becomes out of sync by more than 7 days (or as defined in the script).
+    When the repo is updated, the `pw_pool_web` container will be restarted.  The container will also be restarted if its
+    found to not be running.
