@@ -171,3 +171,30 @@ low-risk (i.e. rollbacks are possible):
 1. On the right-hand-side, click "Create template version" button.  The new
    template will automatically be utilized the next time `LaunchInstances.sh`
    creates a new instance (i.e. complete rollout will take at least 24-hours).
+
+## Debugging Hints
+
+* The management VM is typically running in GCE, but it has no hard ties to any specific cloud.  To access it, you'll
+  need to manually look up it's current external IP using the google cloud console (or gcloud CLI).  It will maintain
+  a stable external IP so long as it's never fully taken offline (reboots are completely okay).
+* The `pw_pool_web` container on the management VM serves up the contents of the `mac_pw_pool/html` subdirectory.  Within
+  is the `utilization.png` image generated when `Cron.sh` runs `Utilization.gnuplot`.  Point your browser at the external
+  IP of the management VM to view these details.  Hint: In Chrome hit F12, go under the "network" tab, and enable "Disable Cache".
+  This will make refreshing the page always update the utilization graph.
+* An overview of the status of each worker can be seen on the [Cirrus-CI pool status
+  page](https://cirrus-ci.com/pool/1cf8c7f7d7db0b56aecd89759721d2e710778c523a8c91c7c3aaee5b15b48d05).  This page requires
+  admin access to the github containers-org.  It includes which tasks are currently running on which workers and the
+  worker's status.  There's also a handy "pause" button that can be use to temporarily stop the worker from picking up
+  any _future_ tasks - i.e. if it's misbehaving and/or requires deeper inspection w/o testing activity.
+* On the management VM, in the `mac_pw_pool` subdirectory, all the output from `Cron.sh` is stored in `Cron.log`.  This is
+  a great resource for monitoring operations of the pool as well as looking back to understand changes.
+* On each MacOS instance, the pool listener process (running as the worker user) keeps a log under `/private/tmp`.  The
+  file includes the registered name of the worker.  For example, on MacM1-7 you would find `/private/tmp/MacM1-7-worker.log`.
+  This log shows tasks taken on, completed, and any errors reported back from Cirrus-CI internals.
+* On each MacOS instance, there is a `setup.log` file that stores the output from executing `setup.sh`.  It also contains
+  any warnings/errors from the (very important) `service_pool.sh` script - which should _always_ be running in the background.
+* Critical operations on the management VM are protected by a mandatory, exclusive file lock on `mac_pw_pool/Cron.sh`.  Should
+  there be a deadlock, management of the pool (`Cron.sh`) will stop.  However the effects of this will not be observed
+  until workers begin hitting their lifetime and/or task limits.
+* Without intervention, the `nightly_maintenance.sh` script will update the containers/automation repo clone on the
+  management VM.  This happens if the repo becomes out of sync by more than 7 days (or as defined in the script)
