@@ -33,7 +33,10 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
     ":gitSignOff",
 
     // Always rebase dep. update PRs from `main` when PR is stale
-    ":rebaseStalePrs"
+    ":rebaseStalePrs",
+
+    // Generic Regex Managers for updating git references and versions for files Renovate doesn't natively support
+    "github>containers/automation//renovate/generic-regex-managers"
   ],
 
   // The default setting is ambiguous, explicitly base schedules on UTC

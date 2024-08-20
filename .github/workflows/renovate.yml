@@ -1,0 +1,38 @@
+name: Renovate
+
+on:
+  pull_request:
+    paths:
+      - ".github/renovate.json"
+      - ".github/renovate.json5"
+      - "renovate.json"
+      - "renovate.json5"
+      - "renovate/*.json"
+      - "renovate/*.json5"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      RENOVATE_PRESETS_DIR: ./renovate/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4
+        with:
+          node-version: latest
+
+      - name: Install Renovate CLI
+        run: npm install -g renovate
+
+      - name: Validate Renovate config
+        run: renovate-config-validator --strict
+
+      - name: Validate Renovate presets
+        run: |
+          for file in $(find $RENOVATE_PRESETS_DIR -type f -name '*.json' -o -name '*.json5'); do
+            echo "Validating $file"
+            renovate-config-validator --strict $file
+          done
