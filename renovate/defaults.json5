@@ -197,12 +197,6 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
       "enabled": false
     },
 
-    // Add CI:DOCS prefix to skip unnecessary tests for golangci updates in podman CI.
-    {
-      "matchPackageNames": ["golangci/golangci-lint"],
-      "commitMessagePrefix": "[CI:DOCS]"
-    },
-
     /*************************************************
     ************ CI configuration options ************
     **************************************************/
