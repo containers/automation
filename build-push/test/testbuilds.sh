@@ -124,7 +124,7 @@ test_cmd "Verify e2e workflow w/ additional build-args" \
         2>&1"
 
 test_cmd "Verify latest tagged image was not pushed" \
-    1 'reading manifest latest in quay\.io/buildah/do_not_use: manifest unknown' \
+    2 'reading manifest latest in quay\.io/buildah/do_not_use: manifest unknown' \
     skopeo inspect docker://$TEST_FQIN:latest
 
 test_cmd "Verify architectures can be obtained from manifest list" \
