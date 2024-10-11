@@ -221,7 +221,7 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
       "matchFileNames": [".cirrus.yml"],
       "groupName": "CI VM Image",
       // Somebody(s) need to check image update PRs as soon as they open.
-      "reviewers": ["cevich"],
+      "reviewers": ["Luap99", "edsantiago"],
       // Don't wait, roll out CI VM Updates immediately
       "schedule": ["at any time"]
     },
