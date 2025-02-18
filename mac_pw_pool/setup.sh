@@ -98,6 +98,9 @@ if [[ ! -x /usr/local/bin/gvproxy ]]; then
         # Necessary for building podman|buildah|skopeo
         go go-md2man coreutils pkg-config pstree gpgme
 
+        # Necessary to compress the podman repo tar
+        zstd
+
         # Necessary for testing podman-machine
         vfkit
 
