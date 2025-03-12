@@ -123,7 +123,7 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
   // toolchain go.mod directive.  This should be done to prevent
   // unwanted auto-updates.
   // Ref: Upstream discussion https://github.com/golang/go/issues/65847
-  "constraints": {"go": "1.22"},
+  "constraints": {"go": "1.23"},
 
   // N/B: LAST MATCHING RULE WINS, match statems are ANDed together.
   // https://docs.renovatebot.com/configuration-options/#packagerules
