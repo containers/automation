@@ -64,16 +64,14 @@ jobs:
             - if: steps.retro.outputs.do_intg == 'true'
               id: create_pr_comment
               name: Create a status comment in the PR
-              # Ref: https://github.com/marketplace/actions/comment-action
-              uses: jungwinter/comment@v1
+              uses: thollander/actions-comment-pull-request@v3
               with:
-                  issue_number: '${{ steps.retro.outputs.prn }}'
-                  type: 'create'
-                  token: '${{ secrets.GITHUB_TOKEN }}'
+                  pr-number: '${{ steps.retro.outputs.prn }}'
+                  comment-tag: retro
                   # N/B: At the time of this comment, it is not possible to provide
                   # direct links to specific job-steps (here) nor links to artifact
                   # files.  There are open RFE's for this capability to be added.
-                  body: >-
+                  message: >-
                       [Cirrus-CI Retrospective Github
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
                       has started.  Running against
@@ -119,7 +117,7 @@ jobs:
             - if: steps.retro.outputs.do_intg == 'true'
               id: edit_pr_comment_build
               name: Update status comment on PR
-              uses: jungwinter/comment@v1
+              uses: thollander/actions-comment-pull-request@v3
               with:
                   type: 'edit'
                   comment_id: '${{ steps.create_pr_comment.outputs.id }}'
@@ -135,12 +133,11 @@ jobs:
             - if: steps.retro.outputs.do_intg == 'true'
               id: edit_pr_comment_exec
               name: Update status comment on PR again
-              uses: jungwinter/comment@v1
+              uses: thollander/actions-comment-pull-request@v3
               with:
-                  type: 'edit'
-                  comment_id: '${{ steps.edit_pr_comment_build.outputs.id }}'
-                  token: '${{ secrets.GITHUB_TOKEN }}'
-                  body: >-
+                  pr-number: '${{ steps.retro.outputs.prn }}'
+                  comment-tag: retro
+                  message: >-
                       Smoke testing passed [Cirrus-CI Retrospective Github
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
                       is triggering Cirrus-CI ${{ env.ACTION_TASK }} task.
@@ -167,12 +164,11 @@ jobs:
 
             - if: steps.retro.outputs.do_intg == 'true'
               name: Update comment on workflow success
-              uses: jungwinter/comment@v1
+              uses: thollander/actions-comment-pull-request@v3
               with:
-                  type: 'edit'
-                  comment_id: '${{ steps.edit_pr_comment_exec.outputs.id }}'
-                  token: '${{ secrets.GITHUB_TOKEN }}'
-                  body: >-
+                  pr-number: '${{ steps.retro.outputs.prn }}'
+                  comment-tag: retro
+                  message: >-
                       Successfully triggered [${{ env.ACTION_TASK }}
                       task](https://cirrus-ci.com/task/${{ steps.retro.outputs.tid }}?command=main#L0)
                       to indicate
@@ -183,12 +179,11 @@ jobs:
 
             - if: failure() && steps.retro.outputs.do_intg == 'true'
               name: Update comment on workflow failure
-              uses: jungwinter/comment@v1
+              uses: thollander/actions-comment-pull-request@v3
               with:
-                  type: 'edit'
-                  comment_id: '${{ steps.create_pr_comment.outputs.id }}'
-                  token: '${{ secrets.GITHUB_TOKEN }}'
-                  body: >-
+                  pr-number: '${{ steps.retro.outputs.prn }}'
+                  comment-tag: retro
+                  message: >-
                       Failure running [Cirrus-CI Retrospective Github
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
                       failed against this PR's
@@ -197,24 +192,22 @@ jobs:
             # This can happen because of --force push, manual cancel button press, or some other cause.
             - if: cancelled() && steps.retro.outputs.do_intg == 'true'
               name: Update comment on workflow cancellation
-              uses: jungwinter/comment@v1
+              uses: thollander/actions-comment-pull-request@v3
               with:
-                  type: 'edit'
-                  comment_id: '${{ steps.create_pr_comment.outputs.id }}'
-                  token: '${{ secrets.GITHUB_TOKEN }}'
-                  body: '[Cancelled](https://github.com/${{github.repository}}/pull/${{steps.retro.outputs.prn}}/commits/${{steps.retro.outputs.sha}})'
+                  pr-number: '${{ steps.retro.outputs.prn }}'
+                  comment-tag: retro
+                  message: '[Cancelled](https://github.com/${{github.repository}}/pull/${{steps.retro.outputs.prn}}/commits/${{steps.retro.outputs.sha}})'
 
             # Abnormal workflow ($ACTION-TASK task already ran / not paused on a PR).
             - if: steps.retro.outputs.is_pr == 'true' && steps.retro.outputs.do_intg != 'true'
               id: create_error_pr_comment
               name: Create an error status comment in the PR
               # Ref: https://github.com/marketplace/actions/comment-action
-              uses: jungwinter/comment@v1
+              uses: thollander/actions-comment-pull-request@v3
               with:
-                  issue_number: '${{ steps.retro.outputs.prn }}'
-                  type: 'create'
-                  token: '${{ secrets.GITHUB_TOKEN }}'
-                  body: >-
+                  pr-number: '${{ steps.retro.outputs.prn }}'
+                  comment-tag: error
+                  message: >-
                       ***ERROR***: [cirrus-ci_retrospective
                       action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
                       found `${{ env.ACTION_TASK }}` task with unexpected `${{ steps.retro.outputs.tst }}`
