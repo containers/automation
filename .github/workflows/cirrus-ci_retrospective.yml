@@ -119,10 +119,9 @@ jobs:
               name: Update status comment on PR
               uses: thollander/actions-comment-pull-request@v3
               with:
-                  type: 'edit'
-                  comment_id: '${{ steps.create_pr_comment.outputs.id }}'
-                  token: '${{ secrets.GITHUB_TOKEN }}'
-                  body: >-
+                  pr-number: '${{ steps.retro.outputs.prn }}'
+                  comment-tag: retro
+                  message: >-
                       Unit-testing passed (`${{ env.HELPER_LIB_TEST }}`)passed.
                       [Cirrus-CI Retrospective Github
                       Action](https://github.com/${{github.repository}}/actions/runs/${{github.run_id}})
