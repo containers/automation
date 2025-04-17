@@ -117,7 +117,7 @@ do
             name
             status
             automaticReRun
-            build {id changeIdInRepo branch pullRequest status repository {
+            build {id changeIdInRepo branch pullRequest tag status repository {
                 owner name cloneUrl masterBranch
               }
             }
