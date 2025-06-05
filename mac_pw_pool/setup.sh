@@ -96,8 +96,7 @@ if [[ ! -x /usr/local/bin/gvproxy ]]; then
         cirruslabs/cli/cirrus
 
         # Necessary for building podman|buildah|skopeo
-        # do not use go from brew right now
-        go-md2man coreutils pkg-config pstree gpgme
+        go go-md2man coreutils pkg-config pstree gpgme
 
         # Necessary to compress the podman repo tar
         zstd
@@ -126,13 +125,6 @@ if [[ ! -x /usr/local/bin/gvproxy ]]; then
     curl -sSLfO "$GVPROXY_RELEASE_URL"
     sudo install -o root -g staff -m 0755 gvproxy-darwin /usr/local/bin/gvproxy
     rm gvproxy-darwin
-
-    # Work around for build podman failure with go 1.24.3 so we pin to 1.24.2 instead of using brew.
-    # https://github.com/golang/go/issues/73617
-    curl -O -L --fail https://go.dev/dl/go1.24.2.darwin-arm64.pkg
-    sudo installer -pkg go1.24.2.darwin-arm64.pkg -target /
-    # Somehow the go pkg $PATH is not read by cirrus so add a symlink from the brew location
-    ln -s /usr/local/go/bin/go  /opt/homebrew/bin/go
 fi
 
 msg "Setting up hostname"
