@@ -6,7 +6,7 @@ This directory contains a simple web-based certificate generator to celebrate fi
 
 - **`certificate_generator.html`** - Interactive web interface for creating certificates
 - **`certificate_template.html`** - The certificate template used for generation
-- **`1stpr.png`** - Podman logo/branding image used in certificates
+- **`first_pr.png`** - Podman logo/branding image used in certificates
 
 ## Usage
 
