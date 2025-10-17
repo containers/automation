@@ -164,7 +164,7 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
     {
       "matchCategories": ["golang"],
       // disabled by default, safe to enable since "tidy" enforced by CI.
-      "postUpdateOptions": ["gomodTidy"],
+      "postUpdateOptions": ["gomodTidy", "gomodUpdateImportPaths"],
       // In case a version in use is retracted, allow going backwards.
       // N/B: This is NOT compatible with pseudo versions, see below.
       "rollbackPrs": false,
