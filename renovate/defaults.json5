@@ -197,6 +197,18 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
       "enabled": false
     },
 
+    // Updates for the monorepo modules should be grouped into a single PR.
+    {
+      "matchCategories": ["golang"],
+      "groupName": "common, image, and storage deps",
+      "schedule": "before 11am on the first day of the week",
+      "matchPackageNames": [
+        "/^go.podman.io/common/",
+        "/^go.podman.io/image/",
+        "/^go.podman.io/storage/"
+      ]
+    },
+
     /*************************************************
     ************ CI configuration options ************
     **************************************************/
