@@ -197,6 +197,18 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
       "enabled": false
     },
 
+    // Updates for the monorepo modules should be grouped into a single PR.
+    {
+      "matchCategories": ["golang"],
+      "groupName": "common, image, and storage deps",
+      "schedule": "before 11am on the first day of the week",
+      "matchPackageNames": [
+        "/^go.podman.io/common/",
+        "/^go.podman.io/image/",
+        "/^go.podman.io/storage/"
+      ]
+    },
+
     /*************************************************
     ************ CI configuration options ************
     **************************************************/
@@ -221,7 +233,7 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
       "matchFileNames": [".cirrus.yml"],
       "groupName": "CI VM Image",
       // Somebody(s) need to check image update PRs as soon as they open.
-      "reviewers": ["Luap99"],
+      "reviewers": ["Luap99", "timcoding1988"],
       // Don't wait, roll out CI VM Updates immediately
       "schedule": ["at any time"]
     },
