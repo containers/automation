@@ -233,6 +233,10 @@ and/or use the pre-commit hook: https://github.com/renovatebot/pre-commit-hooks
       "matchManagers": ["custom.regex"],
       "matchFileNames": [".cirrus.yml"],
       "groupName": "CI VM Image",
+      // Renovate treats "20230120" as the version number, and
+      // maxMajorIncrement defaults to 500 = 5 months;
+      // updates after longer time than that would be ignored.
+      "maxMajorIncrement": 0,
       // Somebody(s) need to check image update PRs as soon as they open.
       "reviewers": ["Luap99", "timcoding1988"],
       // Don't wait, roll out CI VM Updates immediately
