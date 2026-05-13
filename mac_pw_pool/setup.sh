@@ -84,11 +84,8 @@ if [[ ! -x /usr/local/bin/gvproxy ]]; then
     declare -a brew_formulas
 
     brew_taps=(
-        # Required to use upstream vfkit
-        cfergeau/crc
-
         # Required to use upstream krunkit
-        slp/krunkit
+        slp/krun
     )
 
     brew_formulas=(
